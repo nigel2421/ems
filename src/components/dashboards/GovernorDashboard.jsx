@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { 
@@ -9,31 +9,35 @@ import {
   TrendingUp, 
   FileSpreadsheet,
   Award,
-  Vote,
-  Layers
+  UserPlus
 } from 'lucide-react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
+import { AddAgentModal } from '../modules/AddAgentModal';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
 export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
   const { currentUser } = useAuth();
-  const { geography, submissions } = useData();
+  const { geography, getScopedSubmissions, getScopedAgents } = useData();
+  const [showAddAgent, setShowAddAgent] = useState(false);
+
+  const scopedAgents = getScopedAgents(currentUser);
+  const scopedSubmissions = getScopedSubmissions(currentUser);
 
   // Metrics
   const county = geography.counties[0]; // Nairobi City County
-  const totalSubmissions = submissions.length;
-  const approvedCount = submissions.filter(s => s.status === 'Approved').length;
-  const mismatchCount = submissions.filter(s => s.status === 'Mismatch').length;
+  const totalSubmissions = scopedSubmissions.length;
+  const approvedCount = scopedSubmissions.filter(s => s.status === 'Approved').length;
+  const mismatchCount = scopedSubmissions.filter(s => s.status === 'Mismatch').length;
 
-  // Tally Calculations
+  // Tally Calculations based on tenant's agents submissions
   let candidateASum = 0;
   let candidateBSum = 0;
   let sakajaSum = 0;
   let igatheSum = 0;
 
-  submissions.forEach(sub => {
+  scopedSubmissions.forEach(sub => {
     if (sub.tallies.presidential) {
       candidateASum += sub.tallies.presidential.candidateA || 0;
       candidateBSum += sub.tallies.presidential.candidateB || 0;
@@ -100,6 +104,10 @@ export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button className="btn btn-secondary" onClick={() => setShowAddAgent(true)}>
+            <UserPlus style={{ width: '16px', height: '16px' }} />
+            <span>Add Governor Agent</span>
+          </button>
           <button className="btn btn-primary" onClick={onOpenGeographic}>
             <Map style={{ width: '16px', height: '16px' }} />
             <span>IEBC Geo Inspector</span>
@@ -110,6 +118,29 @@ export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
               <span>{mismatchCount} Mismatch Alerts</span>
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Governor Ticket Agents Roster */}
+      <div className="glass-card">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>
+            Governor Ticket Agents ({scopedAgents.length})
+          </h3>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Assigned to Nairobi County Polling Streams</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+          {scopedAgents.map(ag => (
+            <div key={ag.id} className="glass-card" style={{ background: 'rgba(255,255,255,0.02)', padding: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <img src={ag.avatar} alt={ag.name} style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }} />
+              <div>
+                <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{ag.name}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{ag.entityName}</div>
+                <div style={{ fontSize: '0.72rem', color: '#818cf8', marginTop: '0.1rem' }}>{ag.email}</div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -249,7 +280,7 @@ export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
               </tr>
             </thead>
             <tbody>
-              {submissions.map(sub => (
+              {scopedSubmissions.map(sub => (
                 <tr key={sub.id}>
                   <td style={{ fontFamily: 'var(--font-mono)', fontWeight: '600', color: '#a5b4fc' }}>{sub.id}</td>
                   <td>
@@ -282,6 +313,13 @@ export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
           </table>
         </div>
       </div>
+      {/* Add Agent Modal */}
+      {showAddAgent && (
+        <AddAgentModal
+          defaultAspirantId={currentUser.id}
+          onClose={() => setShowAddAgent(false)}
+        />
+      )}
     </div>
   );
 };
