@@ -11,16 +11,22 @@ import { AdminDashboard } from './components/dashboards/AdminDashboard';
 import { GeographicMapper } from './components/modules/GeographicMapper';
 import { MismatchDetector } from './components/modules/MismatchDetector';
 import { AuditLogViewer } from './components/modules/AuditLogViewer';
-import { Bell, X, AlertTriangle, CheckCircle } from 'lucide-react';
+import { LoginModal } from './components/auth/LoginModal';
+import { Bell, X } from 'lucide-react';
 
 const MainAppContent = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, isAuthenticated } = useAuth();
   const { submissions } = useData();
 
   const [showGeographic, setShowGeographic] = useState(false);
   const [showMismatch, setShowMismatch] = useState(false);
   const [showAuditLogs, setShowAuditLogs] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+
+  // If user is not authenticated, render Login Modal
+  if (!isAuthenticated || !currentUser) {
+    return <LoginModal />;
+  }
 
   // Render Dashboard by Role
   const renderDashboard = () => {
