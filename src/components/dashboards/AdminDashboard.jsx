@@ -13,10 +13,12 @@ import {
   Building,
   MapPin
 } from 'lucide-react';
+import { AddAgentModal } from '../modules/AddAgentModal';
 
 export const AdminDashboard = ({ onOpenAuditLogs, onOpenGeographic }) => {
-  const { users, addUser } = useAuth();
+  const { users, addUser, currentUser } = useAuth();
   const { geography, assignAgentToPollingStation, logAuditAction } = useData();
+  const [showAddAgent, setShowAddAgent] = useState(false);
 
   // Active Menu Tab State
   const [activeTab, setActiveTab] = useState('add_aspirant'); // 'add_aspirant' | 'assign_agent' | 'user_directory'
@@ -124,6 +126,15 @@ export const AdminDashboard = ({ onOpenAuditLogs, onOpenGeographic }) => {
         >
           <UserPlus style={{ width: '16px', height: '16px' }} />
           <span>Add Aspirant & Candidate</span>
+        </button>
+
+        <button
+          onClick={() => setShowAddAgent(true)}
+          className="btn btn-secondary"
+          style={{ justifyContent: 'flex-start', width: '100%', borderRadius: '10px', borderColor: 'rgba(99, 102, 241, 0.3)' }}
+        >
+          <UserPlus style={{ width: '16px', height: '16px', color: '#818cf8' }} />
+          <span>Add Polling Station Agent</span>
         </button>
 
         <button
@@ -363,6 +374,14 @@ export const AdminDashboard = ({ onOpenAuditLogs, onOpenGeographic }) => {
           </div>
         )}
       </main>
+
+      {/* Add Agent Modal */}
+      {showAddAgent && (
+        <AddAgentModal
+          defaultAspirantId={currentUser.id}
+          onClose={() => setShowAddAgent(false)}
+        />
+      )}
     </div>
   );
 };

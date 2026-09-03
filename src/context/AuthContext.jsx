@@ -19,17 +19,24 @@ export const AuthProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : initialUsers;
   });
 
+  // Session-bound authentication: Require login on new browser sessions / dev app load
   const [currentUser, setCurrentUser] = useState(() => {
-    const savedUser = localStorage.getItem('ems_current_user');
+    const savedUser = sessionStorage.getItem('ems_current_user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    const savedAuth = localStorage.getItem('ems_is_authenticated');
+    const savedAuth = sessionStorage.getItem('ems_is_authenticated');
     return savedAuth !== null ? JSON.parse(savedAuth) : false;
   });
 
   const [is2FAVerified, setIs2FAVerified] = useState(true);
+
+  // Purge legacy persistent localStorage auth flags to ensure login on reload/dev launch
+  useEffect(() => {
+    localStorage.removeItem('ems_is_authenticated');
+    localStorage.removeItem('ems_current_user');
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('ems_users', JSON.stringify(users));
@@ -37,14 +44,14 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem('ems_current_user', JSON.stringify(currentUser));
+      sessionStorage.setItem('ems_current_user', JSON.stringify(currentUser));
     } else {
-      localStorage.removeItem('ems_current_user');
+      sessionStorage.removeItem('ems_current_user');
     }
   }, [currentUser]);
 
   useEffect(() => {
-    localStorage.setItem('ems_is_authenticated', JSON.stringify(isAuthenticated));
+    sessionStorage.setItem('ems_is_authenticated', JSON.stringify(isAuthenticated));
   }, [isAuthenticated]);
 
   const login = (email, password) => {
@@ -56,6 +63,8 @@ export const AuthProvider = ({ children }) => {
       setCurrentUser(foundUser);
       setIsAuthenticated(true);
       setIs2FAVerified(!foundUser.twoFactorEnabled);
+      sessionStorage.setItem('ems_current_user', JSON.stringify(foundUser));
+      sessionStorage.setItem('ems_is_authenticated', 'true');
       return { success: true, user: foundUser };
     }
 
@@ -65,8 +74,10 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setIsAuthenticated(false);
     setCurrentUser(null);
+    sessionStorage.removeItem('ems_current_user');
+    sessionStorage.setItem('ems_is_authenticated', 'false');
+    localStorage.removeItem('ems_is_authenticated');
     localStorage.removeItem('ems_current_user');
-    localStorage.setItem('ems_is_authenticated', 'false');
   };
 
   const switchUser = (userId) => {

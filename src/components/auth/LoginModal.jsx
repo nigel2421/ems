@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Shield, Lock, Mail, ArrowRight, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Shield, Lock, Mail, ArrowRight, AlertCircle, ShieldCheck, KeyRound, UserCheck } from 'lucide-react';
 
 export const LoginModal = () => {
-  const { login } = useAuth();
+  const { login, users } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -20,24 +20,30 @@ export const LoginModal = () => {
         setError(res.error);
       }
       setIsSubmitting(false);
-    }, 400);
+    }, 300);
+  };
+
+  const handleQuickSelect = (user) => {
+    setEmail(user.email);
+    setPassword(user.password || 'AdminSuper2026!');
+    setError('');
   };
 
   return (
-    <div className="modal-overlay" style={{ background: 'rgba(5, 7, 15, 0.92)', backdropFilter: 'blur(16px)', zIndex: 1000 }}>
+    <div className="modal-overlay" style={{ background: 'rgba(5, 7, 15, 0.94)', backdropFilter: 'blur(16px)', zIndex: 1000 }}>
       <div 
         className="modal-content" 
         style={{ 
-          maxWidth: '440px', 
+          maxWidth: '480px', 
           padding: '2.25rem', 
           borderRadius: '24px', 
           border: '1px solid rgba(99, 102, 241, 0.3)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
-          background: 'linear-gradient(145deg, rgba(20, 26, 45, 0.95) 0%, rgba(13, 17, 31, 0.98) 100%)'
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.85)',
+          background: 'linear-gradient(145deg, rgba(20, 26, 45, 0.96) 0%, rgba(13, 17, 31, 0.99) 100%)'
         }}
       >
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
           <div 
             style={{ 
               width: '56px', 
@@ -57,7 +63,7 @@ export const LoginModal = () => {
             IEBC EMS Secure Login
           </h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
-            Production Multi-Tenant Portal Access
+            Session Protection & Data Integrity Enforcement
           </p>
         </div>
 
@@ -81,8 +87,43 @@ export const LoginModal = () => {
           </div>
         )}
 
+        {/* Quick Fill Account Presets */}
+        {users && users.length > 0 && (
+          <div style={{ marginBottom: '1.25rem', background: 'rgba(255, 255, 255, 0.03)', padding: '0.85rem', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', color: '#a5b4fc', letterSpacing: '0.05em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <KeyRound style={{ width: '13px', height: '13px' }} />
+              <span>Available Provisioned Accounts</span>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+              {users.map(u => (
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => handleQuickSelect(u)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    padding: '0.35rem 0.65rem',
+                    fontSize: '0.75rem',
+                    borderRadius: '8px',
+                    border: email === u.email ? '1px solid #6366f1' : '1px solid rgba(255, 255, 255, 0.1)',
+                    background: email === u.email ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255, 255, 255, 0.04)',
+                    color: email === u.email ? '#fff' : 'var(--text-muted)',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <UserCheck style={{ width: '12px', height: '12px', color: '#818cf8' }} />
+                  <span>{u.name.split(' ')[0]} ({u.role})</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Login Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
           <div className="form-group">
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <Mail style={{ width: '14px', height: '14px', color: '#a5b4fc' }} />
@@ -123,17 +164,17 @@ export const LoginModal = () => {
               fontSize: '0.95rem', 
               fontWeight: '700',
               background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-              marginTop: '0.5rem'
+              marginTop: '0.35rem'
             }}
           >
-            {isSubmitting ? 'Authenticating...' : 'Sign In to Portal'}
+            {isSubmitting ? 'Authenticating Session...' : 'Sign In to Portal'}
             <ArrowRight style={{ width: '18px', height: '18px' }} />
           </button>
         </form>
 
-        <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+        <div style={{ marginTop: '1.35rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
           <ShieldCheck style={{ width: '14px', height: '14px', color: '#10b981' }} />
-          <span>Role-Based Access Control Active</span>
+          <span>Active Session Security & Role-Based Access Control</span>
         </div>
       </div>
     </div>

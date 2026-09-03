@@ -1,17 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { UserPlus, X, Upload, Camera, Shield } from 'lucide-react';
+import { UserPlus, X, Camera, MapPin } from 'lucide-react';
 
 export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
   const { addUser, currentUser } = useAuth();
   const { geography, logAuditAction } = useData();
 
+  // Scoped polling stations matching candidate user's jurisdiction boundary (Ward / Constituency / County)
+  const availablePollingStations = useMemo(() => {
+    if (!currentUser || currentUser.role === 'Admin' || currentUser.assignedEntity === 'GLOBAL') {
+      return geography.pollingStations;
+    }
+
+    // 1. Direct Ward ID match (MCA candidate)
+    const matchedByWard = geography.pollingStations.filter(ps => ps.wardId === currentUser.assignedEntity);
+    if (matchedByWard.length > 0) return matchedByWard;
+
+    // 2. Ward Name match
+    const wardByName = geography.wards.find(w => w.name.toLowerCase() === currentUser.entityName?.toLowerCase());
+    if (wardByName) {
+      const matched = geography.pollingStations.filter(ps => ps.wardId === wardByName.id);
+      if (matched.length > 0) return matched;
+    }
+
+    // 3. Constituency ID/Name match (MP candidate)
+    const isConstituency = geography.constituencies.some(c => c.id === currentUser.assignedEntity);
+    const constByName = geography.constituencies.find(c => c.name.toLowerCase() === currentUser.entityName?.toLowerCase());
+    const constId = isConstituency ? currentUser.assignedEntity : (constByName ? constByName.id : null);
+    if (constId) {
+      const wardIds = geography.wards.filter(w => w.constituencyId === constId).map(w => w.id);
+      const matched = geography.pollingStations.filter(ps => wardIds.includes(ps.wardId));
+      if (matched.length > 0) return matched;
+    }
+
+    // 4. County ID/Name match (Governor / Senator candidate)
+    const isCounty = geography.counties.some(c => c.id === currentUser.assignedEntity);
+    const countyByName = geography.counties.find(c => c.name.toLowerCase() === currentUser.entityName?.toLowerCase());
+    const countyId = isCounty ? currentUser.assignedEntity : (countyByName ? countyByName.id : null);
+    if (countyId) {
+      const constIds = geography.constituencies.filter(c => c.countyId === countyId).map(c => c.id);
+      const wardIds = geography.wards.filter(w => constIds.includes(w.constituencyId)).map(w => w.id);
+      const matched = geography.pollingStations.filter(ps => wardIds.includes(ps.wardId));
+      if (matched.length > 0) return matched;
+    }
+
+    // Fallback for MCA role if no entity matched
+    if (currentUser.role === 'MCA') {
+      const defaultWard = geography.wards[0];
+      return geography.pollingStations.filter(ps => ps.wardId === defaultWard.id);
+    }
+
+    return geography.pollingStations;
+  }, [currentUser, geography]);
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('Agent2026!');
-  const [pollingStationId, setPollingStationId] = useState(geography.pollingStations[0]?.id || 'PS-101');
+  const [pollingStationId, setPollingStationId] = useState(availablePollingStations[0]?.id || 'PS-101');
   const [avatar, setAvatar] = useState('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80');
 
   const selectedPs = geography.pollingStations.find(ps => ps.id === pollingStationId);
@@ -106,9 +153,15 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Assigned Polling Station Boundary</label>
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>Assigned Polling Station Boundary</span>
+              <span style={{ fontSize: '0.72rem', color: '#818cf8', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                <MapPin style={{ width: '12px', height: '12px' }} />
+                {currentUser?.entityName || 'Jurisdiction'} ({availablePollingStations.length} Streams)
+              </span>
+            </label>
             <select className="form-select" value={pollingStationId} onChange={e => setPollingStationId(e.target.value)}>
-              {geography.pollingStations.map(ps => (
+              {availablePollingStations.map(ps => (
                 <option key={ps.id} value={ps.id}>
                   {ps.code} - {ps.name} ({ps.registeredVoters} voters)
                 </option>
