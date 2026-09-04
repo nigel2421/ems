@@ -4,13 +4,18 @@ import { initialUsers } from '../data/mockData';
 const AuthContext = createContext(null);
 
 export const ROLE_HIERARCHY = {
-  Governor: 7,
-  Senator: 7,
-  MP: 5,
-  MCA: 4,
-  Aspirant: 3,
-  Agent: 2,
-  Admin: 10
+  'Super Admin': 10,
+  'Admin': 10,
+  'Strategy Team': 8,
+  'Regional Coordinator': 6,
+  'Governor': 7,
+  'Senator': 7,
+  'MP': 5,
+  'MCA': 4,
+  'Aspirant': 3,
+  'Field Agent': 4,
+  'Agent': 4,
+  'Observer': 2
 };
 
 export const AuthProvider = ({ children }) => {
@@ -108,7 +113,37 @@ export const AuthProvider = ({ children }) => {
     if (!currentUser) return false;
     const userRank = ROLE_HIERARCHY[currentUser.role] || 0;
     const requiredRank = ROLE_HIERARCHY[minRole] || 0;
-    return userRank >= requiredRank || currentUser.role === 'Admin';
+    return userRank >= requiredRank || currentUser.role === 'Super Admin' || currentUser.role === 'Admin';
+  };
+
+  const hasRole = (...roles) => {
+    if (!currentUser) return false;
+    if (currentUser.role === 'Super Admin' || currentUser.role === 'Admin') return true;
+    return roles.includes(currentUser.role);
+  };
+
+  const canAccessModule = (moduleName) => {
+    if (!currentUser) return false;
+    const role = currentUser.role;
+    if (role === 'Super Admin' || role === 'Admin') return true;
+
+    switch (moduleName) {
+      case 'polling_stations':
+      case 'agents':
+      case 'surveys':
+      case 'field_reports':
+      case 'mobilization':
+      case 'strategy':
+      case 'tally_center':
+        return true; // All authenticated users can view/participate according to their role capabilities
+      case 'ai_assistant':
+        return ['Super Admin', 'Admin', 'Strategy Team', 'Governor'].includes(role);
+      case 'system_settings':
+      case 'user_management':
+        return ['Super Admin', 'Admin'].includes(role);
+      default:
+        return true;
+    }
   };
 
   return (
@@ -126,6 +161,8 @@ export const AuthProvider = ({ children }) => {
         setIs2FAVerified,
         toggle2FAStatus,
         hasPermission,
+        hasRole,
+        canAccessModule,
         ROLE_HIERARCHY
       }}
     >

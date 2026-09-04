@@ -1,111 +1,50 @@
-# 🗳️ Election Management System (EMS)
+# 🗳️ Campaign Intelligence & Election Management System (CI-EMS)
 
-> **A real-time, tamper-evident parallel vote tallying, Form 34A evidence verification, and electoral fraud detection platform.**
+> **An enterprise-grade election intelligence, real-time parallel vote counting, Form 34A evidence verification, voter sentiment analytics, and AI-powered campaign strategy platform.**
 
 ---
 
 ## 📌 Executive Summary
 
-The **Election Management System (EMS)** is an enterprise-grade web application engineered for candidates, election agents, and campaign teams. EMS facilitates real-time parallel vote counting, digital Form 34A photo evidence ingestion with client-side image auto-compression, multi-tiered candidate approval workflows, automated discrepancy/mismatch detection against official electoral body (e.g., IEBC) broadcasts, and cryptographic audit trail logging.
-
-Designed specifically to handle high-stakes multi-tier elections (Gubernatorial, Senatorial, Parliamentary, Civic/MCA, and Presidential), EMS provides comprehensive geographical visibility down to individual polling stations.
+The **Campaign Intelligence & Election Management System (CI-EMS)** is an enterprise-grade platform engineered for political candidates, campaign directors, regional coordinators, strategy teams, and field agents. CI-EMS combines real-time parallel vote tallying with client-side image auto-compression, multi-tiered candidate approval workflows, automated discrepancy detection, survey engine analytics, stakeholder network reach tracking, and **Google Gemini LLM RAG Intelligence**.
 
 ---
 
-## 🔥 Key Features
+## 🔥 Key Feature Modules
 
-- 📱 **Agent Mobile Terminal**: Polling station agents capture physical Form 34A camera evidence, trigger client-side auto-compression (~89% size reduction for low-bandwidth cellular uplink), tag verified GPS coordinates, and submit vote tallies.
-- 💾 **Offline Draft Persistence**: Auto-saves form progress locally to prevent data loss in remote areas with unstable connectivity.
-- ⚖️ **Automated Mismatch & Discrepancy Engine**: Cross-references parallel agent tallies against official public streams in real-time. Immediately flags candidate vote count variances and illegal vote inflation.
-- 🛡️ **Multi-Tier Approval Workflow**: Aspirants and campaign managers perform side-by-side visual audits of uploaded Form 34A carbon copies against tally figures before locking submissions.
-- 🗺️ **Interactive Geographic Mapper**: Drill down across regional administrative hierarchies (**County → Constituency → Ward → Polling Station**), monitoring agent coverage density and live turnout heatmaps.
-- 📜 **Immutable Audit Trail Viewer**: Full log of system actions, IP addresses, timestamped state transitions, 2FA status, and automated engine alerts with CSV export capabilities.
-- 📄 **PDF Petition & Audit Report Generator**: Exports presentation-ready, legally format-compliant audit reports and mismatch dispute summaries powered by `jsPDF` and `html2canvas`.
-- 🔐 **Simulated 2FA & Role-Based Access Control (RBAC)**: Enforces granular permission boundaries and quick user persona switching for rapid administrative oversight and field testing.
+1. 🛡️ **Role-Based Access Control (RBAC)**: 5 core roles (**Super Admin**, **Strategy Team**, **Regional Coordinator**, **Field Agent**, **Observer / Read Only**) with a live persona switcher.
+2. 🏛️ **Polling Station Intelligence**: Tracks Party Advantage Scores, Incumbency Scores, Opposition Strength, Public Perception Ratings, Competitor Activity, and Risk Levels across gazetted polling stations with interactive GIS mapping and CSV bulk import.
+3. 👥 **Agent Management**: Station binding, live activity timestamp tracker, submitted report counters, supervisor assignment, and performance rating scores.
+4. 📊 **Survey & Polling Engine**: 4 survey types (Anonymous Public, Targeted, Candidate Preference, Issue-Based) and 5 question types with visual survey builder, public share link & SVG QR Code generator, response analytics, and CSV export.
+5. 📱 **Field Reporting**: 5 report categories (Mobilization, Campaign, Incident, Opponent Activity, Sentiment) with client-side photo auto-compression (~85% size reduction), thumbnail generator, GPS location tagger, and severity badges.
+6. 🌐 **Team Mobilization & Influence Network**: Tracks 7 leader categories (Village Elders, Clergy, Youth, Women, Bodaboda, Business, Community Organizers) with voter reach estimators and activity follow-up logging.
+7. 🎯 **Campaign Strategy**: 5-phase roadmap (Announcement, Team Formation, Voter Mobilization, Mass Campaign, GOTV) with phase progress steppers, task action managers, and KPI target cards.
+8. 🗳️ **Election Day Operations (Tally Center)**: Candidate vote capture, OCR simulated Form 34A scanner, automatic math discrepancy detection, and supervisor verification workflow.
+9. 🤖 **AI Intelligence Assistant (LLM Integration)**: Native Google Gemini 1.5 Flash LLM integration with automatic ground-truth context injection (RAG) for risk ward analysis, voter sentiment summaries, and weekly executive strategy briefings.
 
 ---
 
-## 🛠️ Technology Stack
+## 🛠️ Technology Stack & Testing
 
 | Layer | Technology | Purpose |
 | :--- | :--- | :--- |
 | **Frontend Framework** | [React 19](https://react.dev/) | Modern UI components and high-performance reactive state updates |
 | **Build Tooling** | [Vite 8](https://vitejs.dev/) | Lightning-fast HMR and bundle optimization |
+| **LLM Engine** | Google Gemini API (`gemini-1.5-flash`) | Generative campaign strategy recommendations & RAG analysis |
+| **Test Runner** | Node.js Test Runner (`node --test`) | Native ESM unit & integration test suite |
 | **Icons & Design** | [Lucide React](https://lucide.dev/) | Consistent, lightweight vector icons |
 | **Data Visualization**| [Chart.js](https://www.chartjs.org/) & `react-chartjs-2` | Interactive voter distribution & turnout analytics |
-| **PDF Export Engine** | [jsPDF](https://github.com/parallax/jsPDF) & `html2canvas` | High-fidelity client-side PDF document generation |
 | **Linting & Quality** | [Oxlint](https://oxc.rs/) | Rust-powered ultra-fast static analysis |
 | **Styling** | Vanilla CSS Design System | Custom CSS variables, dark-mode glassmorphism aesthetics |
 
 ---
 
-## 👥 Role-Based Access Control (RBAC)
-
-EMS supports 7 hierarchical user personas with tailored dashboards and operational boundaries:
-
-| Role | Rank | Primary Responsibilities & Dashboard View |
-| :--- | :---: | :--- |
-| **Admin** | 10 | Complete platform control, agent deployment assignments, global system settings, full audit log access. |
-| **Governor** | 7 | High-level county-wide tally aggregation, constituency breakdown, total turnout heatmaps, legal team dispute tracking. |
-| **Senator** | 7 | County-wide overview, parallel vote count verification, inter-constituency discrepancy monitoring. |
-| **MP** | 5 | Constituency-level breakdown across all constituent Wards, agent verification status, candidate tally lead metrics. |
-| **MCA** | 4 | Ward-level granular view, local polling station agent monitoring, civic seat vote counts. |
-| **Aspirant** | 3 | Direct approval queue for agent Form 34A submissions, verification note entry, rejection/sign-off controls. |
-| **Agent** | 2 | Polling station field operator interface: image capture, auto-compression, tally entry, and submission to Aspirant. |
-
----
-
-## 📂 Project Structure
-
-```
-EMS/
-├── public/                    # Static assets & favicon
-├── src/
-│   ├── assets/                # App icons and media assets
-│   ├── components/
-│   │   ├── dashboards/        # Role-specific dashboard views
-│   │   │   ├── AdminDashboard.jsx
-│   │   │   ├── AgentPortal.jsx
-│   │   │   ├── AspirantDashboard.jsx
-│   │   │   ├── GovernorDashboard.jsx
-│   │   │   ├── MCADashboard.jsx
-│   │   │   └── MPDashboard.jsx
-│   │   ├── modules/           # Reusable feature modals & utilities
-│   │   │   ├── ApprovalWorkflowModal.jsx
-│   │   │   ├── AuditLogViewer.jsx
-│   │   │   ├── GeographicMapper.jsx
-│   │   │   ├── MismatchDetector.jsx
-│   │   │   └── PdfReportGenerator.jsx
-│   │   └── Navbar.jsx         # Global top navigation & persona switcher
-│   ├── context/
-│   │   ├── AuthContext.jsx    # User session, role hierarchy, 2FA status
-│   │   └── DataContext.jsx    # Central data state, audit logging, mismatch analyzer
-│   ├── data/
-│   │   └── mockData.js        # Initial geography, users, tallies, and broadcast feeds
-│   ├── App.css                # Base layout rules & utilities
-│   ├── App.jsx                # Main routing and global state container
-│   ├── index.css              # Custom design system tokens & glassmorphism theme
-│   └── main.jsx               # React DOM root entry point
-├── docs/                      # Comprehensive operational documentation
-│   ├── AGENT_WORKFLOW.md
-│   ├── APPROVAL_WORKFLOW.md
-│   ├── MISMATCH_RECONCILIATION.md
-│   ├── GEOGRAPHIC_MAPPING.md
-│   └── SECURITY_AND_AUDIT.md
-├── index.html                 # HTML shell
-├── package.json               # NPM scripts and dependencies
-├── vite.config.js             # Vite configuration
-└── README.md                  # Project overview documentation
-```
-
----
-
-## 🚀 Getting Started
+## 🚀 Getting Started & Testing
 
 ### Prerequisites
 
 - **Node.js**: v18.0.0 or higher
-- **npm**: v9.0.0 or higher (or `pnpm` / `yarn`)
+- **npm**: v9.0.0 or higher
 
 ### Installation & Setup
 
@@ -120,29 +59,45 @@ EMS/
    npm install
    ```
 
-3. **Start the local development server**:
+3. **Start the development server**:
    ```bash
    npm run dev
    ```
-   Open your browser and navigate to `http://localhost:5173`.
+   Navigate to `http://localhost:5173`.
 
-4. **Lint the codebase**:
+4. **Run Unit & Integration Tests**:
+   ```bash
+   npm test
+   ```
+   Runs the test suite in `src/__tests__/ci-ems.test.js` validating LLM API key management, RAG context injection, CSV parser, image compression, OCR simulation, and seed data integrity.
+
+5. **Lint the codebase**:
    ```bash
    npm run lint
    ```
 
-5. **Build for production**:
+6. **Build for production**:
    ```bash
    npm run build
    ```
-   The production-ready assets will be compiled into the `dist/` directory.
 
 ---
 
-## 📖 Operational Documentation
+## 🤖 LLM Setup (Google Gemini API)
 
-For detailed step-by-step guides on operating key modules in EMS, refer to the documentation files in the `docs/` directory:
+1. Get a Gemini API Key from [Google AI Studio](https://aistudio.google.com/).
+2. Add your key to `.env`:
+   ```env
+   VITE_GEMINI_API_KEY=AIzaSy...
+   ```
+3. Alternatively, click the **API Key** button in the AI Assistant window header to configure your key directly in the UI.
 
+---
+
+## 📖 System Manual & Documentation
+
+- 🗳️ [**Campaign System Manual**](file:///c:/Users/user/Documents/Websites/EMS/docs/CAMPAIGN_SYSTEM_MANUAL.md)
+- 🗄️ [**Relational SQL Schema (DDL)**](file:///c:/Users/user/Documents/Websites/EMS/docs/schema.sql)
 - 📱 [**Agent Field Operations & Form 34A Upload**](file:///c:/Users/user/Documents/Websites/EMS/docs/AGENT_WORKFLOW.md)
 - 🛡️ [**Aspirant & Candidate Approval Workflow**](file:///c:/Users/user/Documents/Websites/EMS/docs/APPROVAL_WORKFLOW.md)
 - ⚖️ [**Discrepancy & Mismatch Reconciliation Engine**](file:///c:/Users/user/Documents/Websites/EMS/docs/MISMATCH_RECONCILIATION.md)
@@ -153,4 +108,4 @@ For detailed step-by-step guides on operating key modules in EMS, refer to the d
 
 ## 🛡️ License & Compliance
 
-Distributed under the MIT License. See `LICENSE` for more information. Built for internal campaign oversight and public election integrity audit workflows.
+Distributed under the MIT License. Built for campaign oversight and public election integrity audit workflows.
