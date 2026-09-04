@@ -3,20 +3,18 @@ import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { 
   Shield, 
-  ShieldCheck, 
   Users, 
   Bell, 
-  CheckCircle2, 
-  AlertTriangle, 
   MapPin, 
   Lock,
   ChevronDown,
   Activity,
-  FileCheck
+  LogOut,
+  UserCheck
 } from 'lucide-react';
 
 export const Navbar = ({ onOpenNotifications, onOpenAuditLogs }) => {
-  const { currentUser, users, switchUser, is2FAVerified, toggle2FAStatus } = useAuth();
+  const { currentUser, users, switchUser, logout, is2FAVerified, toggle2FAStatus } = useAuth();
   const { submissions } = useData();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
 
@@ -47,104 +45,19 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs }) => {
         <div style={{ height: '24px', width: '1px', background: 'var(--border-color)' }}></div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
           <MapPin style={{ width: '14px', height: '14px', color: '#06b6d4' }} />
-          <span>{currentUser.entityName}</span>
+          <span>{currentUser?.entityName}</span>
         </div>
       </div>
 
-      {/* Center Actions / Role Switcher */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <div style={{ position: 'relative' }}>
-          <button 
-            className="btn btn-secondary"
-            onClick={() => setShowRoleMenu(!showRoleMenu)}
-            style={{ borderRadius: 'var(--radius-full)', padding: '0.45rem 1rem' }}
-          >
-            <Users style={{ width: '16px', height: '16px', color: '#a5b4fc' }} />
-            <span>Switch Role:</span>
-            <span className={`role-badge ${getRoleClass(currentUser.role)}`}>
-              {currentUser.role}
-            </span>
-            <ChevronDown style={{ width: '14px', height: '14px', opacity: 0.7 }} />
-          </button>
-
-          {/* Role Selection Dropdown */}
-          {showRoleMenu && (
-            <div 
-              className="glass-card" 
-              style={{
-                position: 'absolute',
-                top: '120%',
-                right: 0,
-                width: '320px',
-                zIndex: 300,
-                padding: '0.75rem',
-                border: '1px solid var(--border-glow)'
-              }}
-            >
-              <div style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.5rem', paddingLeft: '0.5rem' }}>
-                Select Active Simulation Role
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                {users.map(u => (
-                  <button
-                    key={u.id}
-                    onClick={() => {
-                      switchUser(u.id);
-                      setShowRoleMenu(false);
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0.5rem 0.75rem',
-                      borderRadius: 'var(--radius-sm)',
-                      border: u.id === currentUser.id ? '1px solid var(--accent-primary)' : '1px solid transparent',
-                      background: u.id === currentUser.id ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-                      color: 'var(--text-main)',
-                      cursor: 'pointer',
-                      textAlign: 'left'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                      <img src={u.avatar} alt={u.name} style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} />
-                      <div>
-                        <div style={{ fontSize: '0.85rem', fontWeight: '600' }}>{u.name}</div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{u.entityName}</div>
-                      </div>
-                    </div>
-                    <span className={`role-badge ${getRoleClass(u.role)}`}>
-                      {u.role}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+      {/* Center Actions / User Identity */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255, 255, 255, 0.05)', padding: '0.45rem 0.85rem', borderRadius: 'var(--radius-full)', border: '1px solid var(--border-color)' }}>
+          <img src={currentUser?.avatar} alt={currentUser?.name} style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }} />
+          <span style={{ fontWeight: '600', fontSize: '0.85rem' }}>{currentUser?.name}</span>
+          <span className={`role-badge ${getRoleClass(currentUser?.role)}`}>
+            {currentUser?.role}
+          </span>
         </div>
-
-        {/* 2FA Status Pill */}
-        <button
-          onClick={toggle2FAStatus}
-          className="btn btn-secondary btn-sm"
-          title="Click to toggle 2FA verification state"
-          style={{
-            background: is2FAVerified ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.15)',
-            borderColor: is2FAVerified ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)',
-            color: is2FAVerified ? '#34d399' : '#f87171'
-          }}
-        >
-          {is2FAVerified ? (
-            <>
-              <ShieldCheck style={{ width: '14px', height: '14px' }} />
-              <span>2FA Verified</span>
-            </>
-          ) : (
-            <>
-              <Lock style={{ width: '14px', height: '14px' }} />
-              <span>2FA Required</span>
-            </>
-          )}
-        </button>
 
         {/* Audit Logs Quick Button */}
         <button 
@@ -153,7 +66,7 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs }) => {
           title="View System Audit Trail"
         >
           <Activity style={{ width: '14px', height: '14px', color: '#06b6d4' }} />
-          <span>Audit Logs</span>
+          <span>Audit</span>
         </button>
 
         {/* Notifications Drawer */}
@@ -184,6 +97,17 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs }) => {
               {pendingCount + mismatchCount}
             </span>
           )}
+        </button>
+
+        {/* Logout Button */}
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={logout}
+          title="Sign out of system"
+          style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}
+        >
+          <LogOut style={{ width: '14px', height: '14px' }} />
+          <span>Logout</span>
         </button>
       </div>
     </nav>
