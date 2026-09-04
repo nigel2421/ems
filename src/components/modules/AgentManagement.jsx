@@ -20,7 +20,7 @@ import {
 
 export const AgentManagement = ({ onClose }) => {
   const { currentUser } = useAuth();
-  const { agents, setAgents, geography, assignAgentToPollingStation, updateAgentStatus } = useData();
+  const { agents, setAgents, geography, assignAgentToPollingStation, updateAgentStatus, getScopedAgents } = useData();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -34,10 +34,15 @@ export const AgentManagement = ({ onClose }) => {
   // Agent Activity Detail Drawer State
   const [viewingActivityAgent, setViewingActivityAgent] = useState(null);
 
-  const filteredAgents = agents.filter(a => {
-    const matchesSearch = a.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          a.phone.includes(searchTerm) ||
-                          a.region.toLowerCase().includes(searchTerm.toLowerCase());
+  const scopedAgents = getScopedAgents ? getScopedAgents(currentUser, agents) : agents;
+
+  const filteredAgents = scopedAgents.filter(a => {
+    const nameStr = (a.fullName || a.name || '').toLowerCase();
+    const phoneStr = a.phone || '';
+    const regionStr = (a.region || '').toLowerCase();
+    const matchesSearch = nameStr.includes(searchTerm.toLowerCase()) ||
+                          phoneStr.includes(searchTerm) ||
+                          regionStr.includes(searchTerm.toLowerCase());
     const matchesStatus = !statusFilter || a.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -122,71 +127,79 @@ export const AgentManagement = ({ onClose }) => {
               </tr>
             </thead>
             <tbody>
-              {filteredAgents.map(ag => (
-                <tr key={ag.id}>
-                  <td>
-                    <div style={{ fontWeight: '700', fontSize: '0.88rem' }}>{ag.fullName}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#a5b4fc', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <Phone style={{ width: '12px', height: '12px' }} />
-                      <span>{ag.phone}</span>
-                    </div>
-                  </td>
-                  <td style={{ fontSize: '0.82rem' }}>{ag.region}</td>
-                  <td style={{ fontSize: '0.82rem' }}>
-                    {Array.isArray(ag.assignedStations) && ag.assignedStations.length > 0 ? (
-                      <span style={{ color: '#34d399', fontWeight: '700' }}>
-                        {ag.assignedStations.join(', ')}
-                      </span>
-                    ) : (
-                      <span style={{ color: 'var(--text-muted)' }}>Unassigned</span>
-                    )}
-                  </td>
-                  <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{ag.supervisor}</td>
-                  <td>
-                    <select 
-                      className={`form-select ${ag.status.toLowerCase().replace(' ', '-')}`}
-                      value={ag.status}
-                      onChange={e => updateAgentStatus(ag.id, e.target.value, currentUser)}
-                      style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', borderRadius: '12px', width: 'auto' }}
-                    >
-                      <option value="Active">Active</option>
-                      <option value="On Duty">On Duty</option>
-                      <option value="Inactive">Inactive</option>
-                      <option value="Offline">Offline</option>
-                    </select>
-                  </td>
-                  <td style={{ fontSize: '0.82rem' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: '#818cf8' }}>
-                        <FileText style={{ width: '12px', height: '12px' }} />
-                        {ag.reportsSubmittedCount || 0}
-                      </span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: '#22d3ee' }}>
-                        <ClipboardList style={{ width: '12px', height: '12px' }} />
-                        {ag.surveysCompletedCount || 0}
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: '#fbbf24', fontWeight: '800' }}>
-                      <Star style={{ width: '14px', height: '14px', fill: '#fbbf24' }} />
-                      <span>{ag.performanceRating || 4.5}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '0.4rem' }}>
-                      <button className="btn btn-secondary btn-sm" onClick={() => setSelectedAgentForAssign(ag)}>
-                        <MapPin style={{ width: '13px', height: '13px' }} />
-                        <span>Bind Station</span>
-                      </button>
-                      <button className="btn btn-secondary btn-sm" onClick={() => setViewingActivityAgent(ag)}>
-                        <Activity style={{ width: '13px', height: '13px' }} />
-                        <span>Activity</span>
-                      </button>
-                    </div>
+              {filteredAgents.length > 0 ? (
+                filteredAgents.map(ag => (
+                  <tr key={ag.id}>
+                    <td>
+                      <div style={{ fontWeight: '700', fontSize: '0.88rem' }}>{ag.fullName || ag.name}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#a5b4fc', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <Phone style={{ width: '12px', height: '12px' }} />
+                        <span>{ag.phone}</span>
+                      </div>
+                    </td>
+                    <td style={{ fontSize: '0.82rem' }}>{ag.region || ag.assignedEntity || 'Local Region'}</td>
+                    <td style={{ fontSize: '0.82rem' }}>
+                      {Array.isArray(ag.assignedStations) && ag.assignedStations.length > 0 ? (
+                        <span style={{ color: '#34d399', fontWeight: '700' }}>
+                          {ag.assignedStations.join(', ')}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)' }}>Unassigned</span>
+                      )}
+                    </td>
+                    <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{ag.supervisor || 'Regional Coordinator'}</td>
+                    <td>
+                      <select 
+                        className={`form-select ${ag.status.toLowerCase().replace(' ', '-')}`}
+                        value={ag.status}
+                        onChange={e => updateAgentStatus(ag.id, e.target.value, currentUser)}
+                        style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', borderRadius: '12px', width: 'auto' }}
+                      >
+                        <option value="Active">Active</option>
+                        <option value="On Duty">On Duty</option>
+                        <option value="Inactive">Inactive</option>
+                        <option value="Offline">Offline</option>
+                      </select>
+                    </td>
+                    <td style={{ fontSize: '0.82rem' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: '#818cf8' }}>
+                          <FileText style={{ width: '12px', height: '12px' }} />
+                          {ag.reportsSubmittedCount || 0}
+                        </span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: '#22d3ee' }}>
+                          <ClipboardList style={{ width: '12px', height: '12px' }} />
+                          {ag.surveysCompletedCount || 0}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: '#fbbf24', fontWeight: '800' }}>
+                        <Star style={{ width: '14px', height: '14px', fill: '#fbbf24' }} />
+                        <span>{ag.performanceRating || 4.5}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <button className="btn btn-secondary btn-sm" onClick={() => setSelectedAgentForAssign(ag)}>
+                          <MapPin style={{ width: '13px', height: '13px' }} />
+                          <span>Bind Station</span>
+                        </button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => setViewingActivityAgent(ag)}>
+                          <Activity style={{ width: '13px', height: '13px' }} />
+                          <span>Activity</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                    No field agents registered for your region. Click "Register New Field Agent" to deploy local agents.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

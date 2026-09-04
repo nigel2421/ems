@@ -15,11 +15,11 @@ import {
 
 export const RegionalDashboard = ({ onOpenModule }) => {
   const { currentUser } = useAuth();
-  const { agents, geography, fieldReports, tallyResults, updateAgentStatus } = useData();
+  const { agents, geography, fieldReports, tallyResults, updateAgentStatus, getScopedAgents } = useData();
 
-  const regionName = currentUser?.assignedEntity || 'Nairobi Metro';
-  const regionalAgents = agents.filter(a => a.region.includes(regionName) || a.supervisor.includes(currentUser?.name || ''));
-  const regionalIncidents = fieldReports.filter(r => r.locationName?.includes(regionName) || r.severityLevel === 'High' || r.severityLevel === 'Critical');
+  const scopedAgents = getScopedAgents ? getScopedAgents(currentUser, agents) : agents;
+  const regionName = currentUser?.entityName || currentUser?.assignedEntity || 'Regional Operations Hub';
+  const regionalIncidents = fieldReports.filter(r => (r.locationName && regionName && r.locationName.toLowerCase().includes(regionName.toLowerCase())) || r.severityLevel === 'High' || r.severityLevel === 'Critical');
   const pendingTallyVerifications = tallyResults.filter(t => t.status === 'Submitted' || t.status === 'Mismatch');
 
   return (
@@ -71,10 +71,10 @@ export const RegionalDashboard = ({ onOpenModule }) => {
             <Users style={{ width: '18px', height: '18px', color: '#06b6d4' }} />
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '0.5rem', color: '#22d3ee' }}>
-            {regionalAgents.length || agents.length}
+            {scopedAgents.length}
           </div>
           <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            {agents.filter(a => a.status === 'Active' || a.status === 'On Duty').length} Active / On Duty
+            {scopedAgents.filter(a => a.status === 'Active' || a.status === 'On Duty').length} Active / On Duty
           </div>
         </div>
 
@@ -146,23 +146,31 @@ export const RegionalDashboard = ({ onOpenModule }) => {
                 </tr>
               </thead>
               <tbody>
-                {agents.map(ag => (
-                  <tr key={ag.id}>
-                    <td style={{ fontWeight: '600' }}>{ag.fullName}</td>
-                    <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{ag.region}</td>
-                    <td>
-                      <span className={`status-pill ${ag.status.toLowerCase().replace(' ', '-')}`}>
-                        {ag.status}
-                      </span>
-                    </td>
-                    <td style={{ fontSize: '0.82rem' }}>
-                      <strong>{ag.reportsSubmittedCount || 0}</strong> reps / <strong>{ag.surveysCompletedCount || 0}</strong> surv
-                    </td>
-                    <td style={{ color: '#fbbf24', fontWeight: '700' }}>
-                      ★ {ag.performanceRating || '4.5'}
+                {scopedAgents.length > 0 ? (
+                  scopedAgents.map(ag => (
+                    <tr key={ag.id}>
+                      <td style={{ fontWeight: '600' }}>{ag.fullName || ag.name}</td>
+                      <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{ag.region}</td>
+                      <td>
+                        <span className={`status-pill ${ag.status.toLowerCase().replace(' ', '-')}`}>
+                          {ag.status}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: '0.82rem' }}>
+                        <strong>{ag.reportsSubmittedCount || 0}</strong> reps / <strong>{ag.surveysCompletedCount || 0}</strong> surv
+                      </td>
+                      <td style={{ color: '#fbbf24', fontWeight: '700' }}>
+                        ★ {ag.performanceRating || '4.5'}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                      No field agents assigned to {regionName} yet. Click "Assign Field Agents" to bind agents to polling stations in this constituency/ward.
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
