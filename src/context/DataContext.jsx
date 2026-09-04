@@ -343,12 +343,50 @@ export const DataProvider = ({ children }) => {
     return { hasMismatch: discrepancies.length > 0, discrepancies };
   };
 
-  const getScopedAgents = (user, allUsers = null) => {
+  const getScopedAgents = (user, customAgentList = null) => {
     if (!user) return [];
-    const saved = localStorage.getItem('ems_users');
-    const userList = allUsers || (saved ? JSON.parse(saved) : initialUsersList);
-    if (user.role === 'Super Admin' || user.role === 'Admin') return userList.filter(u => u.role === 'Field Agent' || u.role === 'Agent');
-    return userList.filter(u => u.role === 'Field Agent' || u.role === 'Agent');
+    const targetAgents = customAgentList || agents;
+
+    // National executive roles see all agents nationally
+    if (['Super Admin', 'Admin', 'Strategy Team', 'Governor', 'Senator'].includes(user.role)) {
+      return targetAgents;
+    }
+
+    const userNameLower = (user.name || '').toLowerCase().trim();
+    const userId = user.id;
+
+    // Extract search tokens from user's assigned jurisdiction
+    const tokens = [
+      user.entityName,
+      user.assignedEntity,
+      user.constituency,
+      user.ward,
+      user.county
+    ]
+      .filter(Boolean)
+      .map(t => String(t).toLowerCase().trim())
+      .filter(t => t !== 'global' && t.length > 2);
+
+    return targetAgents.filter(ag => {
+      // 1. Direct ID binding match (Supervisor ID, Creator ID, Aspirant ID, or User ID)
+      if (ag.supervisorId && ag.supervisorId === userId) return true;
+      if (ag.creatorId && ag.creatorId === userId) return true;
+      if (ag.aspirantId && ag.aspirantId === userId) return true;
+      if (ag.userId && ag.userId === userId) return true;
+
+      // 2. Supervisor string match (e.g., "moha (MCA)", "David Ochieng")
+      const agSupervisorLower = (ag.supervisor || ag.name || '').toLowerCase();
+      if (userNameLower && agSupervisorLower.includes(userNameLower)) return true;
+
+      // 3. Match agent region or assigned entity against user jurisdiction tokens
+      const agRegionLower = (ag.region || ag.entityName || '').toLowerCase();
+      const agAssignedLower = (ag.assignedEntity || '').toLowerCase();
+
+      return tokens.some(token => 
+        agRegionLower.includes(token) || token.includes(agRegionLower) ||
+        agAssignedLower.includes(token) || token.includes(agAssignedLower)
+      );
+    });
   };
 
   const getScopedSubmissions = (user) => {
