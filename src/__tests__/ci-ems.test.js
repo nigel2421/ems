@@ -105,12 +105,63 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
 
   test('6. Seed Dataset Integrity Audit', () => {
     assert.ok(initialUsersList.length >= 5);
-    assert.ok(initialAgentDirectory.length >= 3);
+    assert.ok(initialAgentDirectory.length >= 5);
     assert.ok(initialSurveys.length >= 2);
     assert.ok(initialFieldReports.length >= 3);
     assert.ok(initialStakeholders.length >= 4);
     assert.equal(initialCampaignPhases.length, 5);
     assert.ok(initialTallyCenterData.length >= 2);
+  });
+
+  test('7. Regional Field Agent Scoping & Jurisdiction Isolation', () => {
+    // Helper replicating DataContext scoping logic
+    const getScopedAgentsHelper = (user, agentList) => {
+      if (!user) return [];
+      if (['Super Admin', 'Admin', 'Strategy Team', 'Governor', 'Senator'].includes(user.role)) {
+        return agentList;
+      }
+      const userNameLower = (user.name || '').toLowerCase().trim();
+      const userId = user.id;
+      const tokens = [user.entityName, user.assignedEntity, user.constituency, user.ward, user.county]
+        .filter(Boolean)
+        .map(t => String(t).toLowerCase().trim())
+        .filter(t => t !== 'global' && t.length > 2);
+
+      return agentList.filter(ag => {
+        if (ag.supervisorId && ag.supervisorId === userId) return true;
+        if (ag.creatorId && ag.creatorId === userId) return true;
+        if (ag.aspirantId && ag.aspirantId === userId) return true;
+        if (ag.userId && ag.userId === userId) return true;
+        const agSupervisorLower = (ag.supervisor || ag.name || '').toLowerCase();
+        if (userNameLower && agSupervisorLower.includes(userNameLower)) return true;
+        const agRegionLower = (ag.region || ag.entityName || '').toLowerCase();
+        const agAssignedLower = (ag.assignedEntity || '').toLowerCase();
+        return tokens.some(token => 
+          agRegionLower.includes(token) || token.includes(agRegionLower) ||
+          agAssignedLower.includes(token) || token.includes(agAssignedLower)
+        );
+      });
+    };
+
+    const mohaUser = initialUsersList.find(u => u.name === 'moha') || {
+      id: 'USR-MCA-01',
+      name: 'moha',
+      role: 'MCA',
+      assignedEntity: 'WARD-0019',
+      entityName: 'KONGOWEA'
+    };
+
+    const nairobiCoordinator = initialUsersList.find(u => u.id === 'USR-REGIONAL-01');
+
+    const mohaAgents = getScopedAgentsHelper(mohaUser, initialAgentDirectory);
+    assert.equal(mohaAgents.length, 2);
+    assert.ok(mohaAgents.every(a => a.region.includes('Kongowea') || a.supervisorId === 'USR-MCA-01'));
+    assert.ok(!mohaAgents.some(a => a.fullName.includes('Samuel Kiprop')));
+
+    const nairobiAgents = getScopedAgentsHelper(nairobiCoordinator, initialAgentDirectory);
+    assert.equal(nairobiAgents.length, 3);
+    assert.ok(nairobiAgents.every(a => a.region.includes('Nairobi')));
+    assert.ok(!nairobiAgents.some(a => a.fullName.includes('Ali Hassan Swaleh')));
   });
 
 });
