@@ -1,12 +1,19 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { initialGeography, initialSubmissions, iebcOfficialBroadcasts, initialAuditLogs } from '../data/mockData';
+import { initialGeography, initialSubmissions, iebcOfficialBroadcasts, initialAuditLogs, initialUsers } from '../data/mockData';
 
 const DataContext = createContext(null);
 
 export const DataProvider = ({ children }) => {
   const [geography, setGeography] = useState(() => {
     const saved = localStorage.getItem('ems_geography');
-    return saved ? JSON.parse(saved) : initialGeography;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Reset if cached version in localStorage is from old mock data (e.g. 4 counties instead of full 26)
+      if (parsed.counties && parsed.counties.length >= 26) {
+        return parsed;
+      }
+    }
+    return initialGeography;
   });
 
   const [submissions, setSubmissions] = useState(() => {
@@ -167,6 +174,42 @@ export const DataProvider = ({ children }) => {
     );
   };
 
+  // Get agents linked strictly to a specific Aspirant / Ticket / Creator
+  const getScopedAgents = (user, allUsers = null) => {
+    if (!user) return [];
+    
+    let userList = allUsers;
+    if (!userList) {
+      const saved = localStorage.getItem('ems_users');
+      userList = saved ? JSON.parse(saved) : initialUsers;
+    }
+
+    if (user.role === 'Admin') return userList.filter(u => u.role === 'Agent');
+
+    // Aspirants, Governors, MPs only see agents where creatorId === user.id OR aspirantId === user.id
+    return userList.filter(
+      u => u.role === 'Agent' && (u.creatorId === user.id || u.aspirantId === user.id)
+    );
+  };
+
+  // Get submissions linked strictly to a specific candidate tenant's agents
+  const getScopedSubmissions = (user) => {
+    if (!user) return [];
+    if (user.role === 'Admin') return submissions; // System HQ Super Admin
+
+    // Scope submissions strictly to agents bound to this user (by aspirantId, creatorId, or agentId)
+    const tenantAgents = getScopedAgents(user);
+    const tenantAgentIds = tenantAgents.map(a => a.id);
+
+    if (user.role === 'Agent') {
+      return submissions.filter(s => s.agentId === user.id);
+    }
+
+    return submissions.filter(
+      s => tenantAgentIds.includes(s.agentId) || s.aspirantId === user.id || s.agentId === user.id
+    );
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -178,7 +221,9 @@ export const DataProvider = ({ children }) => {
         updateSubmissionStatus,
         assignAgentToPollingStation,
         analyzeMismatch,
-        logAuditAction
+        logAuditAction,
+        getScopedAgents,
+        getScopedSubmissions
       }}
     >
       {children}

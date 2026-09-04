@@ -4,26 +4,30 @@ import { useData } from '../../context/DataContext';
 import { 
   FileText, 
   CheckCircle, 
-  XCircle, 
   Eye, 
   Download, 
-  ShieldCheck, 
-  UserCheck, 
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  UserPlus,
+  Users
 } from 'lucide-react';
 import { ApprovalWorkflowModal } from '../modules/ApprovalWorkflowModal';
 import { PdfReportGenerator } from '../modules/PdfReportGenerator';
+import { AddAgentModal } from '../modules/AddAgentModal';
 
 export const AspirantDashboard = () => {
   const { currentUser } = useAuth();
-  const { submissions, updateSubmissionStatus } = useData();
+  const { getScopedSubmissions, getScopedAgents, updateSubmissionStatus } = useData();
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [showPdfExport, setShowPdfExport] = useState(false);
+  const [showAddAgent, setShowAddAgent] = useState(false);
 
-  const pendingSubmissions = submissions.filter(s => s.status === 'Submitted');
-  const approvedSubmissions = submissions.filter(s => s.status === 'Approved');
-  const mismatchSubmissions = submissions.filter(s => s.status === 'Mismatch');
+  const scopedSubmissions = getScopedSubmissions(currentUser);
+  const scopedAgents = getScopedAgents(currentUser);
+
+  const pendingSubmissions = scopedSubmissions.filter(s => s.status === 'Submitted');
+  const approvedSubmissions = scopedSubmissions.filter(s => s.status === 'Approved');
+  const mismatchSubmissions = scopedSubmissions.filter(s => s.status === 'Mismatch');
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
@@ -43,33 +47,53 @@ export const AspirantDashboard = () => {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
             <span className="role-badge role-aspirant">Aspirant Command Hub</span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Candidate: {currentUser.name}</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Candidate: {currentUser?.name}</span>
           </div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '0.25rem' }}>
-            Agent Evidence Approval & Verification
+            Agent Evidence Approval & Isolation
           </h1>
           <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-            Gatekeep agent submissions, verify Form 34A evidence photos, and generate verified PDF dossier logs.
+            Manage strictly your own assigned agents, verify Form 34A evidence photos, and generate verified PDF dossier logs.
           </p>
         </div>
 
-        <button 
-          className="btn btn-primary"
-          onClick={() => setShowPdfExport(true)}
-          style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}
-        >
-          <Download style={{ width: '16px', height: '16px' }} />
-          <span>Export Verified PDF Dossier</span>
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button 
+            className="btn btn-secondary"
+            onClick={() => setShowAddAgent(true)}
+          >
+            <UserPlus style={{ width: '16px', height: '16px' }} />
+            <span>Add Candidate Agent</span>
+          </button>
+          <button 
+            className="btn btn-primary"
+            onClick={() => setShowPdfExport(true)}
+            style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}
+          >
+            <Download style={{ width: '16px', height: '16px' }} />
+            <span>Export Verified Dossier</span>
+          </button>
+        </div>
       </div>
 
       {/* Quick Summary Cards */}
       <div className="grid-stats">
         <div className="glass-card stat-box">
           <div>
+            <div className="stat-label">Assigned Agents</div>
+            <div className="stat-val" style={{ color: '#818cf8' }}>{scopedAgents.length}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Bound to Candidate</div>
+          </div>
+          <div className="stat-icon" style={{ color: '#818cf8', background: 'rgba(99, 102, 241, 0.15)' }}>
+            <Users style={{ width: '24px', height: '24px' }} />
+          </div>
+        </div>
+
+        <div className="glass-card stat-box">
+          <div>
             <div className="stat-label">Pending Approval Queue</div>
             <div className="stat-val" style={{ color: '#fcd34d' }}>{pendingSubmissions.length}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Requires Aspirant Sign-off</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Requires Sign-off</div>
           </div>
           <div className="stat-icon" style={{ color: '#f59e0b', background: 'rgba(245, 158, 11, 0.15)' }}>
             <Clock style={{ width: '24px', height: '24px' }} />
@@ -78,7 +102,7 @@ export const AspirantDashboard = () => {
 
         <div className="glass-card stat-box">
           <div>
-            <div className="stat-label">Approved Agent Submissions</div>
+            <div className="stat-label">Approved Submissions</div>
             <div className="stat-val" style={{ color: '#34d399' }}>{approvedSubmissions.length}</div>
             <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '0.2rem' }}>Form 34A Validated</div>
           </div>
@@ -101,10 +125,33 @@ export const AspirantDashboard = () => {
         </div>
       </div>
 
+      {/* Agents Roster Section */}
+      <div className="glass-card">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>
+            My Candidate Agents ({scopedAgents.length})
+          </h3>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Isolated Tenant Access</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+          {scopedAgents.map(ag => (
+            <div key={ag.id} className="glass-card" style={{ background: 'rgba(255,255,255,0.02)', padding: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <img src={ag.avatar} alt={ag.name} style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }} />
+              <div>
+                <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{ag.name}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{ag.entityName}</div>
+                <div style={{ fontSize: '0.72rem', color: '#818cf8', marginTop: '0.1rem' }}>{ag.email}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Submissions Table with Approval Actions */}
       <div className="glass-card">
         <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem' }}>
-          Agent Submissions Ledger
+          Candidate Evidence Submissions Ledger
         </h3>
 
         <div className="custom-table-container">
@@ -121,7 +168,7 @@ export const AspirantDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {submissions.map(sub => (
+              {scopedSubmissions.map(sub => (
                 <tr key={sub.id}>
                   <td style={{ fontFamily: 'var(--font-mono)', fontWeight: '600', color: '#fcd34d' }}>{sub.id}</td>
                   <td>
@@ -172,10 +219,18 @@ export const AspirantDashboard = () => {
         />
       )}
 
+      {/* Add Agent Modal */}
+      {showAddAgent && (
+        <AddAgentModal
+          defaultAspirantId={currentUser.id}
+          onClose={() => setShowAddAgent(false)}
+        />
+      )}
+
       {/* PDF Export Modal */}
       {showPdfExport && (
         <PdfReportGenerator
-          submissions={submissions}
+          submissions={scopedSubmissions}
           onClose={() => setShowPdfExport(false)}
         />
       )}
