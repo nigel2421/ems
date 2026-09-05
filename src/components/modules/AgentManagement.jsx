@@ -28,8 +28,52 @@ export const AgentManagement = ({ onClose }) => {
 
   // Assign Station Modal State
   const [selectedAgentForAssign, setSelectedAgentForAssign] = useState(null);
-  const [targetPsId, setTargetPsId] = useState(geography.pollingStations[0]?.id || '');
+  const [bindCountyId, setBindCountyId] = useState(geography.counties[0]?.id || '');
+  const [bindConstituencyId, setBindConstituencyId] = useState('');
+  const [bindWardId, setBindWardId] = useState('');
+  const [targetPsId, setTargetPsId] = useState('');
   const [assignSuccess, setAssignSuccess] = useState('');
+
+  // Handle Bind Modal Location Cascading
+  const availableBindConstituencies = geography.constituencies.filter(c => c.countyId === bindCountyId);
+  const availableBindWards = geography.wards.filter(w => w.constituencyId === bindConstituencyId);
+  const availableBindPollingStations = bindWardId ? geography.pollingStations.filter(ps => ps.wardId === bindWardId) : [];
+
+  const handleBindCountyChange = (cId) => {
+    setBindCountyId(cId);
+    const firstConst = geography.constituencies.find(c => c.countyId === cId)?.id || '';
+    setBindConstituencyId(firstConst);
+    const firstWard = geography.wards.find(w => w.constituencyId === firstConst)?.id || '';
+    setBindWardId(firstWard);
+    const firstPs = geography.pollingStations.find(ps => ps.wardId === firstWard)?.id || '';
+    setTargetPsId(firstPs);
+  };
+
+  const handleBindConstituencyChange = (csId) => {
+    setBindConstituencyId(csId);
+    const firstWard = geography.wards.find(w => w.constituencyId === csId)?.id || '';
+    setBindWardId(firstWard);
+    const firstPs = geography.pollingStations.find(ps => ps.wardId === firstWard)?.id || '';
+    setTargetPsId(firstPs);
+  };
+
+  const handleBindWardChange = (wId) => {
+    setBindWardId(wId);
+    const firstPs = geography.pollingStations.find(ps => ps.wardId === wId)?.id || '';
+    setTargetPsId(firstPs);
+  };
+
+  const handleOpenAssignModal = (agent) => {
+    setSelectedAgentForAssign(agent);
+    const firstCounty = geography.counties[0]?.id || '';
+    setBindCountyId(firstCounty);
+    const firstConst = geography.constituencies.find(c => c.countyId === firstCounty)?.id || '';
+    setBindConstituencyId(firstConst);
+    const firstWard = geography.wards.find(w => w.constituencyId === firstConst)?.id || '';
+    setBindWardId(firstWard);
+    const firstPs = geography.pollingStations.find(ps => ps.wardId === firstWard)?.id || '';
+    setTargetPsId(firstPs);
+  };
 
   // Agent Activity Detail Drawer State
   const [viewingActivityAgent, setViewingActivityAgent] = useState(null);
@@ -181,7 +225,7 @@ export const AgentManagement = ({ onClose }) => {
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.4rem' }}>
-                        <button className="btn btn-secondary btn-sm" onClick={() => setSelectedAgentForAssign(ag)}>
+                        <button className="btn btn-secondary btn-sm" onClick={() => handleOpenAssignModal(ag)}>
                           <MapPin style={{ width: '13px', height: '13px' }} />
                           <span>Bind Station</span>
                         </button>
@@ -208,11 +252,14 @@ export const AgentManagement = ({ onClose }) => {
       {/* Bind Polling Station Modal */}
       {selectedAgentForAssign && (
         <div className="modal-overlay" onClick={() => setSelectedAgentForAssign(null)}>
-          <div className="modal-content" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
+          <div className="modal-content" style={{ maxWidth: '540px' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: '800' }}>
-                Bind Polling Station to {selectedAgentForAssign.fullName}
-              </h3>
+              <div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: '800' }}>
+                  Bind Polling Station to {selectedAgentForAssign.fullName || selectedAgentForAssign.name}
+                </h3>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Sieve by County → Constituency → Ward to filter streams</p>
+              </div>
               <button className="btn btn-secondary btn-sm" onClick={() => setSelectedAgentForAssign(null)}><X style={{ width: '16px', height: '16px' }} /></button>
             </div>
 
@@ -223,15 +270,61 @@ export const AgentManagement = ({ onClose }) => {
             )}
 
             <form onSubmit={handleAssignSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div className="form-group">
-                <label className="form-label">Select Polling Station Stream</label>
-                <select className="form-select" value={targetPsId} onChange={e => setTargetPsId(e.target.value)}>
-                  {geography.pollingStations.slice(0, 100).map(ps => (
-                    <option key={ps.id} value={ps.id}>
-                      {ps.code} - {ps.name} ({ps.ward || 'Westlands'})
-                    </option>
-                  ))}
-                </select>
+              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.72rem' }}>1. County</label>
+                    <select className="form-select" style={{ fontSize: '0.8rem', padding: '0.4rem' }} value={bindCountyId} onChange={e => handleBindCountyChange(e.target.value)}>
+                      {geography.counties.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.code} - {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.72rem' }}>2. Constituency</label>
+                    <select className="form-select" style={{ fontSize: '0.8rem', padding: '0.4rem' }} value={bindConstituencyId} onChange={e => handleBindConstituencyChange(e.target.value)}>
+                      {availableBindConstituencies.map(cs => (
+                        <option key={cs.id} value={cs.id}>
+                          {cs.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.72rem' }}>3. Ward</label>
+                    <select className="form-select" style={{ fontSize: '0.8rem', padding: '0.4rem' }} value={bindWardId} onChange={e => handleBindWardChange(e.target.value)}>
+                      {availableBindWards.map(w => (
+                        <option key={w.id} value={w.id}>
+                          {w.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>4. Target Polling Station Stream</span>
+                    <span style={{ fontSize: '0.72rem', color: '#34d399' }}>
+                      {availableBindPollingStations.length} Stations Available
+                    </span>
+                  </label>
+                  <select className="form-select" value={targetPsId} onChange={e => setTargetPsId(e.target.value)} required>
+                    {availableBindPollingStations.length > 0 ? (
+                      availableBindPollingStations.map(ps => (
+                        <option key={ps.id} value={ps.id}>
+                          {ps.code} - {ps.name} ({ps.registeredVoters} voters)
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">No polling stations found for selected ward</option>
+                    )}
+                  </select>
+                </div>
               </div>
 
               <button type="submit" className="btn btn-primary" style={{ padding: '0.85rem' }}>

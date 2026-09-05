@@ -1,64 +1,109 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { UserPlus, X, Camera, MapPin } from 'lucide-react';
+import { UserPlus, X, Camera, MapPin, Filter } from 'lucide-react';
 
 export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
   const { addUser, currentUser } = useAuth();
   const { geography, logAuditAction } = useData();
 
-  // Scoped polling stations matching candidate user's jurisdiction boundary (Ward / Constituency / County)
-  const availablePollingStations = useMemo(() => {
+  // Cascading Selection State: County -> Constituency -> Ward -> Polling Station
+  const [countyId, setCountyId] = useState(() => geography.counties[0]?.id || '');
+  const [constituencyId, setConstituencyId] = useState('');
+  const [wardId, setWardId] = useState('');
+  const [pollingStationId, setPollingStationId] = useState('');
+
+  // Initial auto-scoping based on logged in user's jurisdiction
+  useEffect(() => {
     if (!currentUser || currentUser.role === 'Admin' || currentUser.assignedEntity === 'GLOBAL') {
-      return geography.pollingStations;
+      const defaultCounty = geography.counties[0]?.id || '';
+      setCountyId(defaultCounty);
+      const firstConst = geography.constituencies.find(c => c.countyId === defaultCounty)?.id || '';
+      setConstituencyId(firstConst);
+      const firstWard = geography.wards.find(w => w.constituencyId === firstConst)?.id || '';
+      setWardId(firstWard);
+      const firstPs = geography.pollingStations.find(ps => ps.wardId === firstWard)?.id || '';
+      setPollingStationId(firstPs);
+      return;
     }
 
-    // 1. Direct Ward ID match (MCA candidate)
-    const matchedByWard = geography.pollingStations.filter(ps => ps.wardId === currentUser.assignedEntity);
-    if (matchedByWard.length > 0) return matchedByWard;
-
-    // 2. Ward Name match
-    const wardByName = geography.wards.find(w => w.name.toLowerCase() === currentUser.entityName?.toLowerCase());
-    if (wardByName) {
-      const matched = geography.pollingStations.filter(ps => ps.wardId === wardByName.id);
-      if (matched.length > 0) return matched;
+    // Try matching user assigned entity to Ward, Constituency or County
+    const matchedWard = geography.wards.find(w => w.id === currentUser.assignedEntity || w.name.toLowerCase() === currentUser.entityName?.toLowerCase());
+    if (matchedWard) {
+      setCountyId(matchedWard.countyId);
+      setConstituencyId(matchedWard.constituencyId);
+      setWardId(matchedWard.id);
+      const ps = geography.pollingStations.find(p => p.wardId === matchedWard.id);
+      setPollingStationId(ps?.id || '');
+      return;
     }
 
-    // 3. Constituency ID/Name match (MP candidate)
-    const isConstituency = geography.constituencies.some(c => c.id === currentUser.assignedEntity);
-    const constByName = geography.constituencies.find(c => c.name.toLowerCase() === currentUser.entityName?.toLowerCase());
-    const constId = isConstituency ? currentUser.assignedEntity : (constByName ? constByName.id : null);
-    if (constId) {
-      const wardIds = geography.wards.filter(w => w.constituencyId === constId).map(w => w.id);
-      const matched = geography.pollingStations.filter(ps => wardIds.includes(ps.wardId));
-      if (matched.length > 0) return matched;
+    const matchedConst = geography.constituencies.find(c => c.id === currentUser.assignedEntity || c.name.toLowerCase() === currentUser.entityName?.toLowerCase());
+    if (matchedConst) {
+      setCountyId(matchedConst.countyId);
+      setConstituencyId(matchedConst.id);
+      const w = geography.wards.find(ward => ward.constituencyId === matchedConst.id);
+      setWardId(w?.id || '');
+      const ps = geography.pollingStations.find(p => p.wardId === w?.id);
+      setPollingStationId(ps?.id || '');
+      return;
     }
 
-    // 4. County ID/Name match (Governor / Senator candidate)
-    const isCounty = geography.counties.some(c => c.id === currentUser.assignedEntity);
-    const countyByName = geography.counties.find(c => c.name.toLowerCase() === currentUser.entityName?.toLowerCase());
-    const countyId = isCounty ? currentUser.assignedEntity : (countyByName ? countyByName.id : null);
-    if (countyId) {
-      const constIds = geography.constituencies.filter(c => c.countyId === countyId).map(c => c.id);
-      const wardIds = geography.wards.filter(w => constIds.includes(w.constituencyId)).map(w => w.id);
-      const matched = geography.pollingStations.filter(ps => wardIds.includes(ps.wardId));
-      if (matched.length > 0) return matched;
+    const matchedCounty = geography.counties.find(c => c.id === currentUser.assignedEntity || c.name.toLowerCase() === currentUser.entityName?.toLowerCase());
+    if (matchedCounty) {
+      setCountyId(matchedCounty.id);
+      const c = geography.constituencies.find(cs => cs.countyId === matchedCounty.id);
+      setConstituencyId(c?.id || '');
+      const w = geography.wards.find(ward => ward.constituencyId === c?.id);
+      setWardId(w?.id || '');
+      const ps = geography.pollingStations.find(p => p.wardId === w?.id);
+      setPollingStationId(ps?.id || '');
     }
-
-    // Fallback for MCA role if no entity matched
-    if (currentUser.role === 'MCA') {
-      const defaultWard = geography.wards[0];
-      return geography.pollingStations.filter(ps => ps.wardId === defaultWard.id);
-    }
-
-    return geography.pollingStations;
   }, [currentUser, geography]);
+
+  // Derived filtered lists
+  const availableConstituencies = useMemo(() => {
+    return geography.constituencies.filter(c => c.countyId === countyId);
+  }, [geography, countyId]);
+
+  const availableWards = useMemo(() => {
+    return geography.wards.filter(w => w.constituencyId === constituencyId);
+  }, [geography, constituencyId]);
+
+  const availablePollingStations = useMemo(() => {
+    if (!wardId) return [];
+    return geography.pollingStations.filter(ps => ps.wardId === wardId);
+  }, [geography, wardId]);
+
+  // Handle cascading dropdown resets
+  const handleCountyChange = (newCountyId) => {
+    setCountyId(newCountyId);
+    const firstConst = geography.constituencies.find(c => c.countyId === newCountyId)?.id || '';
+    setConstituencyId(firstConst);
+    const firstWard = geography.wards.find(w => w.constituencyId === firstConst)?.id || '';
+    setWardId(firstWard);
+    const firstPs = geography.pollingStations.find(ps => ps.wardId === firstWard)?.id || '';
+    setPollingStationId(firstPs);
+  };
+
+  const handleConstituencyChange = (newConstId) => {
+    setConstituencyId(newConstId);
+    const firstWard = geography.wards.find(w => w.constituencyId === newConstId)?.id || '';
+    setWardId(firstWard);
+    const firstPs = geography.pollingStations.find(ps => ps.wardId === firstWard)?.id || '';
+    setPollingStationId(firstPs);
+  };
+
+  const handleWardChange = (newWardId) => {
+    setWardId(newWardId);
+    const firstPs = geography.pollingStations.find(ps => ps.wardId === newWardId)?.id || '';
+    setPollingStationId(firstPs);
+  };
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('Agent2026!');
-  const [pollingStationId, setPollingStationId] = useState(availablePollingStations[0]?.id || 'PS-101');
   const [avatar, setAvatar] = useState('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80');
 
   const selectedPs = geography.pollingStations.find(ps => ps.id === pollingStationId);
@@ -86,8 +131,8 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
       email,
       password,
       phone,
-      assignedEntity: pollingStationId,
-      entityName: selectedPs ? selectedPs.name : 'Assigned Polling Station',
+      assignedEntity: pollingStationId || 'PS-1',
+      entityName: selectedPs ? `${selectedPs.code} - ${selectedPs.name}` : 'Assigned Polling Station',
       aspirantId: targetAspirantId,
       creatorId: currentUser.id,
       twoFactorEnabled: false,
@@ -95,7 +140,7 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
     };
 
     addUser(newAgent);
-    logAuditAction(currentUser, 'AGENT_REGISTERED', `Added new agent ${name} strictly bound to candidate ${currentUser.name}`);
+    logAuditAction(currentUser, 'AGENT_REGISTERED', `Added new agent ${name} bound to polling station ${selectedPs?.name || pollingStationId}`);
     onClose();
   };
 
@@ -103,7 +148,7 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div 
         className="modal-content" 
-        style={{ maxWidth: '520px', padding: '1.75rem', borderRadius: '20px' }}
+        style={{ maxWidth: '560px', padding: '1.75rem', borderRadius: '20px' }}
         onClick={e => e.stopPropagation()}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
@@ -112,8 +157,8 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
               <UserPlus style={{ width: '20px', height: '20px', color: '#818cf8' }} />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: '800' }}>Add Agent & Station Details</h3>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Bound strictly under candidate: {currentUser.name}</p>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: '800' }}>Register Polling Station Agent</h3>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Sieve location by County → Constituency → Ward to pick exact stream</p>
             </div>
           </div>
           <button className="btn btn-secondary btn-sm" onClick={onClose}>
@@ -124,10 +169,10 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {/* Photo Preview & Upload */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '12px' }}>
-            <img src={avatar} alt="Agent Preview" style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
+            <img src={avatar} alt="Agent Preview" style={{ width: '54px', height: '54px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: '0.85rem', fontWeight: '600' }}>Agent Profile Photo</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Upload official portrait picture</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Upload portrait photo</div>
               <label className="btn btn-secondary btn-sm" style={{ marginTop: '0.35rem', cursor: 'pointer', display: 'inline-flex' }}>
                 <Camera style={{ width: '12px', height: '12px' }} />
                 <span>Choose Image</span>
@@ -152,31 +197,78 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span>Assigned Polling Station Boundary</span>
-              <span style={{ fontSize: '0.72rem', color: '#818cf8', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
-                <MapPin style={{ width: '12px', height: '12px' }} />
-                {currentUser?.entityName || 'Jurisdiction'} ({availablePollingStations.length} Streams)
-              </span>
-            </label>
-            <select className="form-select" value={pollingStationId} onChange={e => setPollingStationId(e.target.value)}>
-              {availablePollingStations.map(ps => (
-                <option key={ps.id} value={ps.id}>
-                  {ps.code} - {ps.name} ({ps.registeredVoters} voters)
-                </option>
-              ))}
-            </select>
+          {/* Cascading Location Filter (Sieve) */}
+          <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: '800', textTransform: 'uppercase', color: '#818cf8', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Filter style={{ width: '14px', height: '14px' }} />
+              <span>Location Sieve: Select County → Constituency → Ward</span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem' }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.72rem' }}>1. County</label>
+                <select className="form-select" style={{ fontSize: '0.8rem', padding: '0.4rem' }} value={countyId} onChange={e => handleCountyChange(e.target.value)}>
+                  {geography.counties.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.code} - {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.72rem' }}>2. Constituency</label>
+                <select className="form-select" style={{ fontSize: '0.8rem', padding: '0.4rem' }} value={constituencyId} onChange={e => handleConstituencyChange(e.target.value)}>
+                  {availableConstituencies.map(cs => (
+                    <option key={cs.id} value={cs.id}>
+                      {cs.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label" style={{ fontSize: '0.72rem' }}>3. Ward</label>
+                <select className="form-select" style={{ fontSize: '0.8rem', padding: '0.4rem' }} value={wardId} onChange={e => handleWardChange(e.target.value)}>
+                  {availableWards.map(w => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>4. Polling Station Stream</span>
+                <span style={{ fontSize: '0.72rem', color: '#34d399', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                  <MapPin style={{ width: '12px', height: '12px' }} />
+                  {availablePollingStations.length} Streams in Ward
+                </span>
+              </label>
+              <select className="form-select" value={pollingStationId} onChange={e => setPollingStationId(e.target.value)} required>
+                {availablePollingStations.length > 0 ? (
+                  availablePollingStations.map(ps => (
+                    <option key={ps.id} value={ps.id}>
+                      {ps.code} - {ps.name} ({ps.registeredVoters} voters)
+                    </option>
+                  ))
+                ) : (
+                  <option value="">No polling stations found for selected ward</option>
+                )}
+              </select>
+            </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Account Password</label>
+            <label className="form-label">Default Account Password</label>
             <input type="text" className="form-input" value={password} onChange={e => setPassword(e.target.value)} required />
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem', marginTop: '0.5rem', background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' }}>
+          <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem', marginTop: '0.25rem', background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' }}>
             <UserPlus style={{ width: '16px', height: '16px' }} />
-            <span>Create Agent & Lock to Candidate</span>
+            <span>Confirm Agent Registration</span>
           </button>
         </form>
       </div>
