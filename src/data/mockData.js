@@ -31,7 +31,7 @@ export const initialAuditLogs = [
     role: 'Admin',
     ipAddress: '127.0.0.1',
     action: 'SYSTEM_HARDENED',
-    details: 'System initialized in production state. IEBC Gazette imported with 12,872 polling stations.'
+    details: 'System initialized in production state. IEBC Gazette imported with 46,051 polling stations across 47 counties and 22,349,912 registered voters.'
   }
 ];
 

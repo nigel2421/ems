@@ -21,7 +21,7 @@ export const DataProvider = ({ children }) => {
     const saved = localStorage.getItem('ems_geography');
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed.counties && parsed.counties.length >= 26) {
+      if (parsed.counties && parsed.counties.length >= 47) {
         return parsed;
       }
     }
