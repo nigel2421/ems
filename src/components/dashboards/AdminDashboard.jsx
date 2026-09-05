@@ -291,7 +291,7 @@ export const AdminDashboard = ({ onOpenAuditLogs, onOpenGeographic }) => {
           <div className="glass-card">
             <h2 style={{ fontSize: '1.35rem', fontWeight: '800', marginBottom: '0.25rem' }}>Agent Boundary Binding</h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
-              Assign created polling station agents to IEBC gazette streams.
+              Assign created polling station agents to IEBC gazette streams by filtering County → Constituency → Ward.
             </p>
 
             {agents.length === 0 ? (
@@ -299,10 +299,10 @@ export const AdminDashboard = ({ onOpenAuditLogs, onOpenGeographic }) => {
                 No active polling station agents registered yet. Candidates add their agents directly from their command portal.
               </div>
             ) : (
-              <form onSubmit={handleAssignAgent} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <form onSubmit={handleAssignAgent} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <div className="form-group">
-                  <label className="form-label">Select Agent</label>
-                  <select className="form-select" value={selectedAgent} onChange={e => setSelectedAgent(e.target.value)}>
+                  <label className="form-label">1. Select Agent</label>
+                  <select className="form-select" value={selectedAgent} onChange={e => setSelectedAgent(e.target.value)} required>
                     <option value="">-- Select Agent --</option>
                     {agents.map(a => (
                       <option key={a.id} value={a.id}>
@@ -312,20 +312,77 @@ export const AdminDashboard = ({ onOpenAuditLogs, onOpenGeographic }) => {
                   </select>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Target Polling Station Stream</label>
-                  <select className="form-select" value={selectedPs} onChange={e => setSelectedPs(e.target.value)}>
-                    {geography.pollingStations.slice(0, 100).map(ps => (
-                      <option key={ps.id} value={ps.id}>
-                        {ps.code} - {ps.name}
-                      </option>
-                    ))}
-                  </select>
+                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', color: '#818cf8' }}>
+                    Location Sieve (Filter Available Streams)
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">2. Select County</label>
+                      <select className="form-select" value={countyId} onChange={e => { setCountyId(e.target.value); setConstituencyId(''); setWardId(''); setSelectedPs(''); }}>
+                        <option value="">-- Select County --</option>
+                        {geography.counties.map(c => (
+                          <option key={c.id} value={c.id}>
+                            {c.code} - {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">3. Select Constituency</label>
+                      <select className="form-select" value={constituencyId} onChange={e => { setConstituencyId(e.target.value); setWardId(''); setSelectedPs(''); }}>
+                        <option value="">-- Select Constituency --</option>
+                        {availableConstituencies.map(cs => (
+                          <option key={cs.id} value={cs.id}>
+                            {cs.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">4. Select Ward</label>
+                      <select className="form-select" value={wardId} onChange={e => {
+                        setWardId(e.target.value);
+                        const firstPs = geography.pollingStations.find(ps => ps.wardId === e.target.value)?.id || '';
+                        setSelectedPs(firstPs);
+                      }}>
+                        <option value="">-- Select Ward --</option>
+                        {availableWards.map(w => (
+                          <option key={w.id} value={w.id}>
+                            {w.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span>5. Target Polling Station Stream</span>
+                      <span style={{ fontSize: '0.75rem', color: '#34d399' }}>
+                        {wardId ? geography.pollingStations.filter(ps => ps.wardId === wardId).length : 0} Streams in Selected Ward
+                      </span>
+                    </label>
+                    <select className="form-select" value={selectedPs} onChange={e => setSelectedPs(e.target.value)} required>
+                      {wardId ? (
+                        geography.pollingStations.filter(ps => ps.wardId === wardId).map(ps => (
+                          <option key={ps.id} value={ps.id}>
+                            {ps.code} - {ps.name} ({ps.registeredVoters} voters)
+                          </option>
+                        ))
+                      ) : (
+                        <option value="">Please select County, Constituency, and Ward first to filter streams</option>
+                      )}
+                    </select>
+                  </div>
                 </div>
 
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="btn btn-primary" style={{ padding: '0.85rem' }}>
                   <MapPin style={{ width: '16px', height: '16px' }} />
-                  <span>Bind Agent to Station</span>
+                  <span>Bind Agent to Selected Station Stream</span>
                 </button>
 
                 {assignmentNotice && (
