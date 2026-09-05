@@ -15,95 +15,83 @@ import { apiService, compressImageSimulation } from '../services/api';
 
 const DataContext = createContext(null);
 
-export const DataProvider = ({ children }) => {
-  // 1. Geography & Polling Stations
-  const [geography, setGeography] = useState(() => {
-    const saved = localStorage.getItem('ems_geography');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed.counties && parsed.counties.length >= 47) {
-        return parsed;
+// Helper to safely write to localStorage without crashing on QuotaExceededError
+const safeSetLocalStorage = (key, value) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (err) {
+    console.warn(`[EMS] LocalStorage save quota exceeded or unavailable for '${key}':`, err);
+    if (err.name === 'QuotaExceededError' || err.code === 22) {
+      try {
+        localStorage.removeItem('ems_geography');
+      } catch (e) {
+        // ignore
       }
+    }
+  }
+};
+
+const safeGetLocalStorage = (key, fallback) => {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : fallback;
+  } catch (err) {
+    return fallback;
+  }
+};
+
+export const DataProvider = ({ children }) => {
+  // 1. Geography & Polling Stations: Uses bundled iebcGeographyData.json (46,051 stations)
+  const [geography, setGeography] = useState(() => {
+    // Purge legacy ems_geography from localStorage to prevent exceeding 5MB browser quota
+    try {
+      localStorage.removeItem('ems_geography');
+    } catch (e) {
+      // ignore
     }
     return initialGeography;
   });
 
   // 2. Polling Station Intelligence Scores
-  const [stationIntelligence, setStationIntelligence] = useState(() => {
-    const saved = localStorage.getItem('ems_station_intelligence');
-    return saved ? JSON.parse(saved) : initialStationIntelligence;
-  });
+  const [stationIntelligence, setStationIntelligence] = useState(() => safeGetLocalStorage('ems_station_intelligence', initialStationIntelligence));
 
   // 3. Agent Directory
-  const [agents, setAgents] = useState(() => {
-    const saved = localStorage.getItem('ems_agent_directory');
-    return saved ? JSON.parse(saved) : initialAgentDirectory;
-  });
+  const [agents, setAgents] = useState(() => safeGetLocalStorage('ems_agent_directory', initialAgentDirectory));
 
   // 4. Surveys
-  const [surveys, setSurveys] = useState(() => {
-    const saved = localStorage.getItem('ems_surveys');
-    return saved ? JSON.parse(saved) : initialSurveys;
-  });
+  const [surveys, setSurveys] = useState(() => safeGetLocalStorage('ems_surveys', initialSurveys));
 
   // 5. Field Reports
-  const [fieldReports, setFieldReports] = useState(() => {
-    const saved = localStorage.getItem('ems_field_reports');
-    return saved ? JSON.parse(saved) : initialFieldReports;
-  });
+  const [fieldReports, setFieldReports] = useState(() => safeGetLocalStorage('ems_field_reports', initialFieldReports));
 
   // 6. Stakeholders / Influence Network
-  const [stakeholders, setStakeholders] = useState(() => {
-    const saved = localStorage.getItem('ems_stakeholders');
-    return saved ? JSON.parse(saved) : initialStakeholders;
-  });
+  const [stakeholders, setStakeholders] = useState(() => safeGetLocalStorage('ems_stakeholders', initialStakeholders));
 
   // 7. Campaign Strategy & Phases
-  const [campaignPhases, setCampaignPhases] = useState(() => {
-    const saved = localStorage.getItem('ems_campaign_phases');
-    return saved ? JSON.parse(saved) : initialCampaignPhases;
-  });
+  const [campaignPhases, setCampaignPhases] = useState(() => safeGetLocalStorage('ems_campaign_phases', initialCampaignPhases));
 
   // 8. Tally Center Results & Submissions
-  const [tallyResults, setTallyResults] = useState(() => {
-    const saved = localStorage.getItem('ems_tally_results');
-    return saved ? JSON.parse(saved) : initialTallyCenterData;
-  });
-
-  const [submissions, setSubmissions] = useState(() => {
-    const saved = localStorage.getItem('ems_submissions');
-    return saved ? JSON.parse(saved) : initialSubmissions;
-  });
-
-  const [broadcasts, setBroadcasts] = useState(() => {
-    const saved = localStorage.getItem('ems_broadcasts');
-    return saved ? JSON.parse(saved) : iebcOfficialBroadcasts;
-  });
+  const [tallyResults, setTallyResults] = useState(() => safeGetLocalStorage('ems_tally_results', initialTallyCenterData));
+  const [submissions, setSubmissions] = useState(() => safeGetLocalStorage('ems_submissions', initialSubmissions));
+  const [broadcasts, setBroadcasts] = useState(() => safeGetLocalStorage('ems_broadcasts', iebcOfficialBroadcasts));
 
   // 9. AI Chat History
-  const [aiChatHistory, setAiChatHistory] = useState(() => {
-    const saved = localStorage.getItem('ems_ai_chat');
-    return saved ? JSON.parse(saved) : initialAIChatHistory;
-  });
+  const [aiChatHistory, setAiChatHistory] = useState(() => safeGetLocalStorage('ems_ai_chat', initialAIChatHistory));
 
   // 10. Audit Logs
-  const [auditLogs, setAuditLogs] = useState(() => {
-    const saved = localStorage.getItem('ems_audit_logs');
-    return saved ? JSON.parse(saved) : initialAuditLogs;
-  });
+  const [auditLogs, setAuditLogs] = useState(() => safeGetLocalStorage('ems_audit_logs', initialAuditLogs));
 
-  // Persist State to LocalStorage
-  useEffect(() => { localStorage.setItem('ems_geography', JSON.stringify(geography)); }, [geography]);
-  useEffect(() => { localStorage.setItem('ems_station_intelligence', JSON.stringify(stationIntelligence)); }, [stationIntelligence]);
-  useEffect(() => { localStorage.setItem('ems_agent_directory', JSON.stringify(agents)); }, [agents]);
-  useEffect(() => { localStorage.setItem('ems_surveys', JSON.stringify(surveys)); }, [surveys]);
-  useEffect(() => { localStorage.setItem('ems_field_reports', JSON.stringify(fieldReports)); }, [fieldReports]);
-  useEffect(() => { localStorage.setItem('ems_stakeholders', JSON.stringify(stakeholders)); }, [stakeholders]);
-  useEffect(() => { localStorage.setItem('ems_campaign_phases', JSON.stringify(campaignPhases)); }, [campaignPhases]);
-  useEffect(() => { localStorage.setItem('ems_tally_results', JSON.stringify(tallyResults)); }, [tallyResults]);
-  useEffect(() => { localStorage.setItem('ems_submissions', JSON.stringify(submissions)); }, [submissions]);
-  useEffect(() => { localStorage.setItem('ems_ai_chat', JSON.stringify(aiChatHistory)); }, [aiChatHistory]);
-  useEffect(() => { localStorage.setItem('ems_audit_logs', JSON.stringify(auditLogs)); }, [auditLogs]);
+  // Persist State to LocalStorage (Safely caught)
+  useEffect(() => { safeSetLocalStorage('ems_station_intelligence', stationIntelligence); }, [stationIntelligence]);
+  useEffect(() => { safeSetLocalStorage('ems_agent_directory', agents); }, [agents]);
+  useEffect(() => { safeSetLocalStorage('ems_surveys', surveys); }, [surveys]);
+  useEffect(() => { safeSetLocalStorage('ems_field_reports', fieldReports); }, [fieldReports]);
+  useEffect(() => { safeSetLocalStorage('ems_stakeholders', stakeholders); }, [stakeholders]);
+  useEffect(() => { safeSetLocalStorage('ems_campaign_phases', campaignPhases); }, [campaignPhases]);
+  useEffect(() => { safeSetLocalStorage('ems_tally_results', tallyResults); }, [tallyResults]);
+  useEffect(() => { safeSetLocalStorage('ems_submissions', submissions); }, [submissions]);
+  useEffect(() => { safeSetLocalStorage('ems_ai_chat', aiChatHistory); }, [aiChatHistory]);
+  useEffect(() => { safeSetLocalStorage('ems_audit_logs', auditLogs); }, [auditLogs]);
 
   // Audit Logger Helper
   const logAuditAction = (user, action, details) => {
