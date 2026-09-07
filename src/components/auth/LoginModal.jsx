@@ -23,12 +23,6 @@ export const LoginModal = () => {
     }, 300);
   };
 
-  const handleQuickSelect = (user) => {
-    setEmail(user.email);
-    setPassword(user.password || 'AdminSuper2026!');
-    setError('');
-  };
-
   return (
     <div className="modal-overlay" style={{ background: 'rgba(5, 7, 15, 0.94)', backdropFilter: 'blur(16px)', zIndex: 1000 }}>
       <div 
@@ -84,41 +78,6 @@ export const LoginModal = () => {
           >
             <AlertCircle style={{ width: '16px', height: '16px', flexShrink: 0 }} />
             <span>{error}</span>
-          </div>
-        )}
-
-        {/* Quick Fill Account Presets */}
-        {users && users.length > 0 && (
-          <div style={{ marginBottom: '1.25rem', background: 'rgba(255, 255, 255, 0.03)', padding: '0.85rem', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', color: '#a5b4fc', letterSpacing: '0.05em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <KeyRound style={{ width: '13px', height: '13px' }} />
-              <span>Available Provisioned Accounts</span>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-              {users.map(u => (
-                <button
-                  key={u.id}
-                  type="button"
-                  onClick={() => handleQuickSelect(u)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    padding: '0.35rem 0.65rem',
-                    fontSize: '0.75rem',
-                    borderRadius: '8px',
-                    border: email === u.email ? '1px solid #6366f1' : '1px solid rgba(255, 255, 255, 0.1)',
-                    background: email === u.email ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255, 255, 255, 0.04)',
-                    color: email === u.email ? '#fff' : 'var(--text-muted)',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <UserCheck style={{ width: '12px', height: '12px', color: '#818cf8' }} />
-                  <span>{u.name.split(' ')[0]} ({u.role})</span>
-                </button>
-              ))}
-            </div>
           </div>
         )}
 

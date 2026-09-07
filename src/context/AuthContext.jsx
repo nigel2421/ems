@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { initialUsers } from '../data/mockData';
+import { getDeviceTelemetry } from '../utils/deviceParser';
 
 const AuthContext = createContext(null);
 
@@ -18,10 +19,59 @@ export const ROLE_HIERARCHY = {
   'Observer': 2
 };
 
+// Seed initial login logs for testing if empty
+const initialLoginLogs = [
+  {
+    id: 'LOG-LOGIN-101',
+    timestamp: new Date(Date.now() - 3600000 * 2).toISOString(),
+    email: 'admin.super@ems.go.ke',
+    userName: 'Admin System Director',
+    role: 'Admin',
+    ipAddress: '197.237.112.45',
+    geoLocation: 'Nairobi, Kenya',
+    deviceType: 'Desktop',
+    os: 'Windows 11/10',
+    browser: 'Google Chrome 128.0',
+    status: 'Success',
+    failureReason: null
+  },
+  {
+    id: 'LOG-LOGIN-102',
+    timestamp: new Date(Date.now() - 3600000 * 5).toISOString(),
+    email: 'unknown.hacker@external.org',
+    userName: 'unknown.hacker@external.org',
+    role: 'Unauthenticated',
+    ipAddress: '45.142.214.99',
+    geoLocation: 'Mombasa, Kenya',
+    deviceType: 'Mobile',
+    os: 'Android OS',
+    browser: 'Mozilla Firefox 130.0',
+    status: 'Failure',
+    failureReason: 'Invalid email address or password credentials'
+  }
+];
+
 export const AuthProvider = ({ children }) => {
   const [users, setUsers] = useState(() => {
-    const saved = localStorage.getItem('ems_users');
-    return saved ? JSON.parse(saved) : initialUsers;
+    try {
+      const saved = localStorage.getItem('ems_users');
+      if (!saved) return initialUsers;
+      const parsed = JSON.parse(saved);
+      const existingEmails = new Set(parsed.map(u => u.email.toLowerCase()));
+      const missing = initialUsers.filter(u => !existingEmails.has(u.email.toLowerCase()));
+      return [...parsed, ...missing];
+    } catch (e) {
+      return initialUsers;
+    }
+  });
+
+  const [loginActivityLogs, setLoginActivityLogs] = useState(() => {
+    try {
+      const savedLogs = localStorage.getItem('ems_login_activity_logs');
+      return savedLogs ? JSON.parse(savedLogs) : initialLoginLogs;
+    } catch (e) {
+      return initialLoginLogs;
+    }
   });
 
   // Session-bound authentication: Require login on new browser sessions / dev app load
@@ -48,6 +98,10 @@ export const AuthProvider = ({ children }) => {
   }, [users]);
 
   useEffect(() => {
+    localStorage.setItem('ems_login_activity_logs', JSON.stringify(loginActivityLogs));
+  }, [loginActivityLogs]);
+
+  useEffect(() => {
     if (currentUser) {
       sessionStorage.setItem('ems_current_user', JSON.stringify(currentUser));
     } else {
@@ -60,9 +114,28 @@ export const AuthProvider = ({ children }) => {
   }, [isAuthenticated]);
 
   const login = (email, password) => {
+    const cleanEmail = email ? email.trim().toLowerCase() : '';
     const foundUser = users.find(
-      u => u.email.toLowerCase() === email.trim().toLowerCase() && u.password === password
+      u => u.email.toLowerCase() === cleanEmail && u.password === password
     );
+
+    const telemetry = getDeviceTelemetry();
+    const logEntry = {
+      id: `LOG-LOGIN-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      timestamp: new Date().toISOString(),
+      email: cleanEmail || 'unknown@user',
+      userName: foundUser ? foundUser.name : (cleanEmail || 'Unknown User'),
+      role: foundUser ? foundUser.role : 'Unauthenticated',
+      ipAddress: telemetry.ipAddress,
+      geoLocation: telemetry.geoLocation,
+      deviceType: telemetry.deviceType,
+      os: telemetry.os,
+      browser: telemetry.browser,
+      status: foundUser ? 'Success' : 'Failure',
+      failureReason: foundUser ? null : 'Invalid email address or password credentials'
+    };
+
+    setLoginActivityLogs(prev => [logEntry, ...prev]);
 
     if (foundUser) {
       setCurrentUser(foundUser);
@@ -135,7 +208,7 @@ export const AuthProvider = ({ children }) => {
       case 'mobilization':
       case 'strategy':
       case 'tally_center':
-        return true; // All authenticated users can view/participate according to their role capabilities
+        return true;
       case 'ai_assistant':
         return ['Super Admin', 'Admin', 'Strategy Team', 'Governor'].includes(role);
       case 'system_settings':
@@ -163,6 +236,7 @@ export const AuthProvider = ({ children }) => {
         hasPermission,
         hasRole,
         canAccessModule,
+        loginActivityLogs,
         ROLE_HIERARCHY
       }}
     >

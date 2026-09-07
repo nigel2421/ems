@@ -72,8 +72,10 @@ export const processOCRForm34A = async (imageFile) => {
 
   return {
     success: true,
+    formType: 'Form 34A',
+    status: 'OCR_PARSED',
     confidence: (0.92 + Math.random() * 0.07).toFixed(2),
-    extractedVotes: { candA, candB, candC, rejected, total },
+    ocrExtracted: { candA, candB, candC, rejected, total },
     detectedHash: '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('')
   };
 };

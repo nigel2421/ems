@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { ElectionCountdown } from './modules/ElectionCountdown';
+import { ThemeSwitcher } from './common/ThemeSwitcher';
 import { 
   Shield, 
   MapPin, 
@@ -129,11 +130,13 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             {/* Desktop Actions */}
             <div className="nav-desktop-row" style={{ border: 'none', padding: 0, gap: '0.4rem' }}>
+              <ThemeSwitcher compact={true} />
+
               <button 
                 className="btn btn-secondary btn-sm"
                 onClick={onOpenAuditLogs}
                 title="View System Audit Trail"
-                style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', borderColor: '#233252' }}
+                style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', borderColor: 'var(--border-color)' }}
               >
                 <Activity style={{ width: '13px', height: '13px', color: '#06B6D4' }} />
                 <span>Audit</span>
@@ -141,7 +144,7 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
 
               <button 
                 className="btn btn-secondary btn-sm" 
-                style={{ position: 'relative', padding: '0.3rem 0.6rem', borderColor: '#233252' }}
+                style={{ position: 'relative', padding: '0.3rem 0.6rem', borderColor: 'var(--border-color)' }}
                 onClick={onOpenNotifications}
               >
                 <Bell style={{ width: '14px', height: '14px' }} />
@@ -343,6 +346,12 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
 
             {/* Quick Actions List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              {/* Theme Switcher Row */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.65rem 0.85rem', background: 'var(--bg-canvas)', border: '1px solid var(--border-color)', borderRadius: '12px', minHeight: '48px' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-primary)' }}>Color Theme</span>
+                <ThemeSwitcher />
+              </div>
+
               {/* Notifications */}
               <button 
                 className="btn btn-secondary" 
