@@ -79,18 +79,19 @@ export const ElectionCountdown = ({
         <button
           onClick={() => setShowMilestonesModal(true)}
           className={`countdown-navbar-btn ${className}`}
+          style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.35)', borderRadius: '9999px', padding: '0.3rem 0.65rem' }}
           title={`Election Day: ${formattedDate}. Click for Election Roadmap & Key Milestones`}
           aria-label={`Election Countdown: ${timeLeft.days} days, ${timeLeft.hours} hours, ${timeLeft.minutes} minutes, ${timeLeft.seconds} seconds remaining`}
           role="timer"
           aria-live="polite"
         >
           <div className="countdown-pulse-dot"></div>
-          <Clock style={{ width: '13px', height: '13px', color: '#f59e0b' }} />
+          <Clock style={{ width: '13px', height: '13px', color: '#F59E0B' }} />
           <span className="countdown-navbar-label">Election:</span>
           {timeLeft.isCompleted ? (
             <span className="countdown-navbar-value completed">Election Day!</span>
           ) : (
-            <span className="countdown-navbar-value font-mono">
+            <span className="countdown-navbar-value font-mono" style={{ color: '#FCD34D' }}>
               <strong className="text-amber">{timeLeft.days}d</strong> {String(timeLeft.hours).padStart(2, '0')}h {String(timeLeft.minutes).padStart(2, '0')}m {String(timeLeft.seconds).padStart(2, '0')}s
             </span>
           )}
@@ -107,43 +108,47 @@ export const ElectionCountdown = ({
     );
   }
 
-  // --- CARD VARIANT (Inline Dashboard Component) ---
+  // --- CARD VARIANT (Inline Dashboard Component - Elevated Container #161F33) ---
   if (variant === 'card') {
     return (
-      <div className={`glass-card countdown-card ${className}`}>
+      <div 
+        className={`glass-card countdown-card ${className}`}
+        style={{ background: '#161F33', border: '1px solid #233252', borderRadius: '12px' }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div className="countdown-pulse-dot"></div>
-            <h4 style={{ fontSize: '0.92rem', fontWeight: '700', color: 'var(--text-main)' }}>{title}</h4>
+            <h4 style={{ fontSize: '0.92rem', fontWeight: '700', color: '#F8FAFC' }}>{title}</h4>
           </div>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{formattedDate}</span>
+          <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{formattedDate}</span>
         </div>
 
-        <div className="countdown-grid" role="timer" aria-live="polite">
-          <div className="countdown-unit">
-            <div className="countdown-num">{timeLeft.days}</div>
-            <div className="countdown-lbl">Days</div>
+        {/* 4-Column Compact Grid */}
+        <div className="countdown-grid" role="timer" aria-live="polite" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+          <div className="countdown-unit" style={{ background: '#0B0F19', border: '1px solid #233252', borderRadius: '8px', padding: '0.6rem 0.4rem', textAlign: 'center' }}>
+            <div className="countdown-num font-mono" style={{ fontSize: '1.35rem', fontWeight: '800', color: '#F8FAFC' }}>{timeLeft.days}</div>
+            <div className="countdown-lbl" style={{ fontSize: '0.65rem', color: '#94A3B8', textTransform: 'uppercase', fontWeight: '700' }}>Days</div>
           </div>
-          <div className="countdown-unit">
-            <div className="countdown-num">{String(timeLeft.hours).padStart(2, '0')}</div>
-            <div className="countdown-lbl">Hours</div>
+          <div className="countdown-unit" style={{ background: '#0B0F19', border: '1px solid #233252', borderRadius: '8px', padding: '0.6rem 0.4rem', textAlign: 'center' }}>
+            <div className="countdown-num font-mono" style={{ fontSize: '1.35rem', fontWeight: '800', color: '#F8FAFC' }}>{String(timeLeft.hours).padStart(2, '0')}</div>
+            <div className="countdown-lbl" style={{ fontSize: '0.65rem', color: '#94A3B8', textTransform: 'uppercase', fontWeight: '700' }}>Hours</div>
           </div>
-          <div className="countdown-unit">
-            <div className="countdown-num">{String(timeLeft.minutes).padStart(2, '0')}</div>
-            <div className="countdown-lbl">Mins</div>
+          <div className="countdown-unit" style={{ background: '#0B0F19', border: '1px solid #233252', borderRadius: '8px', padding: '0.6rem 0.4rem', textAlign: 'center' }}>
+            <div className="countdown-num font-mono" style={{ fontSize: '1.35rem', fontWeight: '800', color: '#F8FAFC' }}>{String(timeLeft.minutes).padStart(2, '0')}</div>
+            <div className="countdown-lbl" style={{ fontSize: '0.65rem', color: '#94A3B8', textTransform: 'uppercase', fontWeight: '700' }}>Mins</div>
           </div>
-          <div className="countdown-unit">
-            <div className="countdown-num">{String(timeLeft.seconds).padStart(2, '0')}</div>
-            <div className="countdown-lbl">Secs</div>
+          <div className="countdown-unit" style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.35)', borderRadius: '8px', padding: '0.6rem 0.4rem', textAlign: 'center' }}>
+            <div className="countdown-num font-mono" style={{ fontSize: '1.35rem', fontWeight: '800', color: '#F59E0B' }}>{String(timeLeft.seconds).padStart(2, '0')}</div>
+            <div className="countdown-lbl" style={{ fontSize: '0.65rem', color: '#FCD34D', textTransform: 'uppercase', fontWeight: '700' }}>Secs</div>
           </div>
         </div>
 
         <button 
           className="btn btn-secondary btn-sm" 
-          style={{ width: '100%', marginTop: '0.85rem', fontSize: '0.78rem' }}
+          style={{ width: '100%', marginTop: '0.85rem', fontSize: '0.78rem', minHeight: '40px', background: '#0B0F19', borderColor: '#233252' }}
           onClick={() => setShowMilestonesModal(true)}
         >
-          <Calendar style={{ width: '13px', height: '13px', color: '#6366f1' }} />
+          <Calendar style={{ width: '13px', height: '13px', color: '#3B82F6' }} />
           View Election Roadmap & Milestones
         </button>
 
@@ -158,7 +163,7 @@ export const ElectionCountdown = ({
     );
   }
 
-  // --- FLOATING VARIANT (Sticky Bottom-Right Widget) ---
+  // --- FLOATING VARIANT (Sticky Bottom Widget Container #161F33) ---
   return (
     <>
       <div 
@@ -166,12 +171,13 @@ export const ElectionCountdown = ({
         role="timer"
         aria-live="polite"
         aria-label="Election Countdown Timer"
+        style={{ background: '#161F33', border: '1px solid #233252', borderRadius: '12px' }}
       >
         {isMinimized ? (
-          <div className="countdown-minimized-bar" onClick={toggleMinimize}>
+          <div className="countdown-minimized-bar" onClick={toggleMinimize} style={{ padding: '0.4rem 0.75rem', background: '#161F33' }}>
             <div className="countdown-pulse-dot"></div>
-            <Clock style={{ width: '14px', height: '14px', color: '#f59e0b' }} />
-            <span style={{ fontSize: '0.78rem', fontWeight: '700', fontFamily: 'var(--font-mono)' }}>
+            <Clock style={{ width: '14px', height: '14px', color: '#F59E0B' }} />
+            <span style={{ fontSize: '0.78rem', fontWeight: '700', fontFamily: 'var(--font-mono)', color: '#FCD34D' }}>
               {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m
             </span>
             <button 
@@ -183,13 +189,13 @@ export const ElectionCountdown = ({
             </button>
           </div>
         ) : (
-          <div className="countdown-expanded-content">
+          <div className="countdown-expanded-content" style={{ padding: '0.75rem 0.85rem' }}>
             {/* Header / Controls */}
-            <div className="countdown-header">
+            <div className="countdown-header" style={{ borderBottom: '1px solid #233252', paddingBottom: '0.4rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }} onClick={() => setShowMilestonesModal(true)}>
                 <div className="countdown-pulse-dot"></div>
-                <span className="countdown-title">{title}</span>
-                <span className="countdown-date-badge">Aug 10</span>
+                <span className="countdown-title" style={{ color: '#F8FAFC', fontSize: '0.78rem' }}>{title}</span>
+                <span className="countdown-date-badge" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#FCD34D' }}>Aug 10</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
                 <button 
@@ -217,32 +223,32 @@ export const ElectionCountdown = ({
             </div>
 
             {/* Timer Ticker Box */}
-            <div className="countdown-body" onClick={() => setShowMilestonesModal(true)}>
+            <div className="countdown-body" onClick={() => setShowMilestonesModal(true)} style={{ paddingTop: '0.35rem' }}>
               {timeLeft.isCompleted ? (
                 <div className="countdown-completed-banner">
-                  <Flag style={{ width: '16px', height: '16px', color: '#10b981' }} />
+                  <Flag style={{ width: '16px', height: '16px', color: '#10B981' }} />
                   <span>Election Day Has Arrived!</span>
                 </div>
               ) : (
                 <div className="countdown-digits-row font-mono">
-                  <div className="digit-box">
-                    <span className="digit-val">{timeLeft.days}</span>
-                    <span className="digit-lbl">DAYS</span>
+                  <div className="digit-box" style={{ background: '#0B0F19', border: '1px solid #233252' }}>
+                    <span className="digit-val" style={{ color: '#F8FAFC' }}>{timeLeft.days}</span>
+                    <span className="digit-lbl" style={{ color: '#94A3B8' }}>DAYS</span>
                   </div>
-                  <span className="digit-colon">:</span>
-                  <div className="digit-box">
-                    <span className="digit-val">{String(timeLeft.hours).padStart(2, '0')}</span>
-                    <span className="digit-lbl">HRS</span>
+                  <span className="digit-colon" style={{ color: '#64748B' }}>:</span>
+                  <div className="digit-box" style={{ background: '#0B0F19', border: '1px solid #233252' }}>
+                    <span className="digit-val" style={{ color: '#F8FAFC' }}>{String(timeLeft.hours).padStart(2, '0')}</span>
+                    <span className="digit-lbl" style={{ color: '#94A3B8' }}>HRS</span>
                   </div>
-                  <span className="digit-colon">:</span>
-                  <div className="digit-box">
-                    <span className="digit-val">{String(timeLeft.minutes).padStart(2, '0')}</span>
-                    <span className="digit-lbl">MIN</span>
+                  <span className="digit-colon" style={{ color: '#64748B' }}>:</span>
+                  <div className="digit-box" style={{ background: '#0B0F19', border: '1px solid #233252' }}>
+                    <span className="digit-val" style={{ color: '#F8FAFC' }}>{String(timeLeft.minutes).padStart(2, '0')}</span>
+                    <span className="digit-lbl" style={{ color: '#94A3B8' }}>MIN</span>
                   </div>
-                  <span className="digit-colon">:</span>
-                  <div className="digit-box highlight">
-                    <span className="digit-val">{String(timeLeft.seconds).padStart(2, '0')}</span>
-                    <span className="digit-lbl">SEC</span>
+                  <span className="digit-colon" style={{ color: '#64748B' }}>:</span>
+                  <div className="digit-box highlight" style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.35)' }}>
+                    <span className="digit-val" style={{ color: '#F59E0B' }}>{String(timeLeft.seconds).padStart(2, '0')}</span>
+                    <span className="digit-lbl" style={{ color: '#FCD34D' }}>SEC</span>
                   </div>
                 </div>
               )}
@@ -268,56 +274,56 @@ const MilestonesModal = ({ targetDate, timeLeft, onClose }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div 
         className="modal-content"
-        style={{ maxWidth: '640px' }}
+        style={{ maxWidth: '640px', background: '#161F33', border: '1px solid #233252', borderRadius: '18px' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Modal Top */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Hourglass style={{ width: '20px', height: '20px', color: '#f59e0b' }} />
+              <Hourglass style={{ width: '20px', height: '20px', color: '#F59E0B' }} />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0 }}>General Election Countdown & Roadmap</h3>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>Target Election Day: August 10th, 2027 (06:00 AM EAT)</p>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0, color: '#F8FAFC' }}>General Election Countdown & Roadmap</h3>
+              <p style={{ fontSize: '0.78rem', color: '#94A3B8', margin: 0 }}>Target Election Day: August 10th, 2027 (06:00 AM EAT)</p>
             </div>
           </div>
-          <button className="btn btn-secondary btn-sm" onClick={onClose}>
+          <button className="btn btn-secondary btn-sm" onClick={onClose} style={{ padding: '0.3rem 0.5rem', background: '#0B0F19', borderColor: '#233252' }}>
             <X style={{ width: '16px', height: '16px' }} />
           </button>
         </div>
 
         {/* Live Ticker Hero Banner inside Modal */}
-        <div className="glass-card" style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%)', borderColor: 'rgba(99, 102, 241, 0.3)', marginBottom: '1.5rem', textAlign: 'center' }}>
-          <span style={{ fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#a5b4fc' }}>
+        <div className="glass-card" style={{ background: '#0B0F19', border: '1px solid #233252', marginBottom: '1.5rem', textAlign: 'center', borderRadius: '12px' }}>
+          <span style={{ fontSize: '0.72rem', fontWeight: '800', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#60A5FA' }}>
             TIME REMAINING UNTIL POLLS OPEN
           </span>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.25rem', marginTop: '0.5rem' }} className="font-mono">
             <div>
-              <div style={{ fontSize: '1.85rem', fontWeight: '800', color: '#fff' }}>{timeLeft.days}</div>
-              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: '600' }}>DAYS</div>
+              <div style={{ fontSize: '1.85rem', fontWeight: '800', color: '#F8FAFC' }}>{timeLeft.days}</div>
+              <div style={{ fontSize: '0.68rem', color: '#94A3B8', fontWeight: '600' }}>DAYS</div>
             </div>
-            <div style={{ fontSize: '1.5rem', opacity: 0.4 }}>:</div>
+            <div style={{ fontSize: '1.5rem', color: '#64748B' }}>:</div>
             <div>
-              <div style={{ fontSize: '1.85rem', fontWeight: '800', color: '#fff' }}>{String(timeLeft.hours).padStart(2, '0')}</div>
-              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: '600' }}>HOURS</div>
+              <div style={{ fontSize: '1.85rem', fontWeight: '800', color: '#F8FAFC' }}>{String(timeLeft.hours).padStart(2, '0')}</div>
+              <div style={{ fontSize: '0.68rem', color: '#94A3B8', fontWeight: '600' }}>HOURS</div>
             </div>
-            <div style={{ fontSize: '1.5rem', opacity: 0.4 }}>:</div>
+            <div style={{ fontSize: '1.5rem', color: '#64748B' }}>:</div>
             <div>
-              <div style={{ fontSize: '1.85rem', fontWeight: '800', color: '#fff' }}>{String(timeLeft.minutes).padStart(2, '0')}</div>
-              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: '600' }}>MINUTES</div>
+              <div style={{ fontSize: '1.85rem', fontWeight: '800', color: '#F8FAFC' }}>{String(timeLeft.minutes).padStart(2, '0')}</div>
+              <div style={{ fontSize: '0.68rem', color: '#94A3B8', fontWeight: '600' }}>MINUTES</div>
             </div>
-            <div style={{ fontSize: '1.5rem', opacity: 0.4 }}>:</div>
+            <div style={{ fontSize: '1.5rem', color: '#64748B' }}>:</div>
             <div>
-              <div style={{ fontSize: '1.85rem', fontWeight: '800', color: '#f59e0b' }}>{String(timeLeft.seconds).padStart(2, '0')}</div>
-              <div style={{ fontSize: '0.68rem', color: '#fbbf24', fontWeight: '600' }}>SECONDS</div>
+              <div style={{ fontSize: '1.85rem', fontWeight: '800', color: '#F59E0B' }}>{String(timeLeft.seconds).padStart(2, '0')}</div>
+              <div style={{ fontSize: '0.68rem', color: '#FCD34D', fontWeight: '600' }}>SECONDS</div>
             </div>
           </div>
         </div>
 
         {/* Milestone Timeline List */}
-        <h4 style={{ fontSize: '0.88rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <Flag style={{ width: '15px', height: '15px', color: '#06b6d4' }} />
+        <h4 style={{ fontSize: '0.88rem', fontWeight: '700', color: '#F8FAFC', marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <Flag style={{ width: '15px', height: '15px', color: '#06B6D4' }} />
           Key Campaign & Statutory Milestones
         </h4>
 
@@ -332,18 +338,19 @@ const MilestonesModal = ({ targetDate, timeLeft, onClose }) => {
                 className="glass-card" 
                 style={{ 
                   padding: '0.85rem 1rem', 
-                  background: isPast ? 'rgba(16, 185, 129, 0.05)' : 'rgba(255, 255, 255, 0.02)',
-                  borderColor: isPast ? 'rgba(16, 185, 129, 0.25)' : 'var(--border-color)',
+                  background: isPast ? 'rgba(16, 185, 129, 0.08)' : '#0B0F19',
+                  borderColor: isPast ? 'rgba(16, 185, 129, 0.3)' : '#233252',
                   display: 'flex',
                   alignItems: 'flex-start',
-                  gap: '0.85rem'
+                  gap: '0.85rem',
+                  borderRadius: '12px'
                 }}
               >
                 <div style={{ marginTop: '0.15rem' }}>
                   {isPast ? (
-                    <CheckCircle2 style={{ width: '18px', height: '18px', color: '#10b981' }} />
+                    <CheckCircle2 style={{ width: '18px', height: '18px', color: '#10B981' }} />
                   ) : (
-                    <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '2px solid #f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: '800', color: '#f59e0b' }}>
+                    <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '2px solid #F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: '800', color: '#F59E0B' }}>
                       {index + 1}
                     </div>
                   )}
@@ -351,17 +358,17 @@ const MilestonesModal = ({ targetDate, timeLeft, onClose }) => {
 
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: '700', fontSize: '0.88rem', color: isPast ? '#6ee7b7' : '#fff' }}>
+                    <span style={{ fontWeight: '700', fontSize: '0.88rem', color: isPast ? '#6EE7B7' : '#F8FAFC' }}>
                       {ms.title}
                     </span>
-                    <span className="font-mono" style={{ fontSize: '0.75rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: isPast ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: isPast ? '#34d399' : '#fbbf24', fontWeight: '600' }}>
+                    <span className="font-mono" style={{ fontSize: '0.75rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: isPast ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: isPast ? '#34D399' : '#FCD34D', fontWeight: '600' }}>
                       {isPast ? 'Completed' : `${msRemaining.days}d ${msRemaining.hours}h remaining`}
                     </span>
                   </div>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.25rem', marginBottom: 0 }}>
+                  <p style={{ fontSize: '0.78rem', color: '#94A3B8', marginTop: '0.25rem', marginBottom: 0 }}>
                     {ms.description}
                   </p>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                     <Calendar style={{ width: '11px', height: '11px' }} />
                     Target: {new Date(ms.date).toLocaleString()}
                   </div>
@@ -372,7 +379,7 @@ const MilestonesModal = ({ targetDate, timeLeft, onClose }) => {
         </div>
 
         <div style={{ marginTop: '1.25rem', textAlign: 'right' }}>
-          <button className="btn btn-secondary btn-sm" onClick={onClose}>
+          <button className="btn btn-secondary btn-sm" onClick={onClose} style={{ background: '#0B0F19', borderColor: '#233252' }}>
             Close Roadmap
           </button>
         </div>
