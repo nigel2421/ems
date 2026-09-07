@@ -16,6 +16,7 @@ import { CampaignStrategy } from './components/modules/CampaignStrategy';
 import { TallyCenter } from './components/modules/TallyCenter';
 import { AIAssistantModal } from './components/modules/AIAssistantModal';
 import { AuditLogViewer } from './components/modules/AuditLogViewer';
+import { ElectionCountdown } from './components/modules/ElectionCountdown';
 import { LoginModal } from './components/auth/LoginModal';
 import { Bell, X } from 'lucide-react';
 
@@ -171,6 +172,9 @@ const MainAppContent = () => {
           </div>
         </div>
       )}
+
+      {/* Universal Floating Sticky Election Countdown Widget */}
+      <ElectionCountdown variant="floating" />
     </div>
   );
 };

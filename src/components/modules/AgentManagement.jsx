@@ -127,8 +127,8 @@ export const AgentManagement = ({ onClose }) => {
       </div>
 
       {/* Filter Bar */}
-      <div className="glass-card" style={{ padding: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ flex: 1, minWidth: '240px', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '0.45rem 0.85rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+      <div className="glass-card responsive-filter-bar" style={{ padding: '1rem' }}>
+        <div style={{ flex: 1, minWidth: '200px', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '0.45rem 0.85rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
           <Search style={{ width: '16px', height: '16px', color: 'var(--text-muted)' }} />
           <input 
             type="text"
@@ -139,7 +139,7 @@ export const AgentManagement = ({ onClose }) => {
           />
         </div>
 
-        <select className="form-select" style={{ width: '160px', padding: '0.45rem' }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+        <select className="form-select" style={{ width: 'auto', flex: '1 1 140px', padding: '0.45rem' }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
           <option value="">All Statuses</option>
           <option value="Active">Active</option>
           <option value="On Duty">On Duty</option>

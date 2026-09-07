@@ -94,7 +94,7 @@ export const CampaignStrategy = ({ onClose }) => {
 
       {/* Selected Phase Detail Breakdown */}
       {selectedPhase && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.25rem' }}>
+        <div className="responsive-split">
           {/* Action Items & Tasks */}
           <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

@@ -131,7 +131,7 @@ export const StrategyDashboard = ({ onOpenModule, onOpenAIAssistant }) => {
       </div>
 
       {/* Main Grid: AI Intelligence Recommendations + High Risk Areas */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem' }}>
+      <div className="responsive-split">
         {/* Left Column: Strategic Action Plans & Phase Progress */}
         <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

@@ -186,7 +186,7 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
             <input type="text" className="form-input" placeholder="e.g. Samuel Mutua" value={name} onChange={e => setName(e.target.value)} required />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <div className="responsive-form-grid">
             <div className="form-group">
               <label className="form-label">Email Address</label>
               <input type="email" className="form-input" placeholder="samuel@agent.ke" value={email} onChange={e => setEmail(e.target.value)} required />
@@ -204,7 +204,7 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
               <span>Location Sieve: Select County → Constituency → Ward</span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem' }}>
+            <div className="responsive-three-col">
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" style={{ fontSize: '0.72rem' }}>1. County</label>
                 <select className="form-select" style={{ fontSize: '0.8rem', padding: '0.4rem' }} value={countyId} onChange={e => handleCountyChange(e.target.value)}>

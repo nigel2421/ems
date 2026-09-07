@@ -123,8 +123,8 @@ export const FieldReporting = ({ onClose }) => {
 
       {/* Filter Bar */}
       {activeTab === 'feed' && (
-        <div className="glass-card" style={{ padding: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <select className="form-select" style={{ width: '220px', padding: '0.45rem' }} value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
+        <div className="glass-card responsive-filter-bar" style={{ padding: '1rem' }}>
+          <select className="form-select" style={{ width: 'auto', flex: '1 1 200px', padding: '0.45rem' }} value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
             <option value="">All Categories</option>
             <option value="Mobilization Reports">Mobilization Reports</option>
             <option value="Campaign Reports">Campaign Reports</option>
@@ -133,7 +133,7 @@ export const FieldReporting = ({ onClose }) => {
             <option value="Community Sentiment Reports">Community Sentiment Reports</option>
           </select>
 
-          <select className="form-select" style={{ width: '160px', padding: '0.45rem' }} value={severityFilter} onChange={e => setSeverityFilter(e.target.value)}>
+          <select className="form-select" style={{ width: 'auto', flex: '1 1 140px', padding: '0.45rem' }} value={severityFilter} onChange={e => setSeverityFilter(e.target.value)}>
             <option value="">All Severity Levels</option>
             <option value="Low">Low</option>
             <option value="Medium">Medium</option>

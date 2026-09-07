@@ -39,7 +39,7 @@ export const GeographicMapper = ({ onClose }) => {
         </div>
 
         {/* Drilldown Selectors */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+        <div className="responsive-form-grid" style={{ marginBottom: '1.25rem' }}>
           <div className="form-group">
             <label className="form-label">County Selection</label>
             <select className="form-select" value={selectedCounty} onChange={e => setSelectedCounty(e.target.value)}>

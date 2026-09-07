@@ -98,7 +98,7 @@ export const AdminDashboard = ({ onOpenAuditLogs, onOpenGeographic }) => {
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '1.5rem', minHeight: '80vh' }}>
+    <div className="responsive-sidebar-layout">
       {/* Left Navigation Sidebar */}
       <aside 
         className="glass-card" 
@@ -119,43 +119,45 @@ export const AdminDashboard = ({ onOpenAuditLogs, onOpenGeographic }) => {
           </div>
         </div>
 
-        <button
-          onClick={() => setActiveTab('add_aspirant')}
-          className={`btn ${activeTab === 'add_aspirant' ? 'btn-primary' : 'btn-secondary'}`}
-          style={{ justifyContent: 'flex-start', width: '100%', borderRadius: '10px' }}
-        >
-          <UserPlus style={{ width: '16px', height: '16px' }} />
-          <span>Add Aspirant & Candidate</span>
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }} className="mobile-btn-stack">
+          <button
+            onClick={() => setActiveTab('add_aspirant')}
+            className={`btn ${activeTab === 'add_aspirant' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ justifyContent: 'flex-start', width: '100%', borderRadius: '10px' }}
+          >
+            <UserPlus style={{ width: '16px', height: '16px' }} />
+            <span>Add Aspirant & Candidate</span>
+          </button>
 
-        <button
-          onClick={() => setShowAddAgent(true)}
-          className="btn btn-secondary"
-          style={{ justifyContent: 'flex-start', width: '100%', borderRadius: '10px', borderColor: 'rgba(99, 102, 241, 0.3)' }}
-        >
-          <UserPlus style={{ width: '16px', height: '16px', color: '#818cf8' }} />
-          <span>Add Polling Station Agent</span>
-        </button>
+          <button
+            onClick={() => setShowAddAgent(true)}
+            className="btn btn-secondary"
+            style={{ justifyContent: 'flex-start', width: '100%', borderRadius: '10px', borderColor: 'rgba(99, 102, 241, 0.3)' }}
+          >
+            <UserPlus style={{ width: '16px', height: '16px', color: '#818cf8' }} />
+            <span>Add Polling Station Agent</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('assign_agent')}
-          className={`btn ${activeTab === 'assign_agent' ? 'btn-primary' : 'btn-secondary'}`}
-          style={{ justifyContent: 'flex-start', width: '100%', borderRadius: '10px' }}
-        >
-          <MapPin style={{ width: '16px', height: '16px' }} />
-          <span>Bind Agent Polling Station</span>
-        </button>
+          <button
+            onClick={() => setActiveTab('assign_agent')}
+            className={`btn ${activeTab === 'assign_agent' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ justifyContent: 'flex-start', width: '100%', borderRadius: '10px' }}
+          >
+            <MapPin style={{ width: '16px', height: '16px' }} />
+            <span>Bind Agent Polling Station</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('user_directory')}
-          className={`btn ${activeTab === 'user_directory' ? 'btn-primary' : 'btn-secondary'}`}
-          style={{ justifyContent: 'flex-start', width: '100%', borderRadius: '10px' }}
-        >
-          <UserCheck style={{ width: '16px', height: '16px' }} />
-          <span>Accounts Directory ({users.length})</span>
-        </button>
+          <button
+            onClick={() => setActiveTab('user_directory')}
+            className={`btn ${activeTab === 'user_directory' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ justifyContent: 'flex-start', width: '100%', borderRadius: '10px' }}
+          >
+            <UserCheck style={{ width: '16px', height: '16px' }} />
+            <span>Accounts Directory ({users.length})</span>
+          </button>
+        </div>
 
-        <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }} className="mobile-btn-stack">
           <button className="btn btn-secondary btn-sm" onClick={onOpenAuditLogs} style={{ justifyContent: 'flex-start' }}>
             <Activity style={{ width: '14px', height: '14px', color: '#06b6d4' }} />
             <span>Audit Trail Ledger</span>
@@ -189,7 +191,7 @@ export const AdminDashboard = ({ onOpenAuditLogs, onOpenGeographic }) => {
               {/* Role Selector */}
               <div className="form-group">
                 <label className="form-label">Select Candidate Executive Level / Role</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '0.5rem' }}>
                   {['Governor', 'Senator', 'MP', 'MCA', 'Aspirant'].map(r => (
                     <button
                       key={r}
@@ -205,7 +207,7 @@ export const AdminDashboard = ({ onOpenAuditLogs, onOpenGeographic }) => {
               </div>
 
               {/* Personal Credentials */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="responsive-form-grid">
                 <div className="form-group">
                   <label className="form-label">Candidate Full Name</label>
                   <input type="text" className="form-input" placeholder="e.g. Hon. Johnson Sakaja" value={name} onChange={e => setName(e.target.value)} required />
@@ -216,7 +218,7 @@ export const AdminDashboard = ({ onOpenAuditLogs, onOpenGeographic }) => {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="responsive-form-grid">
                 <div className="form-group">
                   <label className="form-label">Login Email Address</label>
                   <input type="email" className="form-input" placeholder="candidate@ems.go.ke" value={email} onChange={e => setEmail(e.target.value)} required />

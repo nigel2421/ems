@@ -14,6 +14,10 @@ import {
 } from '../services/api.js';
 
 import {
+  calculateTimeRemaining
+} from '../utils/countdownUtils.js';
+
+import {
   initialUsersList,
   initialStationIntelligence,
   initialAgentDirectory,
@@ -162,6 +166,35 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
     assert.equal(nairobiAgents.length, 3);
     assert.ok(nairobiAgents.every(a => a.region.includes('Nairobi')));
     assert.ok(!nairobiAgents.some(a => a.fullName.includes('Ali Hassan Swaleh')));
+  });
+
+  test('8. Election Countdown Real-time Ticker & Math Engine', () => {
+    // 1. Future target date test (10 days into future)
+    const tenDaysFuture = new Date(Date.now() + (10 * 24 * 60 * 60 * 1000) + (5 * 60 * 60 * 1000) + (12 * 60 * 1000) + 30000).toISOString();
+    const resFuture = calculateTimeRemaining(tenDaysFuture);
+
+    assert.equal(resFuture.isCompleted, false);
+    assert.equal(resFuture.days, 10);
+    assert.equal(resFuture.hours, 5);
+    assert.equal(resFuture.minutes, 12);
+    assert.ok(resFuture.seconds >= 29 && resFuture.seconds <= 30);
+    assert.ok(resFuture.totalMs > 0);
+
+    // 2. Past target date test (completed state)
+    const pastDate = new Date(Date.now() - 10000).toISOString();
+    const resPast = calculateTimeRemaining(pastDate);
+
+    assert.equal(resPast.isCompleted, true);
+    assert.equal(resPast.days, 0);
+    assert.equal(resPast.hours, 0);
+    assert.equal(resPast.minutes, 0);
+    assert.equal(resPast.seconds, 0);
+    assert.equal(resPast.totalMs, 0);
+
+    // 3. Invalid date fallback test
+    const resInvalid = calculateTimeRemaining('invalid-date-string');
+    assert.equal(resInvalid.isCompleted, true);
+    assert.equal(resInvalid.days, 0);
   });
 
 });

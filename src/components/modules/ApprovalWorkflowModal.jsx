@@ -24,7 +24,7 @@ export const ApprovalWorkflowModal = ({ submission, onClose, onApprove, onReject
           </button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.25rem' }}>
+        <div className="responsive-split-equal" style={{ marginBottom: '1.25rem' }}>
           {/* Left Column: Image Preview & Security Metadata */}
           <div>
             <h4 style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '0.5rem' }}>Form 34A Photo Evidence</h4>

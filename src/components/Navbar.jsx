@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
+import { ElectionCountdown } from './modules/ElectionCountdown';
 import { 
   Shield, 
   MapPin, 
@@ -56,9 +57,9 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
   return (
     <nav className="navbar" style={{ flexDirection: 'column', gap: '0.75rem', padding: '0.75rem 1.5rem' }}>
       {/* Top Row: Brand, User Identity & Persona Switcher */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '0.75rem' }}>
         {/* Brand & Title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <div className="brand-logo" onClick={() => onOpenModule && onOpenModule('dashboard')} style={{ cursor: 'pointer' }}>
             <Shield style={{ width: '26px', height: '26px', color: '#6366f1' }} />
             <span>CI-EMS <span style={{ fontSize: '0.75rem', fontWeight: '600', padding: '0.15rem 0.5rem', background: 'rgba(99,102,241,0.2)', color: '#818cf8', borderRadius: '4px' }}>v4.0 PRO</span></span>
@@ -68,6 +69,10 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
             <MapPin style={{ width: '13px', height: '13px', color: '#06b6d4' }} />
             <span>{currentUser?.entityName || 'National Campaign HQ'}</span>
           </div>
+          <div style={{ height: '20px', width: '1px', background: 'var(--border-color)' }}></div>
+          
+          {/* Always Visible Election Countdown Badge in Header */}
+          <ElectionCountdown variant="navbar" />
         </div>
 
         {/* Center/Right User Identity & Persona Quick Switcher */}

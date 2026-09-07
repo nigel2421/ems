@@ -433,3 +433,441 @@ body {
   }
 }
 
+/* ==========================================================================
+   ELECTION COUNTDOWN TIMER COMPONENT STYLES
+   ========================================================================== */
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.text-amber {
+  color: #f59e0b;
+}
+
+/* Glowing Pulsing Status Indicator */
+.countdown-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #f59e0b;
+  box-shadow: 0 0 10px #f59e0b;
+  animation: countdownPulse 2s infinite ease-in-out;
+  flex-shrink: 0;
+}
+
+@keyframes countdownPulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.8;
+    box-shadow: 0 0 4px #f59e0b;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+    box-shadow: 0 0 12px #f59e0b, 0 0 20px rgba(245, 158, 11, 0.5);
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0.8;
+    box-shadow: 0 0 4px #f59e0b;
+  }
+}
+
+/* --- Navbar Variant Badge --- */
+.countdown-navbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.75rem;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-full);
+  color: #f3f4f6;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.countdown-navbar-btn:hover {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+}
+
+.countdown-navbar-label {
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+
+.countdown-navbar-value {
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.countdown-navbar-value.completed {
+  color: #10b981;
+}
+
+/* --- Floating Sticky Widget Variant --- */
+.countdown-floating-widget {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 150;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.7), 0 0 20px rgba(245, 158, 11, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  max-width: 320px;
+}
+
+.countdown-floating-widget:hover {
+  border-color: rgba(245, 158, 11, 0.6);
+  box-shadow: 0 20px 40px -6px rgba(0, 0, 0, 0.8), 0 0 25px rgba(245, 158, 11, 0.25);
+}
+
+.countdown-floating-widget.minimized {
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-full);
+  background: rgba(15, 23, 42, 0.92);
+  max-width: auto;
+}
+
+.countdown-minimized-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  color: #fbbf24;
+}
+
+.countdown-expanded-content {
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.countdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.45rem;
+}
+
+.countdown-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.countdown-date-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border-radius: 4px;
+}
+
+.countdown-icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.countdown-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.countdown-icon-btn.close:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.countdown-body {
+  cursor: pointer;
+  padding: 0.2rem 0;
+}
+
+.countdown-digits-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.2rem;
+}
+
+.digit-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  min-width: 48px;
+}
+
+.digit-box.highlight {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.digit-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #ffffff;
+}
+
+.digit-box.highlight .digit-val {
+  color: #fbbf24;
+}
+
+.digit-lbl {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  margin-top: 0.25rem;
+  letter-spacing: 0.05em;
+}
+
+.digit-box.highlight .digit-lbl {
+  color: #f59e0b;
+}
+
+.digit-colon {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-dim);
+  opacity: 0.6;
+}
+
+.countdown-completed-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 6px;
+  color: #34d399;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+/* --- Inline Card Variant --- */
+.countdown-card .countdown-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.countdown-card .countdown-unit {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.4rem;
+}
+
+.countdown-card .countdown-num {
+  font-size: 1.4rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: #fbbf24;
+}
+
+.countdown-card .countdown-lbl {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* Floating Widget Mobile Rule */
+@media (max-width: 768px) {
+  .countdown-floating-widget {
+    bottom: 1rem;
+    right: 1rem;
+    left: auto;
+    max-width: calc(100vw - 2rem);
+  }
+
+  .countdown-navbar-btn .countdown-navbar-label {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   MOBILE & SMALL SCREEN RESPONSIVENESS UTILITIES
+   ========================================================================== */
+
+/* Universal Responsive Grid Systems */
+.responsive-sidebar-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 1.5rem;
+  min-height: 80vh;
+}
+
+.responsive-split {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 1.5rem;
+}
+
+.responsive-split-equal {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.responsive-three-col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.responsive-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.responsive-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.responsive-filter-bar > * {
+  min-width: 140px;
+}
+
+.responsive-filter-bar .search-input-wrap {
+  flex: 1 1 240px;
+}
+
+/* Table Horizontal Swipe Indicator on Touch Screens */
+.custom-table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  position: relative;
+}
+
+.custom-table-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.custom-table-container::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.4);
+  border-radius: 3px;
+}
+
+/* Tablet Breakpoints (max-width: 992px) */
+@media (max-width: 992px) {
+  .responsive-sidebar-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .responsive-split {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .responsive-three-col {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Phone Breakpoints (max-width: 768px) */
+@media (max-width: 768px) {
+  .responsive-split-equal {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .responsive-three-col {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .responsive-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .responsive-filter-bar > * {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+
+  /* Prevent iOS zoom on input focus */
+  .form-input, .form-select, .form-textarea {
+    font-size: 16px !important;
+  }
+
+  /* Mobile Full-Width Buttons */
+  .mobile-btn-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  /* Mobile Bottom Sheet Modal Overlay */
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-content {
+    border-radius: 20px 20px 0 0;
+    max-height: 92vh;
+    padding: 1.25rem 1rem;
+    margin-bottom: 0;
+  }
+}
+
+/* Extra Small Phones (max-width: 480px) */
+@media (max-width: 480px) {
+  .main-content {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .stat-val {
+    font-size: 1.5rem;
+  }
+
+  .brand-logo {
+    font-size: 1.1rem;
+  }
+}
+
+
+
