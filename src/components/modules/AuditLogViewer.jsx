@@ -36,8 +36,8 @@ export const AuditLogViewer = ({ onClose }) => {
         </div>
 
         {/* Filter & Search Bar */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-          <div style={{ position: 'relative' }}>
+        <div className="responsive-filter-bar" style={{ marginBottom: '1.25rem' }}>
+          <div className="search-input-wrap" style={{ position: 'relative' }}>
             <Search style={{ width: '16px', height: '16px', position: 'absolute', left: '12px', top: '12px', color: 'var(--text-muted)' }} />
             <input 
               type="text"
@@ -49,7 +49,7 @@ export const AuditLogViewer = ({ onClose }) => {
             />
           </div>
 
-          <select className="form-select" value={filterAction} onChange={e => setFilterAction(e.target.value)}>
+          <select className="form-select" style={{ width: 'auto', flex: '1 1 180px' }} value={filterAction} onChange={e => setFilterAction(e.target.value)}>
             <option value="ALL">All Log Actions</option>
             <option value="EVIDENCE_SUBMISSION">Evidence Submissions</option>
             <option value="SUBMISSION_APPROVED">Approvals</option>
