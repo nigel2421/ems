@@ -32,6 +32,7 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showMobileNavDrawer, setShowMobileNavDrawer] = useState(false);
   const [showAccountSheet, setShowAccountSheet] = useState(false);
+  const [showMoreDropdown, setShowMoreDropdown] = useState(false);
 
   const pendingTallyCount = tallyResults ? tallyResults.filter(s => s.status === 'Submitted').length : 0;
   const mismatchCount = tallyResults ? tallyResults.filter(s => s.status === 'Mismatch').length : 0;
@@ -50,23 +51,25 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
     }
   };
 
+  const primaryNavIds = ['dashboard', 'polling_stations', 'agents', 'tally_center', 'strategy'];
+
   const navCategories = [
     {
       name: 'Strategy & Overview',
       icon: BrainCircuit,
       modules: [
-        { id: 'dashboard', label: 'Executive Dashboard', icon: Compass, desc: 'Real-time campaign status & KPIs' },
-        { id: 'strategy', label: 'Campaign Strategy', icon: Target, desc: 'Electoral targets & sentiment matrix' },
-        { id: 'ai_assistant', label: 'AI Intelligence Assistant', icon: Sparkles, desc: 'Predictive analytics & legal RAG' }
+        { id: 'dashboard', label: 'Dashboard', icon: Compass, desc: 'Real-time campaign status & KPIs' },
+        { id: 'strategy', label: 'Strategy', icon: Target, desc: 'Electoral targets & sentiment matrix' },
+        { id: 'ai_assistant', label: 'AI Assistant', icon: Sparkles, desc: 'Predictive analytics & legal RAG' }
       ]
     },
     {
       name: 'Intelligence & Research',
       icon: BarChart3,
       modules: [
-        { id: 'polling_stations', label: 'Polling Intelligence', icon: Building2, desc: 'Boundary mapping & voter statistics' },
-        { id: 'field_reports', label: 'Field Incident Reports', icon: FileText, desc: 'Ground verification & dispatch logs' },
-        { id: 'surveys', label: 'Survey & Sampling Engine', icon: ClipboardList, desc: 'Voter polling & demographic trends' }
+        { id: 'polling_stations', label: 'Polling Intel', icon: Building2, desc: 'Boundary mapping & voter statistics' },
+        { id: 'field_reports', label: 'Field Reports', icon: FileText, desc: 'Ground verification & dispatch logs' },
+        { id: 'surveys', label: 'Surveys & Sampling', icon: ClipboardList, desc: 'Voter polling & demographic trends' }
       ]
     },
     {
@@ -74,34 +77,38 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
       icon: Zap,
       modules: [
         { id: 'agents', label: 'Agent Management', icon: Users, desc: 'Agent deployment & accreditation' },
-        { id: 'mobilization', label: 'Mobilization Network', icon: Layers, desc: 'Grassroots hierarchy & team sync' },
-        { id: 'tally_center', label: 'Form 34A Tally Center', icon: Vote, desc: 'Form verification & mismatch engine' }
+        { id: 'mobilization', label: 'Mobilization', icon: Layers, desc: 'Grassroots hierarchy & team sync' },
+        { id: 'tally_center', label: 'Tally Center', icon: Vote, desc: 'Form verification & mismatch engine' }
       ]
     }
   ];
 
   const allNavModules = navCategories.flatMap(c => c.modules);
+  const primaryNavModules = allNavModules.filter(m => primaryNavIds.includes(m.id));
+  const overflowNavModules = allNavModules.filter(m => !primaryNavIds.includes(m.id));
+
   const activeNavModule = allNavModules.find(m => m.id === currentModule) || allNavModules[0];
   const ActiveNavIcon = activeNavModule.icon;
+  const isOverflowActive = overflowNavModules.some(m => m.id === currentModule);
 
   return (
     <>
       {/* 56px Persistent Top App Bar */}
-      <nav className="navbar" style={{ padding: 0, flexDirection: 'column', background: '#0B0F19', borderBottom: '1px solid #233252' }}>
+      <nav className="navbar" style={{ padding: 0, flexDirection: 'column', background: 'var(--bg-canvas)', borderBottom: '1px solid var(--border-color)' }}>
         <div className="app-header-bar" style={{ width: '100%' }}>
           {/* Left: Brand Identity */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <div className="brand-logo" onClick={() => onOpenModule && onOpenModule('dashboard')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Shield style={{ width: '22px', height: '22px', color: '#3B82F6' }} />
-              <span style={{ fontSize: '1.1rem', fontWeight: '800', color: '#F8FAFC', letterSpacing: '-0.02em' }}>
+              <Shield style={{ width: '22px', height: '22px', color: 'var(--accent-primary)' }} />
+              <span style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
                 CI-EMS
               </span>
-              <span style={{ fontSize: '0.65rem', fontWeight: '800', padding: '0.15rem 0.4rem', background: 'rgba(59, 130, 246, 0.15)', color: '#60A5FA', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '4px' }}>
+              <span style={{ fontSize: '0.65rem', fontWeight: '800', padding: '0.15rem 0.4rem', background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-primary)', border: '1px solid var(--border-glow)', borderRadius: '4px' }}>
                 PRO
               </span>
             </div>
 
-            <div className="nav-desktop-divider" style={{ height: '18px', width: '1px', background: '#233252', margin: '0 0.25rem' }}></div>
+            <div className="nav-desktop-divider" style={{ height: '18px', width: '1px', background: 'var(--border-color)', margin: '0 0.25rem' }}></div>
             
             {/* Countdown Badge - Desktop */}
             <div className="nav-desktop-row" style={{ border: 'none', padding: 0 }}>
@@ -114,15 +121,15 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
             <div 
               className="nav-breadcrumb-selector"
               onClick={() => setShowMobileNavDrawer(true)}
-              style={{ background: '#161F33', border: '1px solid #233252', padding: '0.35rem 0.6rem', borderRadius: '10px' }}
+              style={{ background: 'var(--bg-surface-card)', border: '1px solid var(--border-color)', padding: '0.35rem 0.6rem', borderRadius: '10px' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', overflow: 'hidden' }}>
-                <ActiveNavIcon style={{ width: '15px', height: '15px', color: '#3B82F6', flexShrink: 0 }} />
-                <span style={{ fontWeight: '700', fontSize: '0.8rem', color: '#F8FAFC', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <ActiveNavIcon style={{ width: '15px', height: '15px', color: 'var(--accent-primary)', flexShrink: 0 }} />
+                <span style={{ fontWeight: '700', fontSize: '0.8rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {activeNavModule.label}
                 </span>
               </div>
-              <ChevronDown style={{ width: '14px', height: '14px', color: '#94A3B8', flexShrink: 0 }} />
+              <ChevronDown style={{ width: '14px', height: '14px', color: 'var(--text-muted)', flexShrink: 0 }} />
             </div>
           </div>
 
@@ -135,7 +142,7 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
               <button 
                 className="btn btn-secondary btn-sm"
                 onClick={onOpenAuditLogs}
-                title="View System Audit Trail"
+                title="View System Audit Trail & Login Logs"
                 style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', borderColor: 'var(--border-color)' }}
               >
                 <Activity style={{ width: '13px', height: '13px', color: '#06B6D4' }} />
@@ -179,11 +186,11 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.4rem',
-                background: '#161F33',
+                background: 'var(--bg-surface-card)',
                 padding: '0.25rem 0.5rem',
                 borderRadius: 'var(--radius-full)',
-                border: '1px solid #233252',
-                color: '#F8FAFC',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-primary)',
                 cursor: 'pointer',
                 minHeight: '36px'
               }}
@@ -195,7 +202,7 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
                   alt={currentUser?.name} 
                   style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} 
                 />
-                <span style={{ position: 'absolute', bottom: '0', right: '0', width: '7px', height: '7px', borderRadius: '50%', background: '#10B981', border: '1px solid #0B0F19' }}></span>
+                <span style={{ position: 'absolute', bottom: '0', right: '0', width: '7px', height: '7px', borderRadius: '50%', background: '#10B981', border: '1px solid var(--bg-canvas)' }}></span>
               </div>
               <span className="nav-desktop-row" style={{ border: 'none', padding: 0, fontWeight: '600', fontSize: '0.78rem' }}>
                 {currentUser?.name}
@@ -210,36 +217,122 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
           </div>
         </div>
 
-        {/* Desktop Module Navigation Row (Visible > 768px) */}
-        <div className="nav-desktop-row" style={{ padding: '0.4rem 1.25rem', background: '#0F172A', borderTop: '1px solid #233252' }}>
-          {allNavModules.map(mod => {
+        {/* Desktop Module Navigation Row (Visible > 768px - Max 5 Primary + "More ▾" Dropdown) */}
+        <div className="nav-desktop-row" style={{ padding: '0.4rem 1.25rem', background: 'var(--bg-canvas)', borderTop: '1px solid var(--border-color)', overflow: 'visible' }}>
+          {primaryNavModules.map(mod => {
             const IconComp = mod.icon;
             const isActive = currentModule === mod.id;
             return (
               <button
                 key={mod.id}
-                onClick={() => onOpenModule && onOpenModule(mod.id)}
+                onClick={() => {
+                  setShowMoreDropdown(false);
+                  onOpenModule && onOpenModule(mod.id);
+                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.45rem',
-                  padding: '0.35rem 0.75rem',
-                  fontSize: '0.78rem',
+                  padding: '0.38rem 0.8rem',
+                  fontSize: '0.82rem',
                   fontWeight: isActive ? '700' : '500',
                   borderRadius: '8px',
-                  border: isActive ? '1px solid #3B82F6' : '1px solid transparent',
+                  border: isActive ? '1px solid var(--accent-primary)' : '1px solid transparent',
                   background: isActive ? 'rgba(59, 130, 246, 0.18)' : 'transparent',
-                  color: isActive ? '#60A5FA' : '#94A3B8',
+                  color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
                   whiteSpace: 'nowrap',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease'
                 }}
               >
-                <IconComp style={{ width: '14px', height: '14px', color: isActive ? '#3B82F6' : 'currentColor' }} />
+                <IconComp style={{ width: '14px', height: '14px', color: isActive ? 'var(--accent-primary)' : 'currentColor' }} />
                 <span>{mod.label}</span>
               </button>
             );
           })}
+
+          {/* "More ▾" Overflow Dropdown Trigger & Panel */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowMoreDropdown(!showMoreDropdown)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.38rem 0.85rem',
+                fontSize: '0.82rem',
+                fontWeight: isOverflowActive || showMoreDropdown ? '700' : '500',
+                borderRadius: '8px',
+                border: isOverflowActive ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                background: isOverflowActive ? 'rgba(59, 130, 246, 0.18)' : 'var(--bg-surface-card)',
+                color: isOverflowActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                whiteSpace: 'nowrap',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              title="More Modules"
+              aria-expanded={showMoreDropdown}
+            >
+              <span>More</span>
+              <ChevronDown style={{ width: '14px', height: '14px', transform: showMoreDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+            </button>
+
+            {showMoreDropdown && (
+              <div 
+                className="nav-overflow-menu"
+                style={{
+                  position: 'absolute',
+                  top: '115%',
+                  right: 0,
+                  minWidth: '220px',
+                  background: 'var(--bg-surface-card)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '12px',
+                  boxShadow: 'var(--shadow-main)',
+                  padding: '0.4rem',
+                  zIndex: 300,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.25rem'
+                }}
+              >
+                <div style={{ padding: '0.35rem 0.6rem', fontSize: '0.7rem', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
+                  Additional Modules
+                </div>
+                {overflowNavModules.map(mod => {
+                  const IconComp = mod.icon;
+                  const isActive = currentModule === mod.id;
+                  return (
+                    <button
+                      key={mod.id}
+                      onClick={() => {
+                        onOpenModule && onOpenModule(mod.id);
+                        setShowMoreDropdown(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.6rem',
+                        padding: '0.5rem 0.65rem',
+                        borderRadius: '8px',
+                        border: 'none',
+                        background: isActive ? 'rgba(59, 130, 246, 0.18)' : 'transparent',
+                        color: isActive ? 'var(--accent-primary)' : 'var(--text-primary)',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '0.82rem',
+                        fontWeight: isActive ? '700' : '500',
+                        minHeight: '36px'
+                      }}
+                    >
+                      <IconComp style={{ width: '15px', height: '15px', color: isActive ? 'var(--accent-primary)' : 'var(--text-muted)' }} />
+                      <span>{mod.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </nav>
 
@@ -248,18 +341,18 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
          ========================================================================== */}
       {showMobileNavDrawer && (
         <div className="mobile-drawer-overlay" onClick={() => setShowMobileNavDrawer(false)}>
-          <div className="mobile-drawer-sheet" onClick={e => e.stopPropagation()}>
+          <div className="mobile-drawer-sheet" style={{ background: 'var(--bg-surface-card)', borderTop: '1px solid var(--border-color)' }} onClick={e => e.stopPropagation()}>
             <div className="drawer-drag-handle"></div>
             
             {/* Drawer Title Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', borderBottom: '1px solid #233252' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Shield style={{ width: '20px', height: '20px', color: '#3B82F6' }} />
-                <span style={{ fontWeight: '800', fontSize: '1rem', color: '#F8FAFC' }}>CI-EMS System Modules</span>
+                <Shield style={{ width: '20px', height: '20px', color: 'var(--accent-primary)' }} />
+                <span style={{ fontWeight: '800', fontSize: '1rem', color: 'var(--text-primary)' }}>CI-EMS System Modules</span>
               </div>
               <button 
                 onClick={() => setShowMobileNavDrawer(false)} 
-                style={{ background: 'transparent', border: 'none', color: '#94A3B8', padding: '0.4rem', cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: '0.4rem', cursor: 'pointer' }}
               >
                 <X style={{ width: '20px', height: '20px' }} />
               </button>
@@ -271,8 +364,8 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
                 const CatIcon = cat.icon;
                 return (
                   <div key={cat.name} style={{ marginBottom: '1.25rem' }}>
-                    <div className="drawer-category-header">
-                      <CatIcon style={{ width: '14px', height: '14px', color: '#3B82F6' }} />
+                    <div className="drawer-category-header" style={{ color: 'var(--accent-primary)' }}>
+                      <CatIcon style={{ width: '14px', height: '14px', color: 'var(--accent-primary)' }} />
                       <span>{cat.name}</span>
                     </div>
 
@@ -289,14 +382,14 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
                               setShowMobileNavDrawer(false);
                             }}
                           >
-                            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: isActive ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              <IconComp style={{ width: '18px', height: '18px', color: isActive ? '#3B82F6' : '#94A3B8' }} />
+                            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: isActive ? 'rgba(59, 130, 246, 0.2)' : 'var(--bg-canvas)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <IconComp style={{ width: '18px', height: '18px', color: isActive ? 'var(--accent-primary)' : 'var(--text-muted)' }} />
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: '0.9rem', fontWeight: isActive ? '700' : '600', color: isActive ? '#60A5FA' : '#F8FAFC' }}>
+                              <div style={{ fontSize: '0.9rem', fontWeight: isActive ? '700' : '600', color: isActive ? 'var(--accent-primary)' : 'var(--text-primary)' }}>
                                 {mod.label}
                               </div>
-                              <div style={{ fontSize: '0.75rem', color: '#94A3B8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {mod.desc}
                               </div>
                             </div>
@@ -317,22 +410,22 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
          ========================================================================== */}
       {showAccountSheet && (
         <div className="modal-overlay" onClick={() => setShowAccountSheet(false)}>
-          <div className="account-overflow-sheet" onClick={e => e.stopPropagation()}>
+          <div className="account-overflow-sheet" style={{ background: 'var(--bg-surface-card)', border: '1px solid var(--border-color)' }} onClick={e => e.stopPropagation()}>
             {/* Account Sheet Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid #233252' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <img 
                   src={currentUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'} 
                   alt={currentUser?.name} 
-                  style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #3B82F6' }} 
+                  style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} 
                 />
                 <div>
-                  <div style={{ fontSize: '1rem', fontWeight: '800', color: '#F8FAFC' }}>{currentUser?.name}</div>
+                  <div style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-primary)' }}>{currentUser?.name}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.15rem' }}>
                     <span className={`role-badge ${getRoleClass(currentUser?.role)}`}>
                       {currentUser?.role}
                     </span>
-                    <span style={{ fontSize: '0.75rem', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
                       <MapPin style={{ width: '11px', height: '11px', color: '#06B6D4' }} />
                       {currentUser?.entityName || 'National HQ'}
                     </span>
@@ -359,7 +452,7 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
                   setShowAccountSheet(false);
                   onOpenNotifications && onOpenNotifications();
                 }}
-                style={{ width: '100%', justifyContent: 'space-between', minHeight: '48px', background: '#0B0F19', borderColor: '#233252' }}
+                style={{ width: '100%', justifyContent: 'space-between', minHeight: '48px', background: 'var(--bg-canvas)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                   <Bell style={{ width: '18px', height: '18px', color: '#F59E0B' }} />
@@ -370,7 +463,7 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
                     {totalAlerts} Alert{totalAlerts > 1 ? 's' : ''}
                   </span>
                 ) : (
-                  <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Clear</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Clear</span>
                 )}
               </button>
 
@@ -381,30 +474,30 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
                   setShowAccountSheet(false);
                   onOpenAuditLogs && onOpenAuditLogs();
                 }}
-                style={{ width: '100%', justifyContent: 'space-between', minHeight: '48px', background: '#0B0F19', borderColor: '#233252' }}
+                style={{ width: '100%', justifyContent: 'space-between', minHeight: '48px', background: 'var(--bg-canvas)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                   <Activity style={{ width: '18px', height: '18px', color: '#06B6D4' }} />
                   <span style={{ fontSize: '0.88rem' }}>Audit Trail & Security Logs</span>
                 </div>
-                <ChevronDown style={{ width: '16px', height: '16px', color: '#94A3B8', transform: 'rotate(-90deg)' }} />
+                <ChevronDown style={{ width: '16px', height: '16px', color: 'var(--text-muted)', transform: 'rotate(-90deg)' }} />
               </button>
 
               {/* Role Persona Switcher Accordion */}
-              <div style={{ background: '#0B0F19', border: '1px solid #233252', borderRadius: '12px', padding: '0.6rem 0.75rem' }}>
+              <div style={{ background: 'var(--bg-canvas)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '0.6rem 0.75rem' }}>
                 <div 
                   onClick={() => setShowRoleMenu(!showRoleMenu)} 
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', minHeight: '36px' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                    <UserCheck style={{ width: '18px', height: '18px', color: '#3B82F6' }} />
-                    <span style={{ fontSize: '0.88rem', fontWeight: '600' }}>Switch Role Persona (Demo)</span>
+                    <UserCheck style={{ width: '18px', height: '18px', color: 'var(--accent-primary)' }} />
+                    <span style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-primary)' }}>Switch Role Persona (Demo)</span>
                   </div>
-                  <ChevronDown style={{ width: '16px', height: '16px', color: '#94A3B8', transform: showRoleMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                  <ChevronDown style={{ width: '16px', height: '16px', color: 'var(--text-muted)', transform: showRoleMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
                 </div>
 
                 {showRoleMenu && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.6rem', pt: '0.5rem', borderTop: '1px solid #233252' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.6rem', pt: '0.5rem', borderTop: '1px solid var(--border-color)' }}>
                     {users.map(u => (
                       <button
                         key={u.id}
@@ -421,18 +514,18 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
                           padding: '0.5rem 0.65rem',
                           borderRadius: '8px',
                           border: 'none',
-                          background: currentUser?.id === u.id ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-                          color: currentUser?.id === u.id ? '#60A5FA' : '#F8FAFC',
+                          background: currentUser?.id === u.id ? 'rgba(59, 130, 246, 0.18)' : 'transparent',
+                          color: currentUser?.id === u.id ? 'var(--accent-primary)' : 'var(--text-primary)',
                           textAlign: 'left',
                           cursor: 'pointer',
                           fontSize: '0.82rem',
                           minHeight: '40px'
                         }}
                       >
-                        <UserCheck style={{ width: '14px', height: '14px', color: '#3B82F6' }} />
+                        <UserCheck style={{ width: '14px', height: '14px', color: 'var(--accent-primary)' }} />
                         <div style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           <div style={{ fontWeight: '700' }}>{u.name}</div>
-                          <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>{u.role}</div>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{u.role}</div>
                         </div>
                       </button>
                     ))}

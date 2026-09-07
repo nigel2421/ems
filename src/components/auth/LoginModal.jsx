@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Shield, Lock, Mail, ArrowRight, AlertCircle, ShieldCheck, KeyRound, UserCheck } from 'lucide-react';
+import { ThemeSwitcher } from '../common/ThemeSwitcher';
+import { Shield, Lock, Mail, ArrowRight, AlertCircle, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 
 export const LoginModal = () => {
-  const { login, users } = useAuth();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -24,36 +26,42 @@ export const LoginModal = () => {
   };
 
   return (
-    <div className="modal-overlay" style={{ background: 'rgba(5, 7, 15, 0.94)', backdropFilter: 'blur(16px)', zIndex: 1000 }}>
+    <div className="modal-overlay" style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(16px)', zIndex: 1000 }}>
       <div 
         className="modal-content" 
         style={{ 
           maxWidth: '480px', 
           padding: '2.25rem', 
           borderRadius: '24px', 
-          border: '1px solid rgba(99, 102, 241, 0.3)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.85)',
-          background: 'linear-gradient(145deg, rgba(20, 26, 45, 0.96) 0%, rgba(13, 17, 31, 0.99) 100%)'
+          border: '1px solid var(--border-color)',
+          boxShadow: 'var(--shadow-main)',
+          background: 'var(--bg-surface-card)',
+          position: 'relative'
         }}
       >
+        {/* Top Right Corner Theme Switcher */}
+        <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem' }}>
+          <ThemeSwitcher compact={true} />
+        </div>
+
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem', marginTop: '0.5rem' }}>
           <div 
             style={{ 
               width: '56px', 
               height: '56px', 
               borderRadius: '16px', 
-              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%)',
-              border: '1px solid rgba(99, 102, 241, 0.4)',
+              background: 'rgba(59, 130, 246, 0.15)',
+              border: '1px solid var(--border-glow)',
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
               margin: '0 auto 1rem auto'
             }}
           >
-            <Shield style={{ width: '28px', height: '28px', color: '#818cf8' }} />
+            <Shield style={{ width: '28px', height: '28px', color: 'var(--accent-primary)' }} />
           </div>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: '800', letterSpacing: '-0.02em', color: '#fff' }}>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: '800', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
             IEBC EMS Secure Login
           </h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
@@ -68,7 +76,7 @@ export const LoginModal = () => {
               border: '1px solid rgba(239, 68, 68, 0.3)', 
               borderRadius: '12px', 
               padding: '0.75rem 1rem', 
-              color: '#f87171', 
+              color: '#EF4444', 
               fontSize: '0.82rem',
               display: 'flex',
               alignItems: 'center',
@@ -84,8 +92,8 @@ export const LoginModal = () => {
         {/* Login Form */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
           <div className="form-group">
-            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Mail style={{ width: '14px', height: '14px', color: '#a5b4fc' }} />
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)' }}>
+              <Mail style={{ width: '14px', height: '14px', color: 'var(--accent-primary)' }} />
               <span>Registered Account Email</span>
             </label>
             <input 
@@ -99,18 +107,47 @@ export const LoginModal = () => {
           </div>
 
           <div className="form-group">
-            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Lock style={{ width: '14px', height: '14px', color: '#a5b4fc' }} />
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)' }}>
+              <Lock style={{ width: '14px', height: '14px', color: 'var(--accent-primary)' }} />
               <span>Password</span>
             </label>
-            <input 
-              type="password" 
-              className="form-input" 
-              placeholder="••••••••••••"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required 
-            />
+            <div style={{ position: 'relative' }}>
+              <input 
+                type={showPassword ? 'text' : 'password'} 
+                className="form-input" 
+                placeholder="••••••••••••"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                style={{ paddingRight: '2.6rem', width: '100%' }}
+                required 
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                title={showPassword ? 'Hide Password' : 'Show Password'}
+                aria-label={showPassword ? 'Hide Password' : 'Show Password'}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {showPassword ? (
+                  <EyeOff style={{ width: '18px', height: '18px', color: 'var(--accent-primary)' }} />
+                ) : (
+                  <Eye style={{ width: '18px', height: '18px' }} />
+                )}
+              </button>
+            </div>
           </div>
 
           <button 
@@ -122,8 +159,8 @@ export const LoginModal = () => {
               borderRadius: '12px', 
               fontSize: '0.95rem', 
               fontWeight: '700',
-              background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-              marginTop: '0.35rem'
+              marginTop: '0.35rem',
+              minHeight: '48px'
             }}
           >
             {isSubmitting ? 'Authenticating Session...' : 'Sign In to Portal'}
@@ -132,7 +169,7 @@ export const LoginModal = () => {
         </form>
 
         <div style={{ marginTop: '1.35rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
-          <ShieldCheck style={{ width: '14px', height: '14px', color: '#10b981' }} />
+          <ShieldCheck style={{ width: '14px', height: '14px', color: 'var(--accent-success)' }} />
           <span>Active Session Security & Role-Based Access Control</span>
         </div>
       </div>
