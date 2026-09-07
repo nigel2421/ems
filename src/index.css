@@ -1,30 +1,44 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
-  --bg-primary: #0B0F19; /* Surface Dark base */
-  --bg-secondary: #161F33; /* Surface Container */
-  --bg-card: #161F33; /* Card elevation container */
-  --bg-card-hover: #1E2B47;
-  --border-color: #233252; /* Subtle 1px dividers */
-  --border-glow: rgba(59, 130, 246, 0.3);
+  /* Semantic Tokens - Light Mode Default */
+  --bg-canvas: #F8FAFC;            /* Slate 50 Base */
+  --bg-surface-card: #FFFFFF;      /* Pure White Container */
+  --bg-surface-elevated: #F1F5F9;  /* Slate 100 Drawer/Panel */
+  --border-subtle: #E2E8F0;        /* Slate 200 Border */
+  --border-contrast: #CBD5E1;      /* Slate 300 Border */
 
-  --accent-primary: #3B82F6; /* Primary Accent */
-  --accent-primary-hover: #2563EB;
-  --accent-secondary: #06B6D4; /* Cyan */
-  --accent-success: #10B981; /* Emerald */
-  --accent-warning: #F59E0B; /* Warning / Highlight amber */
-  --accent-danger: #EF4444; /* Red */
-  --accent-purple: #8B5CF6;
+  --text-primary: #0F172A;         /* Slate 900 High Contrast Text */
+  --text-secondary: #475569;       /* Slate 600 Nav/Secondary Text */
+  --text-muted: #94A3B8;           /* Slate 400 Muted Text */
 
-  --text-main: #F8FAFC; /* High Contrast Text */
-  --text-muted: #94A3B8; /* Muted Text */
-  --text-dim: #64748B;
+  --color-primary: #2563EB;        /* Blue 600 Primary Accent */
+  --color-primary-hover: #1D4ED8;
+  --color-warning: #D97706;        /* Amber 600 Warning/Timer */
 
-  --glass-bg: rgba(22, 31, 51, 0.85);
-  --glass-border: #233252;
+  /* Legacy remapped variable aliases for full component compatibility */
+  --bg-primary: var(--bg-canvas);
+  --bg-secondary: var(--bg-surface-card);
+  --bg-card: var(--bg-surface-card);
+  --bg-card-hover: var(--bg-surface-elevated);
+  --border-color: var(--border-subtle);
+  --border-glow: rgba(37, 99, 235, 0.25);
+
+  --accent-primary: var(--color-primary);
+  --accent-primary-hover: var(--color-primary-hover);
+  --accent-secondary: #0284C7;
+  --accent-success: #059669;
+  --accent-warning: var(--color-warning);
+  --accent-danger: #DC2626;
+
+  --text-main: var(--text-primary);
+  --text-dim: var(--text-muted);
+
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: var(--border-subtle);
   --glass-blur: blur(16px);
-  --shadow-main: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
-  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.25);
+  --shadow-main: 0 10px 30px -10px rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 0 20px rgba(37, 99, 235, 0.15);
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 18px;
@@ -32,6 +46,47 @@
 
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+}
+
+html.dark, [data-theme="dark"] {
+  /* Semantic Tokens - Dark Mode */
+  --bg-canvas: #0B0F19;            /* Deep Navy Base */
+  --bg-surface-card: #161F33;      /* Navy 900 Container */
+  --bg-surface-elevated: #1E293B;  /* Slate 800 Raised Surface */
+  --border-subtle: #233252;        /* Muted Blue Border */
+  --border-contrast: #334155;      /* Slate 700 Border */
+
+  --text-primary: #F8FAFC;         /* Slate 50 Text */
+  --text-secondary: #94A3B8;       /* Slate 400 Text */
+  --text-muted: #64748B;           /* Slate 500 Text */
+
+  --color-primary: #3B82F6;        /* Blue 500 Primary Accent */
+  --color-primary-hover: #2563EB;
+  --color-warning: #F59E0B;        /* Amber 500 Warning/Timer */
+
+  /* Legacy remapped variable aliases for full component compatibility */
+  --bg-primary: var(--bg-canvas);
+  --bg-secondary: var(--bg-surface-card);
+  --bg-card: var(--bg-surface-card);
+  --bg-card-hover: var(--bg-surface-elevated);
+  --border-color: var(--border-subtle);
+  --border-glow: rgba(59, 130, 246, 0.3);
+
+  --accent-primary: var(--color-primary);
+  --accent-primary-hover: var(--color-primary-hover);
+  --accent-secondary: #06B6D4;
+  --accent-success: #10B981;
+  --accent-warning: var(--color-warning);
+  --accent-danger: #EF4444;
+
+  --text-main: var(--text-primary);
+  --text-dim: var(--text-muted);
+
+  --glass-bg: rgba(22, 31, 51, 0.85);
+  --glass-border: var(--border-subtle);
+  --glass-blur: blur(16px);
+  --shadow-main: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.25);
 }
 
 * {

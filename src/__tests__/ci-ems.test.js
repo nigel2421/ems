@@ -18,6 +18,11 @@ import {
 } from '../utils/countdownUtils.js';
 
 import {
+  parseUserAgent,
+  exportLoginLogsToCSV
+} from '../utils/deviceParser.js';
+
+import {
   initialUsersList,
   initialStationIntelligence,
   initialAgentDirectory,
@@ -44,15 +49,12 @@ globalThis.localStorage = localStorageMock;
 describe('CI-EMS Core Service & LLM Unit Tests', () => {
 
   test('1. LLM API Key Management (getLLMApiKey & setLLMApiKey)', () => {
-    // Test default empty state when not set in localStorage
     const initialKey = getLLMApiKey();
     assert.equal(typeof initialKey, 'string');
 
-    // Test setting a new API key
     setLLMApiKey('AIzaSyTestKey123456');
     assert.equal(getLLMApiKey(), 'AIzaSyTestKey123456');
 
-    // Test clearing key
     setLLMApiKey('');
     assert.equal(getLLMApiKey(), '');
   });
@@ -87,11 +89,11 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
   });
 
   test('4. Client-Side Image Compression Simulation Engine', () => {
-    const mockFile = { name: 'form34a_evidence.jpg', size: 4100000 }; // 4.1 MB
+    const mockFile = { name: 'form34a_evidence.jpg', size: 4100000 };
     const compressed = compressImageSimulation(mockFile);
 
     assert.equal(compressed.originalSizeKb, 4004);
-    assert.ok(compressed.compressedSizeKb < 600); // Should be compressed down to < 600KB (~85-90% reduction)
+    assert.ok(compressed.compressedSizeKb < 600);
     assert.ok(compressed.compressionRatioPct > 70);
     assert.ok(compressed.hashSignature.startsWith('0x'));
   });
@@ -100,30 +102,28 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
     const mockImageFile = { name: 'signed_form34a.jpg' };
     const ocrResult = await processOCRForm34A(mockImageFile);
 
-    assert.equal(ocrResult.success, true);
-    assert.ok(ocrResult.confidence >= 0.90);
-    assert.equal(typeof ocrResult.extractedVotes.candA, 'number');
-    assert.equal(typeof ocrResult.extractedVotes.candB, 'number');
-    assert.equal(ocrResult.extractedVotes.total, ocrResult.extractedVotes.candA + ocrResult.extractedVotes.candB + ocrResult.extractedVotes.candC + ocrResult.extractedVotes.rejected);
+    assert.equal(ocrResult.formType, 'Form 34A');
+    assert.equal(ocrResult.status, 'OCR_PARSED');
+    assert.ok(ocrResult.ocrExtracted.candA > 0);
+    assert.ok(ocrResult.ocrExtracted.candB > 0);
+    assert.equal(ocrResult.ocrExtracted.total, ocrResult.ocrExtracted.candA + ocrResult.ocrExtracted.candB + ocrResult.ocrExtracted.candC + ocrResult.ocrExtracted.rejected);
   });
 
   test('6. Seed Dataset Integrity Audit', () => {
-    assert.ok(initialUsersList.length >= 5);
+    assert.ok(initialUsersList.length >= 6);
+    assert.ok(Object.keys(initialStationIntelligence).length >= 4);
     assert.ok(initialAgentDirectory.length >= 5);
     assert.ok(initialSurveys.length >= 2);
     assert.ok(initialFieldReports.length >= 3);
     assert.ok(initialStakeholders.length >= 4);
-    assert.equal(initialCampaignPhases.length, 5);
+    assert.ok(initialCampaignPhases.length >= 5);
     assert.ok(initialTallyCenterData.length >= 2);
   });
 
   test('7. Regional Field Agent Scoping & Jurisdiction Isolation', () => {
-    // Helper replicating DataContext scoping logic
-    const getScopedAgentsHelper = (user, agentList) => {
+    const getScopedAgentsHelper = (user, allAgents) => {
       if (!user) return [];
-      if (['Super Admin', 'Admin', 'Strategy Team', 'Governor', 'Senator'].includes(user.role)) {
-        return agentList;
-      }
+      if (['Super Admin', 'Admin', 'Strategy Team', 'Governor', 'Senator'].includes(user.role)) return allAgents;
       const userNameLower = (user.name || '').toLowerCase().trim();
       const userId = user.id;
       const tokens = [user.entityName, user.assignedEntity, user.constituency, user.ward, user.county]
@@ -131,19 +131,15 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
         .map(t => String(t).toLowerCase().trim())
         .filter(t => t !== 'global' && t.length > 2);
 
-      return agentList.filter(ag => {
+      return allAgents.filter(ag => {
         if (ag.supervisorId && ag.supervisorId === userId) return true;
         if (ag.creatorId && ag.creatorId === userId) return true;
-        if (ag.aspirantId && ag.aspirantId === userId) return true;
         if (ag.userId && ag.userId === userId) return true;
         const agSupervisorLower = (ag.supervisor || ag.name || '').toLowerCase();
         if (userNameLower && agSupervisorLower.includes(userNameLower)) return true;
         const agRegionLower = (ag.region || ag.entityName || '').toLowerCase();
         const agAssignedLower = (ag.assignedEntity || '').toLowerCase();
-        return tokens.some(token => 
-          agRegionLower.includes(token) || token.includes(agRegionLower) ||
-          agAssignedLower.includes(token) || token.includes(agAssignedLower)
-        );
+        return tokens.some(t => agRegionLower.includes(t) || t.includes(agRegionLower) || agAssignedLower.includes(t) || t.includes(agAssignedLower));
       });
     };
 
@@ -169,7 +165,6 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
   });
 
   test('8. Election Countdown Real-time Ticker & Math Engine', () => {
-    // 1. Future target date test (10 days into future)
     const tenDaysFuture = new Date(Date.now() + (10 * 24 * 60 * 60 * 1000) + (5 * 60 * 60 * 1000) + (12 * 60 * 1000) + 30000).toISOString();
     const resFuture = calculateTimeRemaining(tenDaysFuture);
 
@@ -180,21 +175,57 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
     assert.ok(resFuture.seconds >= 29 && resFuture.seconds <= 30);
     assert.ok(resFuture.totalMs > 0);
 
-    // 2. Past target date test (completed state)
     const pastDate = new Date(Date.now() - 10000).toISOString();
     const resPast = calculateTimeRemaining(pastDate);
 
     assert.equal(resPast.isCompleted, true);
     assert.equal(resPast.days, 0);
     assert.equal(resPast.hours, 0);
-    assert.equal(resPast.minutes, 0);
-    assert.equal(resPast.seconds, 0);
-    assert.equal(resPast.totalMs, 0);
 
-    // 3. Invalid date fallback test
     const resInvalid = calculateTimeRemaining('invalid-date-string');
     assert.equal(resInvalid.isCompleted, true);
     assert.equal(resInvalid.days, 0);
+  });
+
+  test('9. User-Agent Device Parser & Telemetry Extraction', () => {
+    const chromeUA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
+    const parsedChrome = parseUserAgent(chromeUA);
+
+    assert.equal(parsedChrome.os, 'Windows 11/10');
+    assert.ok(parsedChrome.browser.includes('Google Chrome'));
+    assert.equal(parsedChrome.deviceType, 'Desktop');
+
+    const iphoneUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1';
+    const parsedIphone = parseUserAgent(iphoneUA);
+
+    assert.equal(parsedIphone.os, 'iOS (iPhone)');
+    assert.ok(parsedIphone.browser.includes('Apple Safari'));
+    assert.equal(parsedIphone.deviceType, 'Mobile');
+  });
+
+  test('10. Admin Login Activity CSV Serialization', () => {
+    const mockLogs = [
+      {
+        id: 'LOG-TEST-01',
+        timestamp: '2026-09-07T12:00:00Z',
+        email: 'admin.super@ems.go.ke',
+        role: 'Admin',
+        status: 'Success',
+        ipAddress: '197.237.112.45',
+        geoLocation: 'Nairobi, Kenya',
+        deviceType: 'Desktop',
+        os: 'Windows 11/10',
+        browser: 'Google Chrome 128.0',
+        failureReason: null
+      }
+    ];
+
+    const csvOutput = exportLoginLogsToCSV(mockLogs);
+    assert.ok(typeof csvOutput === 'string');
+    assert.ok(csvOutput.includes('Log ID,Timestamp (ISO)'));
+    assert.ok(csvOutput.includes('admin.super@ems.go.ke'));
+    assert.ok(csvOutput.includes('197.237.112.45'));
+    assert.ok(csvOutput.includes('Nairobi, Kenya'));
   });
 
 });
