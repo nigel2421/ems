@@ -146,7 +146,7 @@ export const AgentPortal = () => {
       <div 
         className="glass-card" 
         style={{
-          background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(17, 24, 39, 0.8) 100%)',
+          background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, var(--bg-surface-card) 100%)',
           border: '1px solid rgba(236, 72, 153, 0.25)',
           display: 'flex',
           alignItems: 'center',
@@ -169,7 +169,7 @@ export const AgentPortal = () => {
         </div>
 
         {savedNotice && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#34d399', fontSize: '0.85rem', fontWeight: '600' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#059669', fontSize: '0.85rem', fontWeight: '600' }}>
             <CheckCircle style={{ width: '16px', height: '16px' }} /> Draft Saved Auto-Persisted!
           </div>
         )}
@@ -224,14 +224,14 @@ export const AgentPortal = () => {
             </div>
 
             {/* Compression Metadata Details */}
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: 'var(--radius-sm)', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.82rem' }}>
+            <div style={{ background: 'var(--bg-surface-elevated)', padding: '1rem', borderRadius: 'var(--radius-sm)', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.82rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Original Size:</span>
                 <strong>{(compressionStats.originalKb / 1024).toFixed(2)} MB</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Compressed Upload:</span>
-                <strong style={{ color: '#34d399' }}>{compressionStats.compressedKb} KB ({compressionStats.ratio})</strong>
+                <strong style={{ color: '#059669' }}>{compressionStats.compressedKb} KB ({compressionStats.ratio})</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-muted)' }}>GPS Timestamp:</span>
@@ -248,8 +248,8 @@ export const AgentPortal = () => {
             </div>
 
             {/* Presidential Tally */}
-            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', color: '#a5b4fc', marginBottom: '0.75rem' }}>
+            <div style={{ background: 'var(--bg-surface-elevated)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-primary)', marginBottom: '0.75rem' }}>
                 Presidential Election
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -275,8 +275,8 @@ export const AgentPortal = () => {
             </div>
 
             {/* Gubernatorial Tally */}
-            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', color: '#c4b5fd', marginBottom: '0.75rem' }}>
+            <div style={{ background: 'var(--bg-surface-elevated)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-primary)', marginBottom: '0.75rem' }}>
                 Gubernatorial Election (Nairobi)
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
