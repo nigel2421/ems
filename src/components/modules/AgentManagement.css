@@ -1,0 +1,287 @@
+.agm-shell {
+  gap: 1rem;
+}
+
+.agm-filters {
+  display: grid;
+  grid-template-columns: 1.8fr minmax(180px, 0.7fr);
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.agm-search {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  height: 44px;
+  padding: 0 0.9rem;
+  border-radius: 12px;
+  border: 1px solid #E6EBE8;
+  background: #F3F6F4;
+}
+
+.agm-search svg {
+  width: 16px;
+  height: 16px;
+  color: #6B756F;
+  flex-shrink: 0;
+}
+
+.agm-search input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.88rem;
+  color: #1A1F1C;
+}
+
+.agm-filters .form-select {
+  height: 44px;
+  border-radius: 12px;
+  border-color: #E6EBE8;
+  background: #fff;
+}
+
+.agm-phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  color: #006B3F;
+  font-weight: 500;
+}
+
+.agm-phone svg {
+  width: 12px;
+  height: 12px;
+}
+
+.agm-bound {
+  color: #006B3F;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.agm-unassigned {
+  color: #6B756F;
+  font-size: 0.82rem;
+}
+
+.agm-status-select {
+  padding: 0.28rem 0.55rem;
+  font-size: 0.75rem;
+  border-radius: 999px;
+  width: auto;
+  min-width: 110px;
+  border-color: #E6EBE8;
+}
+
+.agm-activity-pills {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.agm-activity-pills span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: #E8F5EE;
+  color: #073322;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.agm-activity-pills svg {
+  width: 12px;
+  height: 12px;
+  color: #006B3F;
+}
+
+.agm-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 800;
+  color: #006B3F;
+}
+
+.agm-rating svg {
+  width: 14px;
+  height: 14px;
+  fill: #006B3F;
+  color: #006B3F;
+}
+
+.agm-row-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.agm-action-btn {
+  height: 34px !important;
+  padding: 0 0.7rem !important;
+  font-size: 0.78rem !important;
+}
+
+.agm-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #E6EBE8;
+  font-size: 0.85rem;
+  color: #6B756F;
+}
+
+.agm-pagination-controls {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.agm-page-btn {
+  appearance: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid #E6EBE8;
+  background: #fff;
+  color: #1A1F1C;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.agm-page-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.agm-page-btn:hover:not(:disabled) {
+  border-color: #006B3F;
+  color: #006B3F;
+  background: #E8F5EE;
+}
+
+.agm-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.agm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  background: rgba(7, 51, 34, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.agm-modal {
+  width: min(560px, 100%);
+  max-height: min(90vh, 820px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 20px;
+  border: 1px solid #E6EBE8;
+  box-shadow: 0 24px 60px -28px rgba(7, 51, 34, 0.55);
+  padding: 1.15rem 1.2rem 1.25rem;
+}
+
+.agm-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.agm-modal-head h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.agm-modal-head p {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: #6B756F;
+}
+
+.agm-icon-btn {
+  height: 34px !important;
+  width: 34px !important;
+  padding: 0 !important;
+}
+
+.agm-notice {
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(0, 107, 63, 0.1);
+  border: 1px solid rgba(0, 107, 63, 0.22);
+  color: #073322;
+  font-size: 0.85rem;
+  margin-bottom: 0.85rem;
+}
+
+.agm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.agm-geo-box {
+  padding: 1rem;
+  border-radius: 16px;
+  background: #F3F6F4;
+  border: 1px solid #E6EBE8;
+}
+
+.agm-stream-count {
+  margin-left: 0.5rem;
+  color: #006B3F;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.agm-status {
+  display: inline-flex;
+  margin-top: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.agm-status-active {
+  background: #D8F3E4;
+  color: #073322;
+}
+
+.agm-status-inactive {
+  background: #E8F5EE;
+  color: #0E7A45;
+}
+
+.agm-status-offline {
+  background: #F3F6F4;
+  color: #6B756F;
+}
+
+@media (max-width: 700px) {
+  .agm-filters {
+    grid-template-columns: 1fr;
+  }
+}
