@@ -33,7 +33,7 @@ export const MPDashboard = () => {
       <div 
         className="glass-card" 
         style={{
-          background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(17, 24, 39, 0.8) 100%)',
+          background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, var(--bg-surface-card) 100%)',
           border: '1px solid rgba(6, 182, 212, 0.25)',
           display: 'flex',
           alignItems: 'center',
@@ -66,7 +66,7 @@ export const MPDashboard = () => {
         <div className="glass-card stat-box">
           <div>
             <div className="stat-label">Candidate Tally ({currentUser?.name || 'Hon. Tim Wanyonyi'})</div>
-            <div className="stat-val" style={{ color: '#67e8f9' }}>{wanyonyiVotes.toLocaleString()}</div>
+            <div className="stat-val" style={{ color: '#0284c7' }}>{wanyonyiVotes.toLocaleString()}</div>
             <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '0.2rem' }}>
               Verified Form 34A Agent Votes
             </div>
@@ -79,7 +79,7 @@ export const MPDashboard = () => {
         <div className="glass-card stat-box">
           <div>
             <div className="stat-label">Active Candidate Agents</div>
-            <div className="stat-val" style={{ color: '#fcd34d' }}>{scopedAgents.length}</div>
+            <div className="stat-val" style={{ color: '#d97706' }}>{scopedAgents.length}</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
               Assigned Polling Stations
             </div>
@@ -92,8 +92,8 @@ export const MPDashboard = () => {
         <div className="glass-card stat-box">
           <div>
             <div className="stat-label">Agent Submissions</div>
-            <div className="stat-val" style={{ color: '#34d399' }}>{constituencySubmissions.length}</div>
-            <div style={{ fontSize: '0.75rem', color: '#34d399', marginTop: '0.2rem' }}>
+            <div className="stat-val" style={{ color: '#059669' }}>{constituencySubmissions.length}</div>
+            <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: '0.2rem' }}>
               Verified Physical Evidence
             </div>
           </div>
@@ -114,12 +114,12 @@ export const MPDashboard = () => {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
           {scopedAgents.map(ag => (
-            <div key={ag.id} className="glass-card" style={{ background: 'rgba(255,255,255,0.02)', padding: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div key={ag.id} className="glass-card" style={{ background: 'var(--bg-surface-elevated)', padding: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <img src={ag.avatar} alt={ag.name} style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }} />
               <div>
                 <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{ag.name}</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{ag.entityName}</div>
-                <div style={{ fontSize: '0.72rem', color: '#818cf8', marginTop: '0.1rem' }}>{ag.email}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-primary)', marginTop: '0.1rem' }}>{ag.email}</div>
               </div>
             </div>
           ))}
@@ -140,7 +140,7 @@ export const MPDashboard = () => {
               <div 
                 key={ward.id} 
                 className="glass-card" 
-                style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1rem' }}
+                style={{ background: 'var(--bg-surface-elevated)', padding: '1rem' }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>{ward.name}</div>
@@ -155,7 +155,7 @@ export const MPDashboard = () => {
                 <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                     <span>{currentUser?.name || 'Candidate'} Tally:</span>
-                    <strong style={{ color: '#67e8f9', fontWeight: '800' }}>
+                    <strong style={{ color: '#0284c7', fontWeight: '800' }}>
                       {wardTally} votes
                     </strong>
                   </div>

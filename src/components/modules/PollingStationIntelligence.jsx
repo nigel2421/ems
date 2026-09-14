@@ -166,8 +166,8 @@ export const PollingStationIntelligence = ({ onClose }) => {
       </div>
 
       {/* Filter Controls Bar */}
-      <div className="glass-card" style={{ padding: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ flex: 1, minWidth: '240px', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '0.45rem 0.85rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+      <div className="glass-card responsive-filter-bar" style={{ padding: '1rem' }}>
+        <div style={{ flex: 1, minWidth: '200px', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '0.45rem 0.85rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
           <Search style={{ width: '16px', height: '16px', color: 'var(--text-muted)' }} />
           <input 
             type="text"
@@ -178,7 +178,7 @@ export const PollingStationIntelligence = ({ onClose }) => {
           />
         </div>
 
-        <select className="form-select" style={{ width: '160px', padding: '0.45rem' }} value={selectedRisk} onChange={e => setSelectedRisk(e.target.value)}>
+        <select className="form-select" style={{ width: 'auto', flex: '1 1 140px', padding: '0.45rem' }} value={selectedRisk} onChange={e => setSelectedRisk(e.target.value)}>
           <option value="">All Risk Levels</option>
           <option value="Low">Low Risk</option>
           <option value="Medium">Medium Risk</option>
@@ -186,7 +186,7 @@ export const PollingStationIntelligence = ({ onClose }) => {
           <option value="Severe">Severe Risk</option>
         </select>
 
-        <select className="form-select" style={{ width: '180px', padding: '0.45rem' }} value={selectedImportance} onChange={e => setSelectedImportance(e.target.value)}>
+        <select className="form-select" style={{ width: 'auto', flex: '1 1 160px', padding: '0.45rem' }} value={selectedImportance} onChange={e => setSelectedImportance(e.target.value)}>
           <option value="">All Strategic Priority</option>
           <option value="High">High Importance</option>
           <option value="Medium">Medium Importance</option>
@@ -349,7 +349,7 @@ export const PollingStationIntelligence = ({ onClose }) => {
 
       {/* TAB 3: Analytics Summary */}
       {activeTab === 'analytics' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+        <div className="responsive-split-equal">
           <div className="glass-card" style={{ padding: '1.5rem' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '1rem' }}>Party Advantage Distribution</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
@@ -420,7 +420,7 @@ export const PollingStationIntelligence = ({ onClose }) => {
                 <input type="range" min="0" max="100" value={intelForm.partyAdvantageScore} onChange={e => setIntelForm({ ...intelForm, partyAdvantageScore: parseInt(e.target.value) })} style={{ width: '100%' }} />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="responsive-form-grid">
                 <div className="form-group">
                   <label className="form-label">Incumbency Score</label>
                   <input type="number" className="form-input" value={intelForm.incumbencyScore} onChange={e => setIntelForm({ ...intelForm, incumbencyScore: parseInt(e.target.value) })} />
@@ -431,7 +431,7 @@ export const PollingStationIntelligence = ({ onClose }) => {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="responsive-form-grid">
                 <div className="form-group">
                   <label className="form-label">Competitor Activity</label>
                   <select className="form-select" value={intelForm.competitorActivityLevel} onChange={e => setIntelForm({ ...intelForm, competitorActivityLevel: e.target.value })}>

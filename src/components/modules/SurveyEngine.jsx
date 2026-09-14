@@ -182,7 +182,7 @@ export const SurveyEngine = ({ onClose }) => {
               <input type="text" className="form-input" placeholder="e.g. Ward Youth Employment Priority Survey" value={builderTitle} onChange={e => setBuilderTitle(e.target.value)} required />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="responsive-form-grid">
               <div className="form-group">
                 <label className="form-label">Survey Type</label>
                 <select className="form-select" value={builderType} onChange={e => setBuilderType(e.target.value)}>

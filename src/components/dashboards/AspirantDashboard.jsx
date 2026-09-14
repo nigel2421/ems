@@ -35,7 +35,7 @@ export const AspirantDashboard = () => {
       <div 
         className="glass-card" 
         style={{
-          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(17, 24, 39, 0.8) 100%)',
+          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, var(--bg-surface-card) 100%)',
           border: '1px solid rgba(245, 158, 11, 0.25)',
           display: 'flex',
           alignItems: 'center',
@@ -81,7 +81,7 @@ export const AspirantDashboard = () => {
         <div className="glass-card stat-box">
           <div>
             <div className="stat-label">Assigned Agents</div>
-            <div className="stat-val" style={{ color: '#818cf8' }}>{scopedAgents.length}</div>
+            <div className="stat-val" style={{ color: 'var(--color-primary)' }}>{scopedAgents.length}</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Bound to Candidate</div>
           </div>
           <div className="stat-icon" style={{ color: '#818cf8', background: 'rgba(99, 102, 241, 0.15)' }}>
@@ -92,7 +92,7 @@ export const AspirantDashboard = () => {
         <div className="glass-card stat-box">
           <div>
             <div className="stat-label">Pending Approval Queue</div>
-            <div className="stat-val" style={{ color: '#fcd34d' }}>{pendingSubmissions.length}</div>
+            <div className="stat-val" style={{ color: '#d97706' }}>{pendingSubmissions.length}</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Requires Sign-off</div>
           </div>
           <div className="stat-icon" style={{ color: '#f59e0b', background: 'rgba(245, 158, 11, 0.15)' }}>
@@ -103,7 +103,7 @@ export const AspirantDashboard = () => {
         <div className="glass-card stat-box">
           <div>
             <div className="stat-label">Approved Submissions</div>
-            <div className="stat-val" style={{ color: '#34d399' }}>{approvedSubmissions.length}</div>
+            <div className="stat-val" style={{ color: '#059669' }}>{approvedSubmissions.length}</div>
             <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '0.2rem' }}>Form 34A Validated</div>
           </div>
           <div className="stat-icon" style={{ color: '#10b981', background: 'rgba(16, 185, 129, 0.15)' }}>
@@ -114,7 +114,7 @@ export const AspirantDashboard = () => {
         <div className="glass-card stat-box">
           <div>
             <div className="stat-label">Flagged Discrepancies</div>
-            <div className="stat-val" style={{ color: mismatchSubmissions.length > 0 ? '#f87171' : '#34d399' }}>
+            <div className="stat-val" style={{ color: mismatchSubmissions.length > 0 ? '#dc2626' : '#059669' }}>
               {mismatchSubmissions.length}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>IEBC Broadcast Variance</div>
@@ -136,12 +136,12 @@ export const AspirantDashboard = () => {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
           {scopedAgents.map(ag => (
-            <div key={ag.id} className="glass-card" style={{ background: 'rgba(255,255,255,0.02)', padding: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div key={ag.id} className="glass-card" style={{ background: 'var(--bg-surface-elevated)', padding: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <img src={ag.avatar} alt={ag.name} style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }} />
               <div>
                 <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{ag.name}</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{ag.entityName}</div>
-                <div style={{ fontSize: '0.72rem', color: '#818cf8', marginTop: '0.1rem' }}>{ag.email}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-primary)', marginTop: '0.1rem' }}>{ag.email}</div>
               </div>
             </div>
           ))}
@@ -170,7 +170,7 @@ export const AspirantDashboard = () => {
             <tbody>
               {scopedSubmissions.map(sub => (
                 <tr key={sub.id}>
-                  <td style={{ fontFamily: 'var(--font-mono)', fontWeight: '600', color: '#fcd34d' }}>{sub.id}</td>
+                  <td style={{ fontFamily: 'var(--font-mono)', fontWeight: '600', color: 'var(--color-warning)' }}>{sub.id}</td>
                   <td>
                     <div style={{ fontWeight: '600' }}>{sub.pollingStationName}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ID: {sub.pollingStationId}</div>

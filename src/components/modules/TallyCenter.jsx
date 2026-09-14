@@ -227,7 +227,7 @@ export const TallyCenter = ({ onClose }) => {
             </div>
 
             {/* Candidate Votes Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="responsive-form-grid">
               <div className="form-group">
                 <label className="form-label">Candidate A (Our Candidate)</label>
                 <input type="number" className="form-input" value={candAVotes} onChange={e => setCandAVotes(e.target.value)} required />

@@ -81,7 +81,7 @@ export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
       <div 
         className="glass-card" 
         style={{
-          background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(17, 24, 39, 0.8) 100%)',
+          background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, var(--bg-surface-card) 100%)',
           border: '1px solid rgba(99, 102, 241, 0.25)',
           display: 'flex',
           alignItems: 'center',
@@ -132,7 +132,7 @@ export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
           {scopedAgents.map(ag => (
-            <div key={ag.id} className="glass-card" style={{ background: 'rgba(255,255,255,0.02)', padding: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div key={ag.id} className="glass-card" style={{ background: 'var(--bg-surface-elevated)', padding: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <img src={ag.avatar} alt={ag.name} style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }} />
               <div>
                 <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{ag.name}</div>
@@ -162,7 +162,7 @@ export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
         <div className="glass-card stat-box">
           <div>
             <div className="stat-label">Governor Leading Tally</div>
-            <div className="stat-val" style={{ color: '#a5b4fc' }}>{sakajaSum.toLocaleString()}</div>
+            <div className="stat-val" style={{ color: '#818cf8' }}>{sakajaSum.toLocaleString()}</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
               Margin: +{(sakajaSum - igatheSum).toLocaleString()} votes
             </div>
@@ -191,7 +191,7 @@ export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
             <div className="stat-val" style={{ color: mismatchCount > 0 ? '#f87171' : '#34d399' }}>
               {mismatchCount}
             </div>
-            <div style={{ fontSize: '0.75rem', color: mismatchCount > 0 ? '#fca5a5' : 'var(--text-muted)', marginTop: '0.2rem' }}>
+            <div style={{ fontSize: '0.75rem', color: mismatchCount > 0 ? '#f87171' : 'var(--text-muted)', marginTop: '0.2rem' }}>
               {mismatchCount > 0 ? 'Requires Immediate Investigation' : 'Zero Discrepancies'}
             </div>
           </div>
@@ -226,8 +226,8 @@ export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
                   tooltip: { backgroundColor: '#1f2937', titleColor: '#fff', bodyColor: '#fff' }
                 },
                 scales: {
-                  x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } },
-                  y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } }
+                  x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'var(--text-muted)' } },
+                  y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'var(--text-muted)' } }
                 }
               }}
             />
@@ -247,12 +247,12 @@ export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom', labels: { color: '#9ca3af', font: { size: 11 } } } }
+                plugins: { legend: { position: 'bottom', labels: { color: 'var(--text-muted)', font: { size: 11 } } } }
               }}
             />
           </div>
 
-          <div style={{ padding: '0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)', marginTop: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+          <div style={{ padding: '0.75rem', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-sm)', marginTop: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
             <strong>Note:</strong> County tallies aggregate submissions from Westlands, Dagoretti, Starehe, Langata, and Kasarani.
           </div>
         </div>
@@ -282,7 +282,7 @@ export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
             <tbody>
               {scopedSubmissions.map(sub => (
                 <tr key={sub.id}>
-                  <td style={{ fontFamily: 'var(--font-mono)', fontWeight: '600', color: '#a5b4fc' }}>{sub.id}</td>
+                  <td style={{ fontFamily: 'var(--font-mono)', fontWeight: '600', color: 'var(--color-primary)' }}>{sub.id}</td>
                   <td>
                     <div style={{ fontWeight: '600' }}>{sub.pollingStationName}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Code: {sub.pollingStationId}</div>
@@ -296,7 +296,7 @@ export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
                       href={sub.evidence.form34AUrl} 
                       target="_blank" 
                       rel="noreferrer"
-                      style={{ color: '#06b6d4', textDecoration: 'underline', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                      style={{ color: 'var(--color-primary)', textDecoration: 'underline', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
                     >
                       <FileSpreadsheet style={{ width: '14px', height: '14px' }} />
                       View Image ({sub.evidence.compressedSizeKb}KB)
