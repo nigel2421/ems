@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
+import { AddAgentModal } from '../modules/AddAgentModal';
 import {
   Shield,
   LayoutDashboard,
@@ -41,7 +42,6 @@ const MORE_MODULES = [
 const ADMIN_TOOLS = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'add_aspirant', label: 'Add Candidate', icon: UserPlus },
-  { id: 'assign_agent', label: 'Bind Agent', icon: MapPin },
   { id: 'user_directory', label: 'Accounts', icon: UserCheck }
 ];
 
@@ -78,11 +78,15 @@ export const AdminLayout = ({
   const { tallyResults } = useData();
   const [showMore, setShowMore] = useState(false);
   const [showRoleMenu, setShowRoleMenu] = useState(false);
+  const [showAgentMenu, setShowAgentMenu] = useState(false);
+  const [showAddAgent, setShowAddAgent] = useState(false);
 
   const pendingTallyCount = tallyResults?.filter((s) => s.status === 'Submitted').length || 0;
   const mismatchCount = tallyResults?.filter((s) => s.status === 'Mismatch').length || 0;
   const totalAlerts = pendingTallyCount + mismatchCount;
   const isDashboard = currentModule === 'dashboard';
+  const isBindAgent = isDashboard && adminPanel === 'assign_agent';
+  const isAgentActive = currentModule === 'agents' || isBindAgent || showAddAgent;
   const isMoreActive = MORE_MODULES.some((m) => m.id === currentModule);
 
   const openModule = (id) => {
@@ -114,7 +118,61 @@ export const AdminLayout = ({
           <div className="admin-nav-label">Modules</div>
           {PRIMARY_MODULES.map((item) => {
             const Icon = item.icon;
-            const isActive = currentModule === item.id;
+            const isAgents = item.id === 'agents';
+            const isActive = isAgents
+              ? currentModule === 'agents'
+              : currentModule === item.id;
+
+            if (isAgents) {
+              return (
+                <div key={item.id} className="admin-nav-parent">
+                  <button
+                    type="button"
+                    className={`admin-nav-btn${isAgentActive ? ' is-active' : ''}`}
+                    aria-expanded={showAgentMenu}
+                    onClick={() => {
+                      const next = !showAgentMenu;
+                      setShowAgentMenu(next);
+                      if (next) openModule('agents');
+                    }}
+                  >
+                    <Icon strokeWidth={1.75} />
+                    <span>{item.label}</span>
+                    <ChevronDown
+                      strokeWidth={1.75}
+                      className={`admin-nav-chevron${showAgentMenu ? ' is-open' : ''}`}
+                    />
+                  </button>
+                  {showAgentMenu && (
+                    <div className="admin-more-list">
+                      <button
+                        type="button"
+                        className={`admin-nav-btn admin-nav-btn-sub${showAddAgent ? ' is-active' : ''}`}
+                        onClick={() => {
+                          setShowAgentMenu(true);
+                          setShowAddAgent(true);
+                        }}
+                      >
+                        <UserPlus strokeWidth={1.75} />
+                        <span>Add new agent</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`admin-nav-btn admin-nav-btn-sub${isBindAgent ? ' is-active' : ''}`}
+                        onClick={() => {
+                          setShowAgentMenu(true);
+                          openAdminTool('assign_agent');
+                        }}
+                      >
+                        <MapPin strokeWidth={1.75} />
+                        <span>Bind agent</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             return (
               <button
                 key={item.id}
@@ -256,6 +314,13 @@ export const AdminLayout = ({
       </aside>
 
       <div className="admin-layout-main">{children}</div>
+
+      {showAddAgent && (
+        <AddAgentModal
+          defaultAspirantId={currentUser?.id}
+          onClose={() => setShowAddAgent(false)}
+        />
+      )}
     </div>
   );
 };

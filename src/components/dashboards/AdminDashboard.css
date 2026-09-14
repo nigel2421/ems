@@ -211,6 +211,12 @@
   transform: rotate(180deg);
 }
 
+.admin-nav-parent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
 .admin-more-list {
   display: flex;
   flex-direction: column;
