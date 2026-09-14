@@ -79,20 +79,20 @@ export const ElectionCountdown = ({
         <button
           onClick={() => setShowMilestonesModal(true)}
           className={`countdown-navbar-btn ${className}`}
-          style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.35)', borderRadius: '9999px', padding: '0.3rem 0.65rem' }}
+          style={{ background: 'rgba(0, 107, 63, 0.1)', border: '1px solid rgba(0, 107, 63, 0.35)', borderRadius: '9999px', padding: '0.3rem 0.65rem' }}
           title={`Election Day: ${formattedDate}. Click for Election Roadmap & Key Milestones`}
           aria-label={`Election Countdown: ${timeLeft.days} days, ${timeLeft.hours} hours, ${timeLeft.minutes} minutes, ${timeLeft.seconds} seconds remaining`}
           role="timer"
           aria-live="polite"
         >
           <div className="countdown-pulse-dot"></div>
-          <Clock style={{ width: '13px', height: '13px', color: '#F59E0B' }} />
+          <Clock style={{ width: '13px', height: '13px', color: '#006B3F' }} />
           <span className="countdown-navbar-label">Election:</span>
           {timeLeft.isCompleted ? (
             <span className="countdown-navbar-value completed">Election Day!</span>
           ) : (
-            <span className="countdown-navbar-value font-mono" style={{ color: '#FCD34D' }}>
-              <strong className="text-amber">{timeLeft.days}d</strong> {String(timeLeft.hours).padStart(2, '0')}h {String(timeLeft.minutes).padStart(2, '0')}m {String(timeLeft.seconds).padStart(2, '0')}s
+            <span className="countdown-navbar-value font-mono" style={{ color: '#0E7A45' }}>
+              <strong style={{ color: '#006B3F' }}>{timeLeft.days}d</strong> {String(timeLeft.hours).padStart(2, '0')}h {String(timeLeft.minutes).padStart(2, '0')}m {String(timeLeft.seconds).padStart(2, '0')}s
             </span>
           )}
         </button>
@@ -137,9 +137,9 @@ export const ElectionCountdown = ({
             <div className="countdown-num font-mono" style={{ fontSize: '1.35rem', fontWeight: '800', color: 'var(--text-primary)' }}>{String(timeLeft.minutes).padStart(2, '0')}</div>
             <div className="countdown-lbl" style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700' }}>Mins</div>
           </div>
-          <div className="countdown-unit" style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.35)', borderRadius: '8px', padding: '0.6rem 0.4rem', textAlign: 'center' }}>
-            <div className="countdown-num font-mono" style={{ fontSize: '1.35rem', fontWeight: '800', color: '#F59E0B' }}>{String(timeLeft.seconds).padStart(2, '0')}</div>
-            <div className="countdown-lbl" style={{ fontSize: '0.65rem', color: '#FCD34D', textTransform: 'uppercase', fontWeight: '700' }}>Secs</div>
+          <div className="countdown-unit" style={{ background: 'rgba(0, 107, 63, 0.12)', border: '1px solid rgba(0, 107, 63, 0.35)', borderRadius: '8px', padding: '0.6rem 0.4rem', textAlign: 'center' }}>
+            <div className="countdown-num font-mono" style={{ fontSize: '1.35rem', fontWeight: '800', color: '#006B3F' }}>{String(timeLeft.seconds).padStart(2, '0')}</div>
+            <div className="countdown-lbl" style={{ fontSize: '0.65rem', color: '#0E7A45', textTransform: 'uppercase', fontWeight: '700' }}>Secs</div>
           </div>
         </div>
 
@@ -176,8 +176,8 @@ export const ElectionCountdown = ({
         {isMinimized ? (
           <div className="countdown-minimized-bar" onClick={toggleMinimize} style={{ padding: '0.4rem 0.75rem', background: 'var(--bg-surface-card)' }}>
             <div className="countdown-pulse-dot"></div>
-            <Clock style={{ width: '14px', height: '14px', color: '#F59E0B' }} />
-            <span style={{ fontSize: '0.78rem', fontWeight: '700', fontFamily: 'var(--font-mono)', color: '#FCD34D' }}>
+            <Clock style={{ width: '14px', height: '14px', color: '#006B3F' }} />
+            <span style={{ fontSize: '0.78rem', fontWeight: '700', fontFamily: 'var(--font-mono)', color: '#0E7A45' }}>
               {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m
             </span>
             <button 
@@ -195,7 +195,7 @@ export const ElectionCountdown = ({
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }} onClick={() => setShowMilestonesModal(true)}>
                 <div className="countdown-pulse-dot"></div>
                 <span className="countdown-title" style={{ color: 'var(--text-primary)', fontSize: '0.78rem' }}>{title}</span>
-                <span className="countdown-date-badge" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#FCD34D' }}>Aug 10</span>
+                <span className="countdown-date-badge" style={{ background: 'rgba(0, 107, 63, 0.15)', color: '#006B3F' }}>Aug 10</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
                 <button 
@@ -246,9 +246,9 @@ export const ElectionCountdown = ({
                     <span className="digit-lbl" style={{ color: 'var(--text-muted)' }}>MIN</span>
                   </div>
                   <span className="digit-colon" style={{ color: 'var(--text-muted)' }}>:</span>
-                  <div className="digit-box highlight" style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.35)' }}>
-                    <span className="digit-val" style={{ color: '#F59E0B' }}>{String(timeLeft.seconds).padStart(2, '0')}</span>
-                    <span className="digit-lbl" style={{ color: '#FCD34D' }}>SEC</span>
+                  <div className="digit-box highlight" style={{ background: 'rgba(0, 107, 63, 0.12)', border: '1px solid rgba(0, 107, 63, 0.35)' }}>
+                    <span className="digit-val" style={{ color: '#006B3F' }}>{String(timeLeft.seconds).padStart(2, '0')}</span>
+                    <span className="digit-lbl" style={{ color: '#0E7A45' }}>SEC</span>
                   </div>
                 </div>
               )}
@@ -280,8 +280,8 @@ const MilestonesModal = ({ targetDate, timeLeft, onClose }) => {
         {/* Modal Top */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Hourglass style={{ width: '20px', height: '20px', color: '#F59E0B' }} />
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(0, 107, 63, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Hourglass style={{ width: '20px', height: '20px', color: '#006B3F' }} />
             </div>
             <div>
               <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>General Election Countdown & Roadmap</h3>
