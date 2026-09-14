@@ -1,22 +1,23 @@
 ---
-description: IEBC frontend visual system for EMS
+description: EMS frontend visual system
 alwaysApply: true
 ---
 
-# IEBC frontend system
+# EMS frontend system
 
-Keep every new UI aligned with the official commission look, starting from the login page.
+Keep every new UI aligned with the official Kenya election-operations look.
 
 ## Brand
-- Colors: green `#006B3F` / `#004C2C`, red `#BB0A21`, gold `#C9A227`, black `#141414`, paper `#F4F1EA`, white `#FFFFFF`.
-- Default theme is **light**. Dark mode may exist, but public/auth screens stay official light green.
-- Type: IBM Plex Sans. Condensed weights only for titles. No indigo, cyan, or glassmorphism.
+- Colors: green `#006B3F` / `#073322` / `#0E7A45`, red `#BB0A21`, gold `#C9A227`, black `#111111`, white `#FFFFFF`.
+- Default theme is **light**.
+- Do not print the word **IEBC** on the login page.
+- Do not use the old flag SVG mark on login.
 
-## Layout
-- Compact: 8px spacing, 40–42px inputs/buttons, 6–10px radii.
-- Minimal Lucide icons at **16px**, `strokeWidth={1.75}`, no filled decorative icons.
-- Prefer CSS classes over large inline style objects.
-- Do not reproduce the official IEBC emblem; use the geometric flag mark already on login.
+## Login page
+- Match the split-card reference: floating rounded frame, dark-green left panel, white right panel.
+- Font: **Inter**. Left headline ~64px / 800. Sign In ~42px / 700. Inputs 16px, 56px tall, fully rounded.
+- Placeholders inside pill fields. Green pill Sign In button.
+- Keep existing copy: Election Management, authorised officer access, official email, password.
 
 ## Voice
 - Professional, short, government-grade copy. Avoid startup slogans and “PRO / v4.0” chrome.
