@@ -19,11 +19,49 @@ import {
   Trash2,
   X
 } from 'lucide-react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
+import { Pie, Line } from 'react-chartjs-2';
 import { AddAgentModal } from '../modules/AddAgentModal';
 import './AdminDashboard.css';
 
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
+
 const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
 const ACCOUNT_ROLES = ['Admin', 'Strategy Team', 'Regional Coordinator', 'Governor', 'Senator', 'MP', 'MCA', 'Aspirant', 'Field Agent', 'Agent', 'Observer'];
+
+const COUNTY_CHART_COLORS = [
+  '#006B3F',
+  '#0E7A45',
+  '#C9A227',
+  '#BB0A21',
+  '#2A9D8F',
+  '#3D5A80',
+  '#E76F51',
+  '#8ECAE6',
+  '#073322',
+  '#A7C4B5'
+];
 
 export const AdminDashboard = ({
   onOpenAuditLogs,
@@ -87,8 +125,13 @@ export const AdminDashboard = ({
     const totalVoters = counties.reduce((sum, county) => sum + (Number(county.registeredVoters) || 0), 0);
     const topCounties = [...counties]
       .sort((a, b) => (Number(b.registeredVoters) || 0) - (Number(a.registeredVoters) || 0))
-      .slice(0, 7);
-    const maxVoters = Math.max(...topCounties.map((c) => Number(c.registeredVoters) || 0), 1);
+      .slice(0, 10)
+      .map((county) => ({
+        id: county.id,
+        name: county.name,
+        registeredVoters: Number(county.registeredVoters) || 0,
+        code: county.code
+      }));
 
     return {
       totalVoters,
@@ -98,14 +141,93 @@ export const AdminDashboard = ({
       pendingTallies: (tallyResults || []).filter((t) => t.status === 'Submitted' || t.status === 'Mismatch').length,
       auditCount: (auditLogs || []).length,
       agentCount: (agentDirectory || []).length || agents.length,
-      topCounties: topCounties.map((county) => ({
-        id: county.id,
-        name: county.name,
-        pct: Math.max(10, Math.round(((Number(county.registeredVoters) || 0) / maxVoters) * 100))
-      })),
+      topCounties,
       recentUsers: users.slice(0, 6)
     };
   }, [geography, users, tallyResults, auditLogs, agentDirectory, agents.length]);
+
+  const countyPieData = useMemo(() => ({
+    labels: stats.topCounties.map((c) => c.name),
+    datasets: [
+      {
+        label: 'Registered voters',
+        data: stats.topCounties.map((c) => c.registeredVoters),
+        backgroundColor: COUNTY_CHART_COLORS,
+        borderColor: '#FFFFFF',
+        borderWidth: 2,
+        hoverOffset: 6
+      }
+    ]
+  }), [stats.topCounties]);
+
+  const countyLineData = useMemo(() => ({
+    labels: stats.topCounties.map((c) => c.name.split(' ')[0]),
+    datasets: [
+      {
+        label: 'Registered voters',
+        data: stats.topCounties.map((c) => c.registeredVoters),
+        borderColor: '#006B3F',
+        backgroundColor: 'rgba(0, 107, 63, 0.12)',
+        pointBackgroundColor: COUNTY_CHART_COLORS,
+        pointBorderColor: '#FFFFFF',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        tension: 0.35,
+        fill: true
+      }
+    ]
+  }), [stats.topCounties]);
+
+  const countyChartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          boxWidth: 10,
+          boxHeight: 10,
+          usePointStyle: true,
+          pointStyle: 'circle',
+          color: '#6B756F',
+          font: { size: 11, family: 'Inter, Segoe UI, sans-serif' },
+          padding: 12
+        }
+      },
+      tooltip: {
+        backgroundColor: '#073322',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        callbacks: {
+          label: (ctx) => `${ctx.label || ctx.dataset.label}: ${formatCount(ctx.raw || ctx.parsed?.y || ctx.parsed)}`
+        }
+      }
+    }
+  }), []);
+
+  const countyLineOptions = useMemo(() => ({
+    ...countyChartOptions,
+    plugins: {
+      ...countyChartOptions.plugins,
+      legend: { display: false }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: '#6B756F', font: { size: 11 }, maxRotation: 45, minRotation: 0 }
+      },
+      y: {
+        beginAtZero: true,
+        grid: { color: 'rgba(7, 51, 34, 0.06)' },
+        ticks: {
+          color: '#6B756F',
+          font: { size: 11 },
+          callback: (value) => Number(value).toLocaleString('en-KE', { notation: 'compact', maximumFractionDigits: 1 })
+        }
+      }
+    }
+  }), [countyChartOptions]);
 
   const handleCreateAspirant = (e) => {
     e.preventDefault();
@@ -298,28 +420,36 @@ export const AdminDashboard = ({
             </article>
           </section>
 
-          <section className="admin-grid-2">
-            <article className="admin-card">
+          <section className="admin-analytics-full">
+            <article className="admin-card admin-card-analytics">
               <div className="admin-card-head">
                 <div>
                   <h2>Register by county</h2>
-                  <p>Largest counties by registered voters</p>
+                  <p>Top counties by registered voters from national geography data</p>
                 </div>
                 <button type="button" className="admin-btn admin-btn-ghost" onClick={onOpenGeographic}>
                   View map
                   <ArrowUpRight strokeWidth={1.75} />
                 </button>
               </div>
-              <div className="admin-bars">
-                {stats.topCounties.map((county, index) => (
-                  <div key={county.id}>
-                    <i className={index === 0 ? 'is-accent' : undefined} style={{ height: `${county.pct}%` }} />
-                    <span>{county.name.split(' ')[0]}</span>
+              <div className="admin-chart-split">
+                <div className="admin-chart-panel">
+                  <h3>Share of register</h3>
+                  <div className="admin-chart-canvas admin-chart-canvas-lg">
+                    <Pie data={countyPieData} options={countyChartOptions} />
                   </div>
-                ))}
+                </div>
+                <div className="admin-chart-panel">
+                  <h3>Voters by county</h3>
+                  <div className="admin-chart-canvas admin-chart-canvas-lg">
+                    <Line data={countyLineData} options={countyLineOptions} />
+                  </div>
+                </div>
               </div>
             </article>
+          </section>
 
+          <section className="admin-grid-2">
             <article className="admin-card">
               <div className="admin-card-head">
                 <div>
@@ -344,9 +474,7 @@ export const AdminDashboard = ({
                 ))}
               </div>
             </article>
-          </section>
 
-          <section className="admin-grid-2">
             <article className="admin-card">
               <div className="admin-card-head">
                 <div>
@@ -378,15 +506,17 @@ export const AdminDashboard = ({
                 </div>
               </div>
             </article>
+          </section>
 
-            <article className="admin-card">
+          <section className="admin-grid-2">
+            <article className="admin-card" style={{ gridColumn: '1 / -1' }}>
               <div className="admin-card-head">
                 <div>
                   <h2>Quick actions</h2>
                   <p>Jump to common admin tasks</p>
                 </div>
               </div>
-              <div className="admin-head-actions" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+              <div className="admin-head-actions" style={{ flexWrap: 'wrap' }}>
                 <button type="button" className="admin-btn admin-btn-primary" onClick={() => setTab('add_aspirant')}>
                   <UserPlus strokeWidth={1.75} />
                   Create candidate account
