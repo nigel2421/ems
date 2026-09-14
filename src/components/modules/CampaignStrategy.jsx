@@ -1,25 +1,91 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import {
   Target,
   CheckCircle2,
   Clock,
-  AlertCircle,
-  Plus,
-  Edit3,
   Calendar,
   Users,
-  BarChart3,
-  ChevronRight,
-  TrendingUp
+  Flag,
+  Megaphone,
+  Network,
+  Radio,
+  Vote,
+  X,
+  ListChecks,
+  Gauge,
+  CircleDot,
+  ArrowRight
 } from 'lucide-react';
+import './CampaignStrategy.css';
+
+const PHASE_ICONS = [Megaphone, Users, Network, Radio, Vote];
+
+const CircularProgress = ({ value = 0, size = 'neutral', size = 88 }) => {
+  const stroke = 7;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (Math.min(100, Math.max(0, value)) / 100) * circumference;
+
+  return (
+    <div className={`strategy-ring strategy-ring-${tone}`} style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
+        <circle
+          className="strategy-ring-track"
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          strokeWidth={stroke}
+          fill="none"
+        />
+        <circle
+          className="strategy-ring-value"
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          strokeWidth={stroke}
+          fill="none"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      </svg>
+      <div className="strategy-ring-label">
+        <strong>{value}%</strong>
+      </div>
+    </div>
+  );
+};
+
+const statusTone = (status) => {
+  if (status === 'Completed') return 'done';
+  if (status === 'Active') return 'active';
+  return 'pending';
+};
 
 export const CampaignStrategy = ({ onClose }) => {
   const { currentUser } = useAuth();
   const { campaignPhases, updateCampaignTask } = useData();
+  const [selectedPhaseId, setSelectedPhaseId] = useState(null);
 
-  const [selectedPhase, setSelectedPhase] = useState(campaignPhases[2] || campaignPhases[0]);
+  const selectedPhase = useMemo(
+    () => campaignPhases.find((p) => p.id === selectedPhaseId) || null,
+    [campaignPhases, selectedPhaseId]
+  );
+
+  useEffect(() => {
+    if (selectedPhaseId && !campaignPhases.some((p) => p.id === selectedPhaseId)) {
+      setSelectedPhaseId(null);
+    }
+  }, [campaignPhases, selectedPhaseId]);
+
+  const overallProgress = useMemo(() => {
+    if (!campaignPhases.length) return 0;
+    const total = campaignPhases.reduce((sum, p) => sum + (Number(p.progressPct) || 0), 0);
+    return Math.round(total / campaignPhases.length);
+  }, [campaignPhases]);
 
   const handleTaskStatusToggle = (phaseId, taskId, currentStatus) => {
     const nextStatus = currentStatus === 'Completed' ? 'In Progress' : 'Completed';
@@ -27,164 +93,182 @@ export const CampaignStrategy = ({ onClose }) => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      {/* Top Header */}
-      <div className="glass-card" style={{ padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <Target style={{ width: '28px', height: '28px', color: '#8b5cf6' }} />
+    <div className="strategy-shell">
+      <header className="strategy-hero">
+        <div className="strategy-hero-copy">
+          <div className="strategy-kicker">
+            <Target strokeWidth={1.75} />
+            <span>Campaign operations</span>
+          </div>
+          <h1>Strategy phase roadmap</h1>
+          <p>
+            Select a phase to review objectives, action tasks, and KPI progress. Each phase is tracked independently.
+          </p>
+        </div>
+        <div className="strategy-hero-stat">
+          <CircularProgress value={overallProgress} tone="active" size={96} />
           <div>
-            <h1 style={{ fontSize: '1.4rem', fontWeight: '800' }}>Campaign Strategy & Phase Master Plan</h1>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-              5-phase roadmap: Announcement, Team Formation, Voter Mobilization, Mass Campaign, and GOTV.
-            </p>
+            <strong>Overall progress</strong>
+            <span>{campaignPhases.length} phases in the master plan</span>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* 5-Phase Interactive Timeline Stepper */}
-      <div className="glass-card" style={{ padding: '1.25rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
-          {campaignPhases.map(phase => {
-            const isSelected = selectedPhase.id === phase.id;
-            const isCompleted = phase.status === 'Completed';
-            const isActive = phase.status === 'Active';
-
-            return (
-              <button
-                key={phase.id}
-                onClick={() => setSelectedPhase(phase)}
-                style={{
-                  background: isSelected ? 'rgba(139, 92, 246, 0.25)' : (isActive ? 'rgba(99, 102, 241, 0.12)' : 'rgba(255, 255, 255, 0.03)'),
-                  border: isSelected ? '2px solid #8b5cf6' : (isActive ? '1px solid #6366f1' : '1px solid var(--border-color)'),
-                  borderRadius: '12px',
-                  padding: '1rem 0.85rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  textAlign: 'left',
-                  gap: '0.5rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: '800', textTransform: 'uppercase', color: isSelected ? '#a78bfa' : 'var(--text-muted)' }}>
-                    Phase {phase.phaseNumber}
-                  </span>
-                  <span className={`status-pill ${phase.status.toLowerCase()}`} style={{ fontSize: '0.68rem', padding: '0.1rem 0.4rem' }}>
-                    {phase.status}
-                  </span>
+      <section className="strategy-phase-grid">
+        {campaignPhases.map((phase, index) => {
+          const Icon = PHASE_ICONS[index % PHASE_ICONS.length] || Flag;
+          const tone = statusTone(phase.status);
+          return (
+            <button
+              key={phase.id}
+              type="button"
+              className={`strategy-phase-card strategy-phase-card-${tone}`}
+              onClick={() => setSelectedPhaseId(phase.id)}
+            >
+              <div className="strategy-phase-top">
+                <div className="strategy-phase-icon">
+                  <Icon strokeWidth={1.75} />
                 </div>
-
-                <div style={{ fontSize: '0.9rem', fontWeight: '800', color: isSelected ? '#fff' : 'var(--text-main)' }}>
-                  {phase.name}
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', marginTop: '0.2rem' }}>
-                  <div style={{ flex: 1, height: '5px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div style={{ width: `${phase.progressPct}%`, height: '100%', background: isCompleted ? '#10b981' : '#8b5cf6' }}></div>
-                  </div>
-                  <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#a78bfa' }}>{phase.progressPct}%</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Selected Phase Detail Breakdown */}
-      {selectedPhase && (
-        <div className="responsive-split">
-          {/* Action Items & Tasks */}
-          <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: '800' }}>Phase {selectedPhase.phaseNumber}: {selectedPhase.name} Action Plan</h2>
-                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                  {selectedPhase.startDate} to {selectedPhase.endDate}
-                </p>
-              </div>
-            </div>
-
-            {/* Objectives */}
-            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-              <div style={{ fontSize: '0.78rem', fontWeight: '800', textTransform: 'uppercase', color: '#a78bfa', marginBottom: '0.5rem' }}>
-                Key Strategic Objectives
-              </div>
-              <ul style={{ paddingLeft: '1.2rem', margin: 0, fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                {selectedPhase.objectives?.map((obj, idx) => (
-                  <li key={idx} style={{ color: 'var(--text-main)' }}>{obj}</li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Task Checklist */}
-            <div>
-              <div style={{ fontSize: '0.88rem', fontWeight: '800', marginBottom: '0.75rem' }}>
-                Phase Action Tasks ({selectedPhase.tasks?.length || 0})
+                <span className={`strategy-status strategy-status-${tone}`}>{phase.status}</span>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {selectedPhase.tasks?.map(task => (
-                  <div 
-                    key={task.id}
-                    style={{
-                      background: 'rgba(255,255,255,0.02)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '12px',
-                      padding: '1rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '1rem'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <button 
-                        onClick={() => handleTaskStatusToggle(selectedPhase.id, task.id, task.status)}
-                        style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
-                      >
-                        {task.status === 'Completed' ? (
-                          <CheckCircle2 style={{ width: '22px', height: '22px', color: '#10b981' }} />
-                        ) : (
-                          <Clock style={{ width: '22px', height: '22px', color: '#f59e0b' }} />
-                        )}
-                      </button>
-                      <div>
-                        <div style={{ fontWeight: '700', fontSize: '0.9rem', textDecoration: task.status === 'Completed' ? 'line-through' : 'none', color: task.status === 'Completed' ? 'var(--text-muted)' : '#fff' }}>
-                          {task.title}
-                        </div>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem', display: 'flex', gap: '0.75rem' }}>
-                          <span>Team: <strong>{task.assignedTeam}</strong></span>
-                          <span>Due: <strong>{task.dueDate}</strong></span>
-                        </div>
-                      </div>
-                    </div>
+              <div className="strategy-phase-mid">
+                <span className="strategy-phase-num">Phase {phase.phaseNumber}</span>
+                <h2>{phase.name}</h2>
+                <p>{phase.description}</p>
+              </div>
 
-                    <span className={`status-pill ${task.status.toLowerCase().replace(' ', '-')}`}>
-                      {task.status}
+              <div className="strategy-phase-foot">
+                <CircularProgress value={phase.progressPct} tone={tone} size={84} />
+                <div className="strategy-phase-meta">
+                  <div>
+                    <Calendar strokeWidth={1.75} />
+                    <span>
+                      {phase.startDate} → {phase.endDate}
                     </span>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* KPI Target Cards */}
-          <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: '800' }}>KPI Target Progress</h3>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              {selectedPhase.tasks?.map(task => (
-                <div key={task.id} style={{ background: 'rgba(255,255,255,0.02)', padding: '0.85rem', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: '700' }}>{task.title}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem', marginTop: '0.35rem', color: '#a78bfa' }}>
-                    <span>Target: {task.kpiTarget}</span>
-                    <span>Current: <strong>{task.kpiCurrent}</strong></span>
+                  <div>
+                    <ListChecks strokeWidth={1.75} />
+                    <span>{phase.tasks?.length || 0} action tasks</span>
                   </div>
+                  <span className="strategy-open-hint">
+                    Open details <ArrowRight strokeWidth={1.75} />
+                  </span>
                 </div>
-              ))}
+              </div>
+            </button>
+          );
+        })}
+      </section>
+
+      {selectedPhase && (
+        <div className="strategy-modal-overlay" onClick={() => setSelectedPhaseId(null)}>
+          <div
+            className="strategy-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="strategy-phase-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="strategy-modal-head">
+              <div className="strategy-modal-title-row">
+                <CircularProgress value={selectedPhase.progressPct} tone={statusTone(selectedPhase.status)} size={72} />
+                <div>
+                  <span className={`strategy-status strategy-status-${statusTone(selectedPhase.status)}`}>
+                    {selectedPhase.status}
+                  </span>
+                  <h2 id="strategy-phase-title">
+                    Phase {selectedPhase.phaseNumber}: {selectedPhase.name}
+                  </h2>
+                  <p>
+                    {selectedPhase.startDate} to {selectedPhase.endDate}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="strategy-icon-btn"
+                aria-label="Close phase details"
+                onClick={() => setSelectedPhaseId(null)}
+              >
+                <X strokeWidth={1.75} />
+              </button>
             </div>
+
+            <p className="strategy-modal-desc">{selectedPhase.description}</p>
+
+            <div className="strategy-modal-grid">
+              <section className="strategy-panel">
+                <div className="strategy-panel-head">
+                  <CircleDot strokeWidth={1.75} />
+                  <h3>Key objectives</h3>
+                </div>
+                <ul className="strategy-objective-list">
+                  {(selectedPhase.objectives || []).map((obj) => (
+                    <li key={obj}>
+                      <CheckCircle2 strokeWidth={1.75} />
+                      <span>{obj}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              <section className="strategy-panel">
+                <div className="strategy-panel-head">
+                  <Gauge strokeWidth={1.75} />
+                  <h3>KPI progress</h3>
+                </div>
+                <div className="strategy-kpi-list">
+                  {(selectedPhase.tasks || []).map((task) => (
+                    <div key={task.id} className="strategy-kpi-item">
+                      <strong>{task.title}</strong>
+                      <div>
+                        <span>Target: {task.kpiTarget}</span>
+                        <span>Current: {task.kpiCurrent}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+
+            <section className="strategy-panel strategy-panel-tasks">
+              <div className="strategy-panel-head">
+                <ListChecks strokeWidth={1.75} />
+                <h3>Action tasks ({selectedPhase.tasks?.length || 0})</h3>
+              </div>
+              <div className="strategy-task-list">
+                {(selectedPhase.tasks || []).map((task) => {
+                  const done = task.status === 'Completed';
+                  return (
+                    <div key={task.id} className={`strategy-task-row${done ? ' is-done' : ''}`}>
+                      <button
+                        type="button"
+                        className="strategy-task-toggle"
+                        title={done ? 'Mark in progress' : 'Mark completed'}
+                        onClick={() => handleTaskStatusToggle(selectedPhase.id, task.id, task.status)}
+                      >
+                        {done ? <CheckCircle2 strokeWidth={1.75} /> : <Clock strokeWidth={1.75} />}
+                      </button>
+                      <div className="strategy-task-copy">
+                        <strong>{task.title}</strong>
+                        <div>
+                          <span>
+                            <Users strokeWidth={1.75} /> {task.assignedTeam}
+                          </span>
+                          <span>
+                            <Calendar strokeWidth={1.75} /> {task.dueDate}
+                          </span>
+                        </div>
+                      </div>
+                      <span className={`strategy-status strategy-status-${done ? 'done' : 'active'}`}>
+                        {task.status}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
           </div>
         </div>
       )}
