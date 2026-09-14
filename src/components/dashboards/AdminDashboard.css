@@ -48,6 +48,12 @@
   overflow-y: auto;
 }
 
+.admin-mobile-bar,
+.admin-aside-scrim,
+.admin-menu-toggle {
+  display: none;
+}
+
 .admin-brand {
   appearance: none;
   width: 100%;
@@ -1176,27 +1182,159 @@
     grid-template-columns: 1fr;
   }
 
-  .admin-aside {
-    position: static;
-    height: auto;
-    max-height: none;
-    border-right: none;
+  .admin-mobile-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    padding: 0.65rem 0.85rem;
+    background: var(--admin-surface);
     border-bottom: 1px solid var(--admin-line);
+  }
+
+  .admin-menu-toggle {
+    appearance: none;
+    width: 42px;
+    height: 42px;
+    border: 1px solid var(--admin-line);
+    border-radius: 12px;
+    background: var(--admin-canvas);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .admin-hamburger {
+    width: 18px;
+    height: 14px;
+    position: relative;
+    display: block;
+  }
+
+  .admin-hamburger span {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--admin-green-deep);
+    transition: transform 0.22s ease, opacity 0.18s ease, top 0.22s ease;
+  }
+
+  .admin-hamburger span:nth-child(1) {
+    top: 0;
+  }
+
+  .admin-hamburger span:nth-child(2) {
+    top: 6px;
+  }
+
+  .admin-hamburger span:nth-child(3) {
+    top: 12px;
+  }
+
+  .admin-menu-toggle.is-open .admin-hamburger span:nth-child(1) {
+    top: 6px;
+    transform: rotate(45deg);
+  }
+
+  .admin-menu-toggle.is-open .admin-hamburger span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .admin-menu-toggle.is-open .admin-hamburger span:nth-child(3) {
+    top: 6px;
+    transform: rotate(-45deg);
+  }
+
+  .admin-mobile-brand {
+    appearance: none;
+    border: none;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+  }
+
+  .admin-mobile-brand svg {
+    width: 18px;
+    height: 18px;
+    color: var(--admin-green);
+  }
+
+  .admin-mobile-brand strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .admin-aside-scrim {
+    display: block;
+    appearance: none;
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    border: none;
+    margin: 0;
+    padding: 0;
+    background: rgba(7, 51, 34, 0.28);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .admin-layout.is-aside-open .admin-aside-scrim {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .admin-aside {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 80;
+    width: min(288px, 86vw);
+    height: 100vh;
+    max-height: 100vh;
+    border-right: 1px solid var(--admin-line);
+    border-bottom: none;
+    transform: translateX(-105%);
+    transition: transform 0.24s ease;
+    box-shadow: none;
+  }
+
+  .admin-layout.is-aside-open .admin-aside {
+    transform: translateX(0);
+    box-shadow: 12px 0 32px rgba(7, 51, 34, 0.16);
   }
 
   .admin-layout-main {
     max-height: none;
-    padding: 1rem;
+    min-height: calc(100vh - 58px);
+    padding: 0.9rem 0.85rem 1.5rem;
   }
 
   .admin-nav-group {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
   }
 
   .admin-nav-label {
-    grid-column: 1 / -1;
+    grid-column: auto;
   }
 
   .admin-aside-card {
@@ -1206,14 +1344,14 @@
   .admin-role-row {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .admin-profile-overlay {
+    padding: 0.85rem;
+  }
 }
 
 @media (max-width: 560px) {
   .admin-metric-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .admin-nav-group {
     grid-template-columns: 1fr;
   }
 
@@ -1225,3 +1363,4 @@
     font-size: 1.4rem;
   }
 }
+

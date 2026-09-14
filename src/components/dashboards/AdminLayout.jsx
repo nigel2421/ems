@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { AddAgentModal } from '../modules/AddAgentModal';
@@ -92,9 +92,29 @@ export const AdminLayout = ({
   const [showMore, setShowMore] = useState(false);
   const [showAgentMenu, setShowAgentMenu] = useState(false);
   const [showAddAgent, setShowAddAgent] = useState(false);
+  const [asideOpen, setAsideOpen] = useState(false);
 
   const isAdmin =
     currentUser?.role === 'Admin' || currentUser?.role === 'Super Admin';
+
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth > 900) setAsideOpen(false);
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  useEffect(() => {
+    if (!asideOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setAsideOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [asideOpen]);
+
+  const closeAside = () => setAsideOpen(false);
 
   const pendingTallyCount = tallyResults?.filter((s) => s.status === 'Submitted').length || 0;
   const mismatchCount = tallyResults?.filter((s) => s.status === 'Mismatch').length || 0;
@@ -117,11 +137,13 @@ export const AdminLayout = ({
   const openModule = (id) => {
     setShowMore(false);
     onCloseProfilePanel?.();
+    closeAside();
     onOpenModule?.(id);
   };
 
   const openAdminTool = (panelId) => {
     onCloseProfilePanel?.();
+    closeAside();
     onAdminPanelChange?.(panelId);
     onOpenModule?.('dashboard');
   };
@@ -136,8 +158,39 @@ export const AdminLayout = ({
   const toolsLabel = isAdmin ? 'Admin tools' : 'Workspace';
 
   return (
-    <div className="admin-layout">
-      <aside className="admin-aside">
+    <div className={`admin-layout${asideOpen ? ' is-aside-open' : ''}`}>
+      <header className="admin-mobile-bar">
+        <button
+          type="button"
+          className={`admin-menu-toggle${asideOpen ? ' is-open' : ''}`}
+          aria-label={asideOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-expanded={asideOpen}
+          aria-controls="admin-aside-nav"
+          onClick={() => setAsideOpen((v) => !v)}
+        >
+          <span className="admin-hamburger" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+        </button>
+        <button type="button" className="admin-mobile-brand" onClick={() => openModule('dashboard')}>
+          <Shield strokeWidth={2} />
+          <strong>
+            CI-EMS <span className="admin-pro-badge">PRO</span>
+          </strong>
+        </button>
+      </header>
+
+      <button
+        type="button"
+        className="admin-aside-scrim"
+        aria-label="Close navigation menu"
+        tabIndex={asideOpen ? 0 : -1}
+        onClick={closeAside}
+      />
+
+      <aside id="admin-aside-nav" className="admin-aside">
         <button type="button" className="admin-brand" onClick={() => openModule('dashboard')}>
           <div className="admin-aside-mark">
             <Shield strokeWidth={2} />
@@ -187,6 +240,7 @@ export const AdminLayout = ({
                         onClick={() => {
                           setShowAgentMenu(true);
                           onCloseProfilePanel?.();
+                          closeAside();
                           setShowAddAgent(true);
                         }}
                       >
@@ -287,7 +341,7 @@ export const AdminLayout = ({
               );
             })}
           {isAdmin && (
-            <button type="button" className="admin-nav-btn" onClick={() => { onCloseProfilePanel?.(); onOpenGeographic?.(); }}>
+            <button type="button" className="admin-nav-btn" onClick={() => { onCloseProfilePanel?.(); closeAside(); onOpenGeographic?.(); }}>
               <Map strokeWidth={1.75} />
               <span>Geo Inspector</span>
             </button>
@@ -296,12 +350,12 @@ export const AdminLayout = ({
             ['Strategy Team', 'Governor', 'Senator', 'Regional Coordinator'].includes(
               currentUser?.role
             )) && (
-            <button type="button" className="admin-nav-btn" onClick={() => { onCloseProfilePanel?.(); onOpenAuditLogs?.(); }}>
+            <button type="button" className="admin-nav-btn" onClick={() => { onCloseProfilePanel?.(); closeAside(); onOpenAuditLogs?.(); }}>
               <Activity strokeWidth={1.75} />
               <span>Audit</span>
             </button>
           )}
-          <button type="button" className="admin-nav-btn" onClick={() => { onCloseProfilePanel?.(); onOpenNotifications?.(); }}>
+          <button type="button" className="admin-nav-btn" onClick={() => { onCloseProfilePanel?.(); closeAside(); onOpenNotifications?.(); }}>
             <Bell strokeWidth={1.75} />
             <span>Alerts</span>
             {totalAlerts > 0 && <span className="admin-nav-badge">{totalAlerts}</span>}
@@ -312,7 +366,10 @@ export const AdminLayout = ({
           <button
             type="button"
             className={`admin-profile-btn${showProfilePanel ? ' is-active' : ''}`}
-            onClick={() => onToggleProfilePanel?.()}
+            onClick={() => {
+              closeAside();
+              onToggleProfilePanel?.();
+            }}
             aria-expanded={showProfilePanel}
             aria-controls="admin-profile-panel"
           >
