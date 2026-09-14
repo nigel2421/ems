@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { AddAgentModal } from '../modules/AddAgentModal';
@@ -20,7 +20,10 @@ import {
   FileText,
   ClipboardList,
   Sparkles,
-  Map
+  Map,
+  X,
+  Mail,
+  IdCard
 } from 'lucide-react';
 import './AdminDashboard.css';
 
@@ -50,18 +53,26 @@ const getRoleClass = (role) => {
     case 'Admin':
       return 'role-admin';
     case 'Strategy Team':
+    case 'Governor':
+    case 'Senator':
       return 'role-governor';
     case 'Regional Coordinator':
+    case 'MP':
+    case 'MCA':
       return 'role-mp';
     case 'Field Agent':
     case 'Agent':
       return 'role-agent';
     case 'Observer':
+    case 'Aspirant':
       return 'role-aspirant';
     default:
       return '';
   }
 };
+
+const DEFAULT_AVATAR =
+  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80';
 
 export const AdminLayout = ({
   children,
@@ -71,32 +82,58 @@ export const AdminLayout = ({
   onOpenModule,
   onOpenNotifications,
   onOpenAuditLogs,
-  onOpenGeographic
+  onOpenGeographic,
+  showProfilePanel = false,
+  onToggleProfilePanel,
+  onCloseProfilePanel
 }) => {
-  const { currentUser, users, switchUser, logout } = useAuth();
+  const { currentUser, users, switchUser, logout, canAccessModule } = useAuth();
   const { tallyResults } = useData();
   const [showMore, setShowMore] = useState(false);
-  const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showAgentMenu, setShowAgentMenu] = useState(false);
   const [showAddAgent, setShowAddAgent] = useState(false);
+
+  const isAdmin =
+    currentUser?.role === 'Admin' || currentUser?.role === 'Super Admin';
 
   const pendingTallyCount = tallyResults?.filter((s) => s.status === 'Submitted').length || 0;
   const mismatchCount = tallyResults?.filter((s) => s.status === 'Mismatch').length || 0;
   const totalAlerts = pendingTallyCount + mismatchCount;
   const isDashboard = currentModule === 'dashboard';
-  const isBindAgent = isDashboard && adminPanel === 'assign_agent';
+  const isBindAgent = isAdmin && isDashboard && adminPanel === 'assign_agent';
   const isAgentActive = currentModule === 'agents' || isBindAgent || showAddAgent;
   const isMoreActive = MORE_MODULES.some((m) => m.id === currentModule);
 
+  const primaryModules = useMemo(
+    () => PRIMARY_MODULES.filter((m) => m.id === 'dashboard' || canAccessModule?.(m.id)),
+    [canAccessModule]
+  );
+
+  const moreModules = useMemo(
+    () => MORE_MODULES.filter((m) => canAccessModule?.(m.id)),
+    [canAccessModule]
+  );
+
   const openModule = (id) => {
     setShowMore(false);
+    onCloseProfilePanel?.();
     onOpenModule?.(id);
   };
 
   const openAdminTool = (panelId) => {
+    onCloseProfilePanel?.();
     onAdminPanelChange?.(panelId);
     onOpenModule?.('dashboard');
   };
+
+  const handleSwitchPersona = (userId) => {
+    switchUser(userId);
+    onCloseProfilePanel?.();
+    onOpenModule?.('dashboard');
+    onAdminPanelChange?.('overview');
+  };
+
+  const toolsLabel = isAdmin ? 'Admin tools' : 'Workspace';
 
   return (
     <div className="admin-layout">
@@ -115,14 +152,14 @@ export const AdminLayout = ({
 
         <div className="admin-nav-group">
           <div className="admin-nav-label">Modules</div>
-          {PRIMARY_MODULES.map((item) => {
+          {primaryModules.map((item) => {
             const Icon = item.icon;
             const isAgents = item.id === 'agents';
             const isActive = isAgents
               ? currentModule === 'agents'
               : currentModule === item.id;
 
-            if (isAgents) {
+            if (isAgents && isAdmin) {
               return (
                 <div key={item.id} className="admin-nav-parent">
                   <button
@@ -149,6 +186,7 @@ export const AdminLayout = ({
                         className={`admin-nav-btn admin-nav-btn-sub${showAddAgent ? ' is-active' : ''}`}
                         onClick={() => {
                           setShowAgentMenu(true);
+                          onCloseProfilePanel?.();
                           setShowAddAgent(true);
                         }}
                       >
@@ -178,7 +216,7 @@ export const AdminLayout = ({
                 type="button"
                 className={`admin-nav-btn${isActive ? ' is-active' : ''}`}
                 onClick={() => {
-                  if (item.id === 'dashboard') onAdminPanelChange?.('overview');
+                  if (item.id === 'dashboard' && isAdmin) onAdminPanelChange?.('overview');
                   openModule(item.id);
                 }}
               >
@@ -188,70 +226,82 @@ export const AdminLayout = ({
             );
           })}
 
-          <button
-            type="button"
-            className={`admin-nav-btn${isMoreActive || showMore ? ' is-active' : ''}`}
-            onClick={() => setShowMore((v) => !v)}
-            aria-expanded={showMore}
-          >
-            <Layers strokeWidth={1.75} />
-            <span>More</span>
-            <ChevronDown
-              strokeWidth={1.75}
-              className={`admin-nav-chevron${showMore ? ' is-open' : ''}`}
-            />
-          </button>
+          {moreModules.length > 0 && (
+            <>
+              <button
+                type="button"
+                className={`admin-nav-btn${isMoreActive || showMore ? ' is-active' : ''}`}
+                onClick={() => setShowMore((v) => !v)}
+                aria-expanded={showMore}
+              >
+                <Layers strokeWidth={1.75} />
+                <span>More</span>
+                <ChevronDown
+                  strokeWidth={1.75}
+                  className={`admin-nav-chevron${showMore ? ' is-open' : ''}`}
+                />
+              </button>
 
-          {showMore && (
-            <div className="admin-more-list">
-              {MORE_MODULES.map((item) => {
-                const Icon = item.icon;
-                const isActive = currentModule === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={`admin-nav-btn admin-nav-btn-sub${isActive ? ' is-active' : ''}`}
-                    onClick={() => openModule(item.id)}
-                  >
-                    <Icon strokeWidth={1.75} />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+              {showMore && (
+                <div className="admin-more-list">
+                  {moreModules.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = currentModule === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={`admin-nav-btn admin-nav-btn-sub${isActive ? ' is-active' : ''}`}
+                        onClick={() => openModule(item.id)}
+                      >
+                        <Icon strokeWidth={1.75} />
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
 
         <div className="admin-nav-group">
-          <div className="admin-nav-label">Admin tools</div>
-          {ADMIN_TOOLS.map((item) => {
-            const Icon = item.icon;
-            const isActive = isDashboard && adminPanel === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                className={`admin-nav-btn${isActive ? ' is-active' : ''}`}
-                onClick={() => openAdminTool(item.id)}
-              >
-                <Icon strokeWidth={1.75} />
-                <span>{item.label}</span>
-                {item.id === 'user_directory' && (
-                  <span className="admin-nav-badge">{users.length}</span>
-                )}
-              </button>
-            );
-          })}
-          <button type="button" className="admin-nav-btn" onClick={onOpenGeographic}>
-            <Map strokeWidth={1.75} />
-            <span>Geo Inspector</span>
-          </button>
-          <button type="button" className="admin-nav-btn" onClick={onOpenAuditLogs}>
-            <Activity strokeWidth={1.75} />
-            <span>Audit</span>
-          </button>
-          <button type="button" className="admin-nav-btn" onClick={onOpenNotifications}>
+          <div className="admin-nav-label">{toolsLabel}</div>
+          {isAdmin &&
+            ADMIN_TOOLS.map((item) => {
+              const Icon = item.icon;
+              const isActive = isDashboard && adminPanel === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`admin-nav-btn${isActive ? ' is-active' : ''}`}
+                  onClick={() => openAdminTool(item.id)}
+                >
+                  <Icon strokeWidth={1.75} />
+                  <span>{item.label}</span>
+                  {item.id === 'user_directory' && (
+                    <span className="admin-nav-badge">{users.length}</span>
+                  )}
+                </button>
+              );
+            })}
+          {isAdmin && (
+            <button type="button" className="admin-nav-btn" onClick={() => { onCloseProfilePanel?.(); onOpenGeographic?.(); }}>
+              <Map strokeWidth={1.75} />
+              <span>Geo Inspector</span>
+            </button>
+          )}
+          {(isAdmin ||
+            ['Strategy Team', 'Governor', 'Senator', 'Regional Coordinator'].includes(
+              currentUser?.role
+            )) && (
+            <button type="button" className="admin-nav-btn" onClick={() => { onCloseProfilePanel?.(); onOpenAuditLogs?.(); }}>
+              <Activity strokeWidth={1.75} />
+              <span>Audit</span>
+            </button>
+          )}
+          <button type="button" className="admin-nav-btn" onClick={() => { onCloseProfilePanel?.(); onOpenNotifications?.(); }}>
             <Bell strokeWidth={1.75} />
             <span>Alerts</span>
             {totalAlerts > 0 && <span className="admin-nav-badge">{totalAlerts}</span>}
@@ -261,58 +311,113 @@ export const AdminLayout = ({
         <div className="admin-profile-block">
           <button
             type="button"
-            className="admin-profile-btn"
-            onClick={() => setShowRoleMenu((v) => !v)}
-            aria-expanded={showRoleMenu}
+            className={`admin-profile-btn${showProfilePanel ? ' is-active' : ''}`}
+            onClick={() => onToggleProfilePanel?.()}
+            aria-expanded={showProfilePanel}
+            aria-controls="admin-profile-panel"
           >
-            <img
-              src={
-                currentUser?.avatar ||
-                'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
-              }
-              alt=""
-            />
+            <img src={currentUser?.avatar || DEFAULT_AVATAR} alt="" />
             <div>
               <strong>{currentUser?.name}</strong>
               <span className={`role-badge ${getRoleClass(currentUser?.role)}`}>
                 {currentUser?.role}
               </span>
             </div>
-            <ChevronDown strokeWidth={1.75} className={`admin-nav-chevron${showRoleMenu ? ' is-open' : ''}`} />
+            <ChevronDown
+              strokeWidth={1.75}
+              className={`admin-nav-chevron${showProfilePanel ? ' is-open' : ''}`}
+            />
           </button>
+        </div>
+      </aside>
 
-          {showRoleMenu && (
-            <div className="admin-profile-menu">
-              <div className="admin-nav-label">Switch persona</div>
-              {users.map((u) => (
+      <div className="admin-layout-main">
+        {showProfilePanel && (
+          <div
+            id="admin-profile-panel"
+            className="admin-profile-panel"
+            role="dialog"
+            aria-label="Account profile"
+          >
+            <div className="admin-profile-panel-card">
+              <div className="admin-profile-panel-head">
+                <div className="admin-profile-panel-identity">
+                  <img src={currentUser?.avatar || DEFAULT_AVATAR} alt="" />
+                  <div>
+                    <h2>{currentUser?.name}</h2>
+                    <span className={`role-badge ${getRoleClass(currentUser?.role)}`}>
+                      {currentUser?.role}
+                    </span>
+                  </div>
+                </div>
                 <button
-                  key={u.id}
                   type="button"
-                  className={`admin-nav-btn admin-nav-btn-sub${currentUser?.id === u.id ? ' is-active' : ''}`}
-                  onClick={() => {
-                    switchUser(u.id);
-                    setShowRoleMenu(false);
-                    onOpenModule?.('dashboard');
-                    onAdminPanelChange?.('overview');
-                  }}
+                  className="admin-profile-panel-close"
+                  onClick={() => onCloseProfilePanel?.()}
+                  aria-label="Close profile"
                 >
-                  <UserCheck strokeWidth={1.75} />
-                  <span>
-                    {u.name}
-                    <small>{u.role}</small>
-                  </span>
+                  <X strokeWidth={1.75} />
                 </button>
-              ))}
+              </div>
+
+              <div className="admin-profile-panel-meta">
+                <div>
+                  <Mail strokeWidth={1.75} />
+                  <div>
+                    <small>Official email</small>
+                    <strong>{currentUser?.email || 'Not provided'}</strong>
+                  </div>
+                </div>
+                <div>
+                  <IdCard strokeWidth={1.75} />
+                  <div>
+                    <small>Assigned scope</small>
+                    <strong>{currentUser?.entityName || currentUser?.assignedEntity || 'National'}</strong>
+                  </div>
+                </div>
+                <div>
+                  <MapPin strokeWidth={1.75} />
+                  <div>
+                    <small>Jurisdiction</small>
+                    <strong>
+                      {[currentUser?.county, currentUser?.constituency, currentUser?.ward]
+                        .filter(Boolean)
+                        .join(' · ') || 'Nationwide'}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="admin-profile-panel-personas">
+                <div className="admin-nav-label">Switch persona</div>
+                <div className="admin-profile-panel-persona-list">
+                  {users.map((u) => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      className={`admin-nav-btn admin-nav-btn-sub${currentUser?.id === u.id ? ' is-active' : ''}`}
+                      onClick={() => handleSwitchPersona(u.id)}
+                    >
+                      <UserCheck strokeWidth={1.75} />
+                      <span>
+                        {u.name}
+                        <small>{u.role}</small>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <button type="button" className="admin-logout-btn" onClick={logout}>
                 <LogOut strokeWidth={1.75} />
                 Sign out
               </button>
             </div>
-          )}
-        </div>
-      </aside>
+          </div>
+        )}
 
-      <div className="admin-layout-main">{children}</div>
+        {children}
+      </div>
 
       {showAddAgent && (
         <AddAgentModal
