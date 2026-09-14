@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider, useData } from './context/DataContext';
 import { Navbar } from './components/Navbar';
+import { AdminLayout } from './components/dashboards/AdminLayout';
 import { AdminDashboard } from './components/dashboards/AdminDashboard';
 import { StrategyDashboard } from './components/dashboards/StrategyDashboard';
 import { RegionalDashboard } from './components/dashboards/RegionalDashboard';
@@ -25,6 +26,7 @@ const MainAppContent = () => {
   const { tallyResults } = useData();
 
   const [currentModule, setCurrentModule] = useState('dashboard');
+  const [adminPanel, setAdminPanel] = useState('overview');
   const [showAuditLogs, setShowAuditLogs] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
@@ -33,57 +35,61 @@ const MainAppContent = () => {
     return <LoginModal />;
   }
 
-  // Render Dashboard persona view
+  const isAdmin = currentUser.role === 'Admin' || currentUser.role === 'Super Admin';
+
+  const openModule = (mod) => {
+    if (mod === 'ai_assistant') {
+      setShowAIAssistant(true);
+      return;
+    }
+    setCurrentModule(mod);
+    if (mod === 'dashboard') {
+      setAdminPanel((prev) => prev || 'overview');
+    }
+  };
+
   const renderDashboardByRole = () => {
     switch (currentUser.role) {
       case 'Super Admin':
       case 'Admin':
         return (
-          <AdminDashboard 
-            onOpenAuditLogs={() => setShowAuditLogs(true)} 
-            onOpenGeographic={() => setCurrentModule('polling_stations')} 
+          <AdminDashboard
+            activeTab={adminPanel}
+            onTabChange={setAdminPanel}
+            onOpenAuditLogs={() => setShowAuditLogs(true)}
+            onOpenGeographic={() => setCurrentModule('polling_stations')}
+            onOpenModule={openModule}
           />
         );
       case 'Strategy Team':
       case 'Governor':
       case 'Senator':
         return (
-          <StrategyDashboard 
-            onOpenModule={(mod) => setCurrentModule(mod)} 
-            onOpenAIAssistant={() => setShowAIAssistant(true)} 
+          <StrategyDashboard
+            onOpenModule={openModule}
+            onOpenAIAssistant={() => setShowAIAssistant(true)}
           />
         );
       case 'Regional Coordinator':
       case 'MP':
       case 'MCA':
       case 'Aspirant':
-        return (
-          <RegionalDashboard 
-            onOpenModule={(mod) => setCurrentModule(mod)} 
-          />
-        );
+        return <RegionalDashboard onOpenModule={openModule} />;
       case 'Field Agent':
       case 'Agent':
-        return (
-          <AgentDashboard 
-            onOpenModule={(mod) => setCurrentModule(mod)} 
-          />
-        );
+        return <AgentDashboard onOpenModule={openModule} />;
       case 'Observer':
-        return (
-          <ObserverDashboard />
-        );
+        return <ObserverDashboard />;
       default:
         return (
-          <StrategyDashboard 
-            onOpenModule={(mod) => setCurrentModule(mod)} 
-            onOpenAIAssistant={() => setShowAIAssistant(true)} 
+          <StrategyDashboard
+            onOpenModule={openModule}
+            onOpenAIAssistant={() => setShowAIAssistant(true)}
           />
         );
     }
   };
 
-  // Render active module component
   const renderActiveModuleContent = () => {
     switch (currentModule) {
       case 'polling_stations':
@@ -101,47 +107,56 @@ const MainAppContent = () => {
       case 'tally_center':
         return <TallyCenter onClose={() => setCurrentModule('dashboard')} />;
       case 'ai_assistant':
-        return <StrategyDashboard onOpenModule={(mod) => setCurrentModule(mod)} onOpenAIAssistant={() => setShowAIAssistant(true)} />;
+        return (
+          <StrategyDashboard
+            onOpenModule={openModule}
+            onOpenAIAssistant={() => setShowAIAssistant(true)}
+          />
+        );
       case 'dashboard':
       default:
         return renderDashboardByRole();
     }
   };
 
+  const content = renderActiveModuleContent();
+
   return (
-    <div className="app-container">
-      {/* Universal Top Header & Navigation */}
-      <Navbar 
-        currentModule={currentModule}
-        onOpenModule={(mod) => {
-          if (mod === 'ai_assistant') {
-            setShowAIAssistant(true);
-          } else {
-            setCurrentModule(mod);
-          }
-        }}
-        onOpenNotifications={() => setShowNotifications(true)}
-        onOpenAuditLogs={() => setShowAuditLogs(true)}
-      />
+    <div className={`app-container${isAdmin ? ' is-admin-shell' : ''}`}>
+      {!isAdmin && (
+        <Navbar
+          currentModule={currentModule}
+          onOpenModule={openModule}
+          onOpenNotifications={() => setShowNotifications(true)}
+          onOpenAuditLogs={() => setShowAuditLogs(true)}
+        />
+      )}
 
-      {/* Main View Area */}
-      <main className="main-content">
-        {renderActiveModuleContent()}
-      </main>
+      {isAdmin ? (
+        <AdminLayout
+          currentModule={currentModule}
+          adminPanel={adminPanel}
+          onAdminPanelChange={setAdminPanel}
+          onOpenModule={openModule}
+          onOpenNotifications={() => setShowNotifications(true)}
+          onOpenAuditLogs={() => setShowAuditLogs(true)}
+          onOpenGeographic={() => setCurrentModule('polling_stations')}
+        >
+          {content}
+        </AdminLayout>
+      ) : (
+        <main className="main-content">{content}</main>
+      )}
 
-      {/* Audit Logs Viewer Modal Overlay */}
       {showAuditLogs && <AuditLogViewer onClose={() => setShowAuditLogs(false)} />}
-
-      {/* AI Assistant Modal Overlay */}
       {showAIAssistant && <AIAssistantModal onClose={() => setShowAIAssistant(false)} />}
 
-      {/* System Notifications Drawer */}
       {showNotifications && (
         <div className="modal-overlay" onClick={() => setShowNotifications(false)}>
-          <div 
+          <div
             className="modal-content"
             style={{ maxWidth: '550px' }}
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -154,7 +169,7 @@ const MainAppContent = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {tallyResults.map(tally => (
+              {tallyResults.map((tally) => (
                 <div key={tally.id} className="glass-card" style={{ padding: '0.85rem', background: 'rgba(255,255,255,0.02)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span className={`status-pill ${tally.status.toLowerCase()}`}>{tally.status}</span>
@@ -173,7 +188,6 @@ const MainAppContent = () => {
         </div>
       )}
 
-      {/* Universal Floating Sticky Election Countdown Widget */}
       <ElectionCountdown variant="floating" />
     </div>
   );
