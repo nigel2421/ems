@@ -13,12 +13,17 @@ import {
   ArrowUpRight,
   Plus,
   Upload,
-  ClipboardList
+  ClipboardList,
+  Eye,
+  Pencil,
+  Trash2,
+  X
 } from 'lucide-react';
 import { AddAgentModal } from '../modules/AddAgentModal';
 import './AdminDashboard.css';
 
 const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
+const ACCOUNT_ROLES = ['Admin', 'Strategy Team', 'Regional Coordinator', 'Governor', 'Senator', 'MP', 'MCA', 'Aspirant', 'Field Agent', 'Agent', 'Observer'];
 
 export const AdminDashboard = ({
   onOpenAuditLogs,
@@ -27,7 +32,7 @@ export const AdminDashboard = ({
   activeTab: controlledTab = 'overview',
   onTabChange
 }) => {
-  const { users, addUser, currentUser } = useAuth();
+  const { users, addUser, currentUser, updateUserProfile, deleteUser } = useAuth();
   const {
     geography,
     assignAgentToPollingStation,
@@ -38,6 +43,11 @@ export const AdminDashboard = ({
   } = useData();
   const [showAddAgent, setShowAddAgent] = useState(false);
   const [activeTab, setActiveTab] = useState(controlledTab);
+  const [accountModal, setAccountModal] = useState(null); // { mode: 'view' | 'edit', user }
+  const [editDraft, setEditDraft] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [accountNotice, setAccountNotice] = useState('');
+
 
   useEffect(() => {
     setActiveTab(controlledTab);
@@ -156,6 +166,59 @@ export const AdminDashboard = ({
     );
     setAssignmentNotice(`Agent bound to polling station ${selectedPs}`);
     setTimeout(() => setAssignmentNotice(''), 4000);
+  };
+
+  const openAccountView = (user) => {
+    setAccountModal({ mode: 'view', user });
+    setEditDraft(null);
+  };
+
+  const openAccountEdit = (user) => {
+    setAccountModal({ mode: 'edit', user });
+    setEditDraft({
+      name: user.name || '',
+      email: user.email || '',
+      role: user.role || 'Aspirant',
+      entityName: user.entityName || '',
+      party: user.party || '',
+      phone: user.phone || ''
+    });
+  };
+
+  const handleSaveAccount = (e) => {
+    e.preventDefault();
+    if (!accountModal?.user || !editDraft) return;
+    updateUserProfile(accountModal.user.id, {
+      name: editDraft.name.trim(),
+      email: editDraft.email.trim(),
+      role: editDraft.role,
+      entityName: editDraft.entityName.trim(),
+      party: editDraft.party.trim(),
+      phone: editDraft.phone.trim()
+    });
+    logAuditAction(
+      currentUser,
+      'ACCOUNT_UPDATED',
+      `Updated account ${editDraft.name} (${editDraft.email})`
+    );
+    setAccountNotice(`Updated ${editDraft.name}`);
+    setAccountModal(null);
+    setEditDraft(null);
+    setTimeout(() => setAccountNotice(''), 3500);
+  };
+
+  const handleDeleteAccount = () => {
+    if (!deleteTarget) return;
+    const name = deleteTarget.name;
+    deleteUser(deleteTarget.id);
+    logAuditAction(currentUser, 'ACCOUNT_DELETED', `Deleted account ${name} (${deleteTarget.email})`);
+    setAccountNotice(`Removed ${name}`);
+    setDeleteTarget(null);
+    if (accountModal?.user?.id === deleteTarget.id) {
+      setAccountModal(null);
+      setEditDraft(null);
+    }
+    setTimeout(() => setAccountNotice(''), 3500);
   };
 
   const pageCopy = {
@@ -544,8 +607,23 @@ export const AdminDashboard = ({
 
       {activeTab === 'user_directory' && (
         <div className="admin-panel">
-          <h2>Active accounts ({users.length})</h2>
-          <p>Provisioned candidates and polling station agents.</p>
+          <div className="admin-panel-toolbar">
+            <div>
+              <h2>Active accounts ({users.length})</h2>
+              <p>Provisioned candidates and polling station agents.</p>
+            </div>
+            <button type="button" className="admin-btn admin-btn-primary" onClick={() => setTab('add_aspirant')}>
+              <Plus strokeWidth={1.75} />
+              Add account
+            </button>
+          </div>
+
+          {accountNotice && (
+            <div className="admin-notice">
+              <CheckCircle strokeWidth={1.75} />
+              <span>{accountNotice}</span>
+            </div>
+          )}
 
           <div className="custom-table-container">
             <table className="custom-table">
@@ -555,6 +633,7 @@ export const AdminDashboard = ({
                   <th>Role</th>
                   <th>Email</th>
                   <th>Jurisdiction</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -567,10 +646,193 @@ export const AdminDashboard = ({
                     <td><span className={`role-badge role-${String(u.role).toLowerCase().replace(/\s+/g, '-')}`}>{u.role}</span></td>
                     <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem' }}>{u.email}</td>
                     <td>{u.entityName}</td>
+                    <td>
+                      <div className="admin-row-actions">
+                        <button
+                          type="button"
+                          className="admin-icon-btn"
+                          title="View account"
+                          aria-label={`View ${u.name}`}
+                          onClick={() => openAccountView(u)}
+                        >
+                          <Eye strokeWidth={1.75} />
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-icon-btn"
+                          title="Edit account"
+                          aria-label={`Edit ${u.name}`}
+                          onClick={() => openAccountEdit(u)}
+                        >
+                          <Pencil strokeWidth={1.75} />
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-icon-btn is-danger"
+                          title="Delete account"
+                          aria-label={`Delete ${u.name}`}
+                          disabled={u.id === currentUser?.id}
+                          onClick={() => setDeleteTarget(u)}
+                        >
+                          <Trash2 strokeWidth={1.75} />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {accountModal && (
+        <div className="admin-modal-overlay" onClick={() => { setAccountModal(null); setEditDraft(null); }}>
+          <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-head">
+              <div>
+                <h3>{accountModal.mode === 'edit' ? 'Edit account' : 'Account details'}</h3>
+                <p>{accountModal.user.email}</p>
+              </div>
+              <button
+                type="button"
+                className="admin-icon-btn"
+                aria-label="Close"
+                onClick={() => { setAccountModal(null); setEditDraft(null); }}
+              >
+                <X strokeWidth={1.75} />
+              </button>
+            </div>
+
+            {accountModal.mode === 'view' ? (
+              <div className="admin-account-detail">
+                <img src={accountModal.user.avatar} alt="" />
+                <div className="admin-account-detail-grid">
+                  <div><span>Name</span><strong>{accountModal.user.name}</strong></div>
+                  <div><span>Role</span><strong>{accountModal.user.role}</strong></div>
+                  <div><span>Email</span><strong>{accountModal.user.email}</strong></div>
+                  <div><span>Phone</span><strong>{accountModal.user.phone || '—'}</strong></div>
+                  <div><span>Jurisdiction</span><strong>{accountModal.user.entityName || '—'}</strong></div>
+                  <div><span>Party</span><strong>{accountModal.user.party || '—'}</strong></div>
+                </div>
+                <div className="admin-modal-actions">
+                  <button type="button" className="admin-btn admin-btn-ghost" onClick={() => openAccountEdit(accountModal.user)}>
+                    <Pencil strokeWidth={1.75} />
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-danger"
+                    disabled={accountModal.user.id === currentUser?.id}
+                    onClick={() => setDeleteTarget(accountModal.user)}
+                  >
+                    <Trash2 strokeWidth={1.75} />
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSaveAccount} className="admin-account-form">
+                <div className="responsive-form-grid">
+                  <div className="form-group">
+                    <label className="form-label">Full name</label>
+                    <input
+                      className="form-input"
+                      value={editDraft?.name || ''}
+                      onChange={(e) => setEditDraft((d) => ({ ...d, name: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Email</label>
+                    <input
+                      type="email"
+                      className="form-input"
+                      value={editDraft?.email || ''}
+                      onChange={(e) => setEditDraft((d) => ({ ...d, email: e.target.value }))}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="responsive-form-grid">
+                  <div className="form-group">
+                    <label className="form-label">Role</label>
+                    <select
+                      className="form-select"
+                      value={editDraft?.role || ''}
+                      onChange={(e) => setEditDraft((d) => ({ ...d, role: e.target.value }))}
+                    >
+                      {ACCOUNT_ROLES.map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Phone</label>
+                    <input
+                      className="form-input"
+                      value={editDraft?.phone || ''}
+                      onChange={(e) => setEditDraft((d) => ({ ...d, phone: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="responsive-form-grid">
+                  <div className="form-group">
+                    <label className="form-label">Jurisdiction</label>
+                    <input
+                      className="form-input"
+                      value={editDraft?.entityName || ''}
+                      onChange={(e) => setEditDraft((d) => ({ ...d, entityName: e.target.value }))}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Party</label>
+                    <input
+                      className="form-input"
+                      value={editDraft?.party || ''}
+                      onChange={(e) => setEditDraft((d) => ({ ...d, party: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="admin-modal-actions">
+                  <button type="button" className="admin-btn admin-btn-ghost" onClick={() => { setAccountModal(null); setEditDraft(null); }}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="admin-btn admin-btn-primary">
+                    <CheckCircle strokeWidth={1.75} />
+                    Save changes
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="admin-modal-overlay" onClick={() => setDeleteTarget(null)}>
+          <div className="admin-modal admin-modal-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-head">
+              <div>
+                <h3>Delete account</h3>
+                <p>This removes access for {deleteTarget.name}.</p>
+              </div>
+              <button type="button" className="admin-icon-btn" aria-label="Close" onClick={() => setDeleteTarget(null)}>
+                <X strokeWidth={1.75} />
+              </button>
+            </div>
+            <p className="admin-modal-copy">
+              Confirm deletion of <strong>{deleteTarget.email}</strong>. This cannot be undone in this session.
+            </p>
+            <div className="admin-modal-actions">
+              <button type="button" className="admin-btn admin-btn-ghost" onClick={() => setDeleteTarget(null)}>
+                Cancel
+              </button>
+              <button type="button" className="admin-btn admin-btn-danger" onClick={handleDeleteAccount}>
+                <Trash2 strokeWidth={1.75} />
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
