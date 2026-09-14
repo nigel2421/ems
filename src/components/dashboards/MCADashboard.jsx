@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { MapPin, Users, CheckCircle, Clock, AlertCircle, UserPlus, Award } from 'lucide-react';
 import { AddAgentModal } from '../modules/AddAgentModal';
+import './DashboardShared.css';
 
 export const MCADashboard = () => {
   const { currentUser } = useAuth();
@@ -18,114 +19,83 @@ export const MCADashboard = () => {
   const wardPollingStations = geography.pollingStations.filter(ps => ps.wardId === ward.id);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Header Banner */}
-      <div 
-        className="glass-card" 
-        style={{
-          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, var(--bg-surface-card) 100%)',
-          border: '1px solid rgba(16, 185, 129, 0.25)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1rem'
-        }}
-      >
+    <div className="role-dash">
+      <header className="admin-page-head">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <span className="role-badge role-mca">MCA Ward Level Command</span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Ward: {ward.name} ({ward.id})</span>
-          </div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '0.25rem' }}>
-            {ward.name} Ward Polling Matrix
-          </h1>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+          <h1>{ward.name} Ward Polling Matrix</h1>
+          <p>
             Hyper-local ward polling station monitoring, polling stream coverage, and agent deployment tracking.
           </p>
         </div>
+        <div className="admin-head-actions">
+          <button type="button" className="admin-btn admin-btn-primary" onClick={() => setShowAddAgent(true)}>
+            <UserPlus strokeWidth={1.75} />
+            Add MCA Ward Agent
+          </button>
+        </div>
+      </header>
 
-        <button 
-          className="btn btn-primary" 
-          onClick={() => setShowAddAgent(true)}
-          style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
-        >
-          <UserPlus style={{ width: '16px', height: '16px' }} />
-          <span>Add MCA Ward Agent</span>
-        </button>
-      </div>
+      <section className="admin-metric-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+        <article className="admin-metric is-featured">
+          <div className="admin-metric-top">
+            <span>Candidate Tally ({currentUser?.name})</span>
+            <div className="admin-metric-icon"><Award strokeWidth={1.75} /></div>
+          </div>
+          <strong>{scopedSubmissions.length}</strong>
+          <small>Verified Ward Evidence Submissions</small>
+        </article>
 
-      {/* Top Stat Cards Grid */}
-      <div className="grid-stats">
-        <div className="glass-card stat-box">
+        <article className="admin-metric">
+          <div className="admin-metric-top">
+            <span>Active Ward Agents</span>
+            <div className="admin-metric-icon"><Users strokeWidth={1.75} /></div>
+          </div>
+          <strong>{scopedAgents.length}</strong>
+          <small>Bound to MCA Ticket</small>
+        </article>
+
+        <article className="admin-metric">
+          <div className="admin-metric-top">
+            <span>Ward Polling Stations</span>
+            <div className="admin-metric-icon"><MapPin strokeWidth={1.75} /></div>
+          </div>
+          <strong>{wardPollingStations.length}</strong>
+          <small>{ward.name} Territory Streams</small>
+        </article>
+      </section>
+
+      <article className="admin-card">
+        <div className="admin-card-head">
           <div>
-            <div className="stat-label">Candidate Tally ({currentUser?.name})</div>
-            <div className="stat-val" style={{ color: '#059669' }}>{scopedSubmissions.length} Submissions</div>
-            <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '0.2rem' }}>Verified Ward Evidence</div>
-          </div>
-          <div className="stat-icon" style={{ color: '#10b981', background: 'rgba(16, 185, 129, 0.15)' }}>
-            <Award style={{ width: '24px', height: '24px' }} />
+            <h2>My Ward Candidate Agents ({scopedAgents.length})</h2>
+            <p>Assigned to {ward.name} Polling Streams</p>
           </div>
         </div>
-
-        <div className="glass-card stat-box">
-          <div>
-            <div className="stat-label">Active Ward Agents</div>
-            <div className="stat-val" style={{ color: 'var(--color-primary)' }}>{scopedAgents.length}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Bound to MCA Ticket</div>
-          </div>
-          <div className="stat-icon" style={{ color: '#818cf8', background: 'rgba(99, 102, 241, 0.15)' }}>
-            <Users style={{ width: '24px', height: '24px' }} />
-          </div>
-        </div>
-
-        <div className="glass-card stat-box">
-          <div>
-            <div className="stat-label">Ward Polling Stations</div>
-            <div className="stat-val" style={{ color: '#0284c7' }}>{wardPollingStations.length} Streams</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{ward.name} Territory</div>
-          </div>
-          <div className="stat-icon" style={{ color: '#06b6d4', background: 'rgba(6, 182, 212, 0.15)' }}>
-            <MapPin style={{ width: '24px', height: '24px' }} />
-          </div>
-        </div>
-      </div>
-
-      {/* MCA Ticket Agents Roster */}
-      <div className="glass-card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>
-            My Ward Candidate Agents ({scopedAgents.length})
-          </h3>
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Assigned to {ward.name} Polling Streams</span>
-        </div>
-
         {scopedAgents.length === 0 ? (
-          <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', background: 'var(--bg-surface-elevated)', borderRadius: '12px' }}>
-            No agents registered yet for your MCA ticket. Click <strong>"Add MCA Ward Agent"</strong> above to provision agents.
+          <div className="admin-empty">
+            No agents registered yet for your MCA ticket. Click <strong>Add MCA Ward Agent</strong> above to provision agents.
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+          <div className="admin-agent-grid">
             {scopedAgents.map(ag => (
-              <div key={ag.id} className="glass-card" style={{ background: 'var(--bg-surface-elevated)', padding: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <img src={ag.avatar} alt={ag.name} style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }} />
-                <div>
-                  <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{ag.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{ag.entityName}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--color-primary)', marginTop: '0.1rem' }}>{ag.email}</div>
-                </div>
+              <div key={ag.id} className="admin-agent-tile">
+                <img src={ag.avatar} alt={ag.name} />
+                <strong>{ag.name}</strong>
+                <span>{ag.entityName}</span>
+                <span>{ag.email}</span>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </article>
 
-      {/* Ward Polling Stations Grid */}
-      <div className="glass-card">
-        <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem' }}>
-          Polling Stations & Assigned Agents ({wardPollingStations.length} Streams)
-        </h3>
-
+      <article className="admin-card">
+        <div className="admin-card-head">
+          <div>
+            <h2>Polling Stations & Assigned Agents ({wardPollingStations.length} Streams)</h2>
+            <p>Ward-level coverage and Form 34A status</p>
+          </div>
+        </div>
         <div className="custom-table-container">
           <table className="custom-table">
             <thead>
@@ -143,21 +113,21 @@ export const MCADashboard = () => {
                 const assignedAgent = scopedAgents.find(a => a.assignedEntity === ps.id);
                 return (
                   <tr key={ps.id}>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontWeight: '600', color: '#059669' }}>{ps.code}</td>
-                    <td style={{ fontWeight: '600' }}>{ps.name}</td>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#006B3F' }}>{ps.code}</td>
+                    <td style={{ fontWeight: 600 }}>{ps.name}</td>
                     <td>{ps.registeredVoters} voters</td>
                     <td>
                       {assignedAgent ? (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#059669' }}>
-                          <CheckCircle style={{ width: '14px', height: '14px' }} /> {assignedAgent.name}
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#006B3F' }}>
+                          <CheckCircle strokeWidth={1.75} style={{ width: 14, height: 14 }} /> {assignedAgent.name}
                         </span>
                       ) : ps.agentAssigned ? (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#059669' }}>
-                          <CheckCircle style={{ width: '14px', height: '14px' }} /> Assigned ({ps.agentAssigned})
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#006B3F' }}>
+                          <CheckCircle strokeWidth={1.75} style={{ width: 14, height: 14 }} /> Assigned ({ps.agentAssigned})
                         </span>
                       ) : (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#dc2626' }}>
-                          <AlertCircle style={{ width: '14px', height: '14px' }} /> Unassigned Agent
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#BB0A21' }}>
+                          <AlertCircle strokeWidth={1.75} style={{ width: 14, height: 14 }} /> Unassigned Agent
                         </span>
                       )}
                     </td>
@@ -168,7 +138,7 @@ export const MCADashboard = () => {
                         </span>
                       ) : (
                         <span className="status-pill pending">
-                          <Clock style={{ width: '12px', height: '12px' }} /> Awaiting Tally
+                          <Clock strokeWidth={1.75} style={{ width: 12, height: 12 }} /> Awaiting Tally
                         </span>
                       )}
                     </td>
@@ -178,9 +148,8 @@ export const MCADashboard = () => {
             </tbody>
           </table>
         </div>
-      </div>
+      </article>
 
-      {/* Add Agent Modal */}
       {showAddAgent && (
         <AddAgentModal
           defaultAspirantId={currentUser.id}

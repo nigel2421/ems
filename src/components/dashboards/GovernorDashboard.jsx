@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { 
-  Users, 
-  CheckCircle, 
-  AlertOctagon, 
-  Map, 
-  TrendingUp, 
+import {
+  Users,
+  CheckCircle,
+  AlertOctagon,
+  Map,
+  TrendingUp,
   FileSpreadsheet,
   Award,
   UserPlus
@@ -14,6 +14,7 @@ import {
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { AddAgentModal } from '../modules/AddAgentModal';
+import './DashboardShared.css';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
@@ -55,8 +56,8 @@ export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
       {
         label: 'County Governor Votes',
         data: [sakajaSum, igatheSum, 25],
-        backgroundColor: ['rgba(99, 102, 241, 0.85)', 'rgba(6, 182, 212, 0.85)', 'rgba(156, 163, 175, 0.6)'],
-        borderColor: ['#6366f1', '#06b6d4', '#9ca3af'],
+        backgroundColor: ['#006B3F', '#0E7A45', '#A7C4B5'],
+        borderColor: ['#073322', '#006B3F', '#6B756F'],
         borderWidth: 1.5,
         borderRadius: 8
       }
@@ -68,205 +69,163 @@ export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
     datasets: [
       {
         data: [candidateASum + candidateBSum, 1120, 2480000],
-        backgroundColor: ['#10b981', '#f59e0b', '#1f2937'],
-        borderColor: '#111827',
+        backgroundColor: ['#006B3F', '#C9A227', '#BB0A21'],
+        borderColor: '#FFFFFF',
         borderWidth: 2
       }
     ]
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-      {/* Header Banner */}
-      <div 
-        className="glass-card" 
-        style={{
-          background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, var(--bg-surface-card) 100%)',
-          border: '1px solid rgba(99, 102, 241, 0.25)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1rem'
-        }}
-      >
+    <div className="role-dash">
+      <header className="admin-page-head">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <span className="role-badge role-governor">{currentUser.role} Control Command</span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>IEBC Gazette C047</span>
-          </div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '0.25rem' }}>
-            {county.name} Executive Dashboard
-          </h1>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+          <h1>{county.name} Executive Dashboard</h1>
+          <p>
             County-wide live voting tally, turnouts, agent evidence status, and mismatch detection.
           </p>
         </div>
-
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button className="btn btn-secondary" onClick={() => setShowAddAgent(true)}>
-            <UserPlus style={{ width: '16px', height: '16px' }} />
-            <span>Add Governor Agent</span>
+        <div className="admin-head-actions">
+          <button type="button" className="admin-btn admin-btn-ghost" onClick={() => setShowAddAgent(true)}>
+            <UserPlus strokeWidth={1.75} />
+            Add Governor Agent
           </button>
-          <button className="btn btn-primary" onClick={onOpenGeographic}>
-            <Map style={{ width: '16px', height: '16px' }} />
-            <span>IEBC Geo Inspector</span>
+          <button type="button" className="admin-btn admin-btn-primary" onClick={onOpenGeographic}>
+            <Map strokeWidth={1.75} />
+            Geo Inspector
           </button>
           {mismatchCount > 0 && (
-            <button className="btn btn-danger" onClick={onOpenMismatch}>
-              <AlertOctagon style={{ width: '16px', height: '16px' }} />
-              <span>{mismatchCount} Mismatch Alerts</span>
+            <button type="button" className="admin-btn admin-btn-ghost" onClick={onOpenMismatch} style={{ borderColor: '#BB0A21', color: '#BB0A21' }}>
+              <AlertOctagon strokeWidth={1.75} />
+              {mismatchCount} Mismatch Alerts
             </button>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* Governor Ticket Agents Roster */}
-      <div className="glass-card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>
-            Governor Ticket Agents ({scopedAgents.length})
-          </h3>
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Assigned to Nairobi County Polling Streams</span>
+      <section className="admin-metric-grid">
+        <article className="admin-metric is-featured">
+          <div className="admin-metric-top">
+            <span>Registered Voters</span>
+            <div className="admin-metric-icon"><Users strokeWidth={1.75} /></div>
+          </div>
+          <strong>{county.registeredVoters.toLocaleString()}</strong>
+          <small>17 Constituencies · 85 Wards</small>
+        </article>
+
+        <article className="admin-metric">
+          <div className="admin-metric-top">
+            <span>Governor Leading Tally</span>
+            <div className="admin-metric-icon"><Award strokeWidth={1.75} /></div>
+          </div>
+          <strong>{sakajaSum.toLocaleString()}</strong>
+          <small>Margin: +{(sakajaSum - igatheSum).toLocaleString()} votes</small>
+        </article>
+
+        <article className="admin-metric">
+          <div className="admin-metric-top">
+            <span>Polling Stations Reporting</span>
+            <div className="admin-metric-icon"><CheckCircle strokeWidth={1.75} /></div>
+          </div>
+          <strong>{approvedCount} / {totalSubmissions}</strong>
+          <small>Form 34A Signed & Approved</small>
+        </article>
+
+        <article className="admin-metric">
+          <div className="admin-metric-top">
+            <span>Mismatch Flags</span>
+            <div className="admin-metric-icon"><AlertOctagon strokeWidth={1.75} /></div>
+          </div>
+          <strong>{mismatchCount}</strong>
+          <small>{mismatchCount > 0 ? 'Requires Immediate Investigation' : 'Zero Discrepancies'}</small>
+        </article>
+      </section>
+
+      <article className="admin-card">
+        <div className="admin-card-head">
+          <div>
+            <h2>Governor Ticket Agents ({scopedAgents.length})</h2>
+            <p>Assigned to Nairobi County Polling Streams</p>
+          </div>
         </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+        <div className="admin-agent-grid">
           {scopedAgents.map(ag => (
-            <div key={ag.id} className="glass-card" style={{ background: 'var(--bg-surface-elevated)', padding: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <img src={ag.avatar} alt={ag.name} style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }} />
-              <div>
-                <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{ag.name}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{ag.entityName}</div>
-                <div style={{ fontSize: '0.72rem', color: '#818cf8', marginTop: '0.1rem' }}>{ag.email}</div>
-              </div>
+            <div key={ag.id} className="admin-agent-tile">
+              <img src={ag.avatar} alt={ag.name} />
+              <strong>{ag.name}</strong>
+              <span>{ag.entityName}</span>
+              <span>{ag.email}</span>
             </div>
           ))}
         </div>
-      </div>
+      </article>
 
-      {/* Top Stat Cards Grid */}
-      <div className="grid-stats">
-        <div className="glass-card stat-box">
-          <div>
-            <div className="stat-label">Registered Voters</div>
-            <div className="stat-val">{county.registeredVoters.toLocaleString()}</div>
-            <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '0.2rem' }}>
-              17 Constituencies • 85 Wards
-            </div>
-          </div>
-          <div className="stat-icon" style={{ color: '#818cf8', background: 'rgba(99, 102, 241, 0.15)' }}>
-            <Users style={{ width: '24px', height: '24px' }} />
-          </div>
-        </div>
-
-        <div className="glass-card stat-box">
-          <div>
-            <div className="stat-label">Governor Leading Tally</div>
-            <div className="stat-val" style={{ color: '#818cf8' }}>{sakajaSum.toLocaleString()}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-              Margin: +{(sakajaSum - igatheSum).toLocaleString()} votes
-            </div>
-          </div>
-          <div className="stat-icon" style={{ color: '#10b981', background: 'rgba(16, 185, 129, 0.15)' }}>
-            <Award style={{ width: '24px', height: '24px' }} />
-          </div>
-        </div>
-
-        <div className="glass-card stat-box">
-          <div>
-            <div className="stat-label">Polling Stations Reporting</div>
-            <div className="stat-val">{approvedCount} / {totalSubmissions}</div>
-            <div style={{ fontSize: '0.75rem', color: '#38bdf8', marginTop: '0.2rem' }}>
-              Form 34A Signed & Approved
-            </div>
-          </div>
-          <div className="stat-icon" style={{ color: '#38bdf8', background: 'rgba(56, 189, 248, 0.15)' }}>
-            <CheckCircle style={{ width: '24px', height: '24px' }} />
-          </div>
-        </div>
-
-        <div className="glass-card stat-box">
-          <div>
-            <div className="stat-label">IEBC Mismatch Flags</div>
-            <div className="stat-val" style={{ color: mismatchCount > 0 ? '#f87171' : '#34d399' }}>
-              {mismatchCount}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: mismatchCount > 0 ? '#f87171' : 'var(--text-muted)', marginTop: '0.2rem' }}>
-              {mismatchCount > 0 ? 'Requires Immediate Investigation' : 'Zero Discrepancies'}
-            </div>
-          </div>
-          <div className="stat-icon" style={{ color: '#f87171', background: 'rgba(239, 68, 68, 0.15)' }}>
-            <AlertOctagon style={{ width: '24px', height: '24px' }} />
-          </div>
-        </div>
-      </div>
-
-      {/* Main Charts & Analytics Grid */}
-      <div className="grid-dashboard">
-        {/* Main Bar Chart */}
-        <div className="glass-card col-span-8">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+      <section className="admin-grid-2">
+        <article className="admin-card">
+          <div className="admin-card-head">
             <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>Nairobi County Gubernatorial Tally</h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Comparison of total valid votes counted from verified Form 34A evidence</p>
+              <h2>Nairobi County Gubernatorial Tally</h2>
+              <p>Comparison of total valid votes counted from verified Form 34A evidence</p>
             </div>
-            <span className="status-pill approved">
-              <TrendingUp style={{ width: '12px', height: '12px' }} /> Live Stream
+            <span className="admin-chip">
+              <TrendingUp strokeWidth={1.75} style={{ width: 12, height: 12, display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
+              Live Stream
             </span>
           </div>
-
           <div style={{ height: '300px', width: '100%', position: 'relative' }}>
-            <Bar 
-              data={governorChartData} 
+            <Bar
+              data={governorChartData}
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                   legend: { display: false },
-                  tooltip: { backgroundColor: '#1f2937', titleColor: '#fff', bodyColor: '#fff' }
+                  tooltip: { backgroundColor: '#073322', titleColor: '#fff', bodyColor: '#fff' }
                 },
                 scales: {
-                  x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'var(--text-muted)' } },
-                  y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'var(--text-muted)' } }
+                  x: { grid: { color: '#E6EBE8' }, ticks: { color: '#6B756F' } },
+                  y: { grid: { color: '#E6EBE8' }, ticks: { color: '#6B756F' } }
                 }
               }}
             />
           </div>
-        </div>
+        </article>
 
-        {/* Turnout Doughnut Chart */}
-        <div className="glass-card col-span-4" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.25rem' }}>County Turnout Ratio</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Voter participation progress</p>
+        <article className="admin-card" style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="admin-card-head">
+            <div>
+              <h2>County Turnout Ratio</h2>
+              <p>Voter participation progress</p>
+            </div>
           </div>
-
-          <div style={{ height: '200px', position: 'relative', display: 'flex', justifyContent: 'center' }}>
-            <Doughnut 
-              data={turnoutData} 
+          <div style={{ height: '200px', position: 'relative', display: 'flex', justifyContent: 'center', flex: 1 }}>
+            <Doughnut
+              data={turnoutData}
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom', labels: { color: 'var(--text-muted)', font: { size: 11 } } } }
+                plugins: {
+                  legend: {
+                    position: 'bottom',
+                    labels: { color: '#6B756F', font: { size: 11 } }
+                  }
+                }
               }}
             />
           </div>
-
-          <div style={{ padding: '0.75rem', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-sm)', marginTop: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+          <p style={{ margin: '1rem 0 0', fontSize: '0.8rem', color: '#6B756F', lineHeight: 1.45 }}>
             <strong>Note:</strong> County tallies aggregate submissions from Westlands, Dagoretti, Starehe, Langata, and Kasarani.
-          </div>
-        </div>
-      </div>
+          </p>
+        </article>
+      </section>
 
-      {/* Submissions Table Summary */}
-      <div className="glass-card col-span-12">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+      <article className="admin-card">
+        <div className="admin-card-head">
           <div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>Recent Form 34A Agent Uploads</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Live evidence stream submitted by polling station agents</p>
+            <h2>Recent Form 34A Agent Uploads</h2>
+            <p>Live evidence stream submitted by polling station agents</p>
           </div>
         </div>
-
         <div className="custom-table-container">
           <table className="custom-table">
             <thead>
@@ -282,23 +241,23 @@ export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
             <tbody>
               {scopedSubmissions.map(sub => (
                 <tr key={sub.id}>
-                  <td style={{ fontFamily: 'var(--font-mono)', fontWeight: '600', color: 'var(--color-primary)' }}>{sub.id}</td>
+                  <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#006B3F' }}>{sub.id}</td>
                   <td>
-                    <div style={{ fontWeight: '600' }}>{sub.pollingStationName}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Code: {sub.pollingStationId}</div>
+                    <div style={{ fontWeight: 600 }}>{sub.pollingStationName}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#6B756F' }}>Code: {sub.pollingStationId}</div>
                   </td>
                   <td>{sub.agentName}</td>
-                  <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  <td style={{ fontSize: '0.8rem', color: '#6B756F' }}>
                     {new Date(sub.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </td>
                   <td>
-                    <a 
-                      href={sub.evidence.form34AUrl} 
-                      target="_blank" 
+                    <a
+                      href={sub.evidence.form34AUrl}
+                      target="_blank"
                       rel="noreferrer"
-                      style={{ color: 'var(--color-primary)', textDecoration: 'underline', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                      style={{ color: '#006B3F', textDecoration: 'underline', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
                     >
-                      <FileSpreadsheet style={{ width: '14px', height: '14px' }} />
+                      <FileSpreadsheet strokeWidth={1.75} style={{ width: 14, height: 14 }} />
                       View Image ({sub.evidence.compressedSizeKb}KB)
                     </a>
                   </td>
@@ -312,8 +271,8 @@ export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
             </tbody>
           </table>
         </div>
-      </div>
-      {/* Add Agent Modal */}
+      </article>
+
       {showAddAgent && (
         <AddAgentModal
           defaultAspirantId={currentUser.id}

@@ -4,139 +4,107 @@ import {
   Eye,
   Vote,
   BarChart3,
-  Users,
-  AlertTriangle,
   ShieldCheck,
-  Building
+  Building2
 } from 'lucide-react';
+import './DashboardShared.css';
+
+const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
 
 export const ObserverDashboard = () => {
-  const { geography, stationIntelligence, surveys, tallyResults, fieldReports } = useData();
+  const { geography, surveys, tallyResults } = useData();
 
-  const totalPollingStations = geography.pollingStations?.length || 12872;
-  const verifiedTallies = tallyResults.filter(t => t.status === 'Approved' || t.status === 'Verified');
+  const totalPollingStations = geography.pollingStations?.length || 0;
+  const verifiedTallies = tallyResults.filter((t) => t.status === 'Approved' || t.status === 'Verified');
   const totalVotesCast = tallyResults.reduce((acc, t) => acc + (t.totalVotesCast || 0), 0);
+  const surveyResponses = surveys.reduce((acc, s) => acc + (s.responseCount || 0), 0);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Read-Only Observer Banner */}
-      <div 
-        className="glass-card"
-        style={{
-          background: 'linear-gradient(135deg, rgba(100, 116, 139, 0.15) 0%, rgba(30, 41, 59, 0.3) 100%)',
-          border: '1px solid rgba(148, 163, 184, 0.2)',
-          padding: '1.25rem 1.5rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1rem'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <Eye style={{ width: '28px', height: '28px', color: '#94a3b8' }} />
-          <div>
-            <div style={{ fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase', color: '#cbd5e1', letterSpacing: '0.05em' }}>
-              Observer / Read-Only Transparency Desk
-            </div>
-            <h1 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#fff' }}>
-              Election Monitoring & Public Analytics Portal
-            </h1>
-          </div>
+    <div className="role-dash">
+      <header className="admin-page-head">
+        <div>
+          <h1>Observer portal</h1>
+          <p>Read-only transparency desk for election monitoring and public analytics.</p>
         </div>
-
-        <div style={{ fontSize: '0.8rem', color: '#94a3b8', background: 'rgba(0,0,0,0.3)', padding: '0.4rem 0.85rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
-          Read-Only Mode Enabled
+        <div className="admin-head-actions">
+          <span className="admin-chip" style={{ height: 42, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0 0.9rem' }}>
+            <Eye strokeWidth={1.75} style={{ width: 15, height: 15 }} />
+            Read-only mode
+          </span>
         </div>
-      </div>
+      </header>
 
-      {/* Analytics Cards Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-        <div className="glass-card" style={{ padding: '1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Total Polling Stations</span>
-            <Building style={{ width: '18px', height: '18px', color: '#6366f1' }} />
+      <section className="admin-metric-grid">
+        <article className="admin-metric is-featured">
+          <div className="admin-metric-top">
+            <span>Polling stations</span>
+            <div className="admin-metric-icon"><Building2 strokeWidth={1.75} /></div>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '0.5rem' }}>
-            {totalPollingStations.toLocaleString()}
+          <strong>{formatCount(totalPollingStations)}</strong>
+          <small>Gazetted electoral streams</small>
+        </article>
+        <article className="admin-metric">
+          <div className="admin-metric-top">
+            <span>Verified returns</span>
+            <div className="admin-metric-icon"><ShieldCheck strokeWidth={1.75} /></div>
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Gazetted electoral streams
-          </div>
-        </div>
-
-        <div className="glass-card" style={{ padding: '1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Verified Tally Returns</span>
-            <ShieldCheck style={{ width: '18px', height: '18px', color: '#10b981' }} />
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '0.5rem', color: '#34d399' }}>
+          <strong>
             {verifiedTallies.length} / {tallyResults.length}
+          </strong>
+          <small>Form 34A evidence verified</small>
+        </article>
+        <article className="admin-metric">
+          <div className="admin-metric-top">
+            <span>Votes processed</span>
+            <div className="admin-metric-icon"><Vote strokeWidth={1.75} /></div>
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Form 34A evidence verified
+          <strong>{formatCount(totalVotesCast)}</strong>
+          <small>Ballots recorded across streams</small>
+        </article>
+        <article className="admin-metric">
+          <div className="admin-metric-top">
+            <span>Survey inputs</span>
+            <div className="admin-metric-icon"><BarChart3 strokeWidth={1.75} /></div>
+          </div>
+          <strong>{formatCount(surveyResponses)}</strong>
+          <small>Voter sentiment responses</small>
+        </article>
+      </section>
+
+      <article className="admin-card">
+        <div className="admin-card-head">
+          <div>
+            <h2>Tally stream summary</h2>
+            <p>Election day Form 34A returns</p>
           </div>
         </div>
-
-        <div className="glass-card" style={{ padding: '1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Total Votes Processed</span>
-            <Vote style={{ width: '18px', height: '18px', color: '#f59e0b' }} />
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '0.5rem', color: '#fbbf24' }}>
-            {totalVotesCast.toLocaleString()}
-          </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Ballots recorded across streams
-          </div>
-        </div>
-
-        <div className="glass-card" style={{ padding: '1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Survey Inputs Collected</span>
-            <BarChart3 style={{ width: '18px', height: '18px', color: '#06b6d4' }} />
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '0.5rem', color: '#22d3ee' }}>
-            {surveys.reduce((acc, s) => acc + (s.responseCount || 0), 0)}
-          </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Voter sentiment responses
-          </div>
-        </div>
-      </div>
-
-      {/* Summary Tables */}
-      <div className="glass-card" style={{ padding: '1.5rem' }}>
-        <h2 style={{ fontSize: '1.15rem', fontWeight: '800', marginBottom: '0.75rem' }}>Election Day Tally Stream Summary</h2>
         <div className="custom-table-container">
           <table className="custom-table">
             <thead>
               <tr>
-                <th>Station Code & Name</th>
+                <th>Station</th>
                 <th>Candidate A</th>
                 <th>Candidate B</th>
                 <th>Candidate C</th>
-                <th>Total Cast</th>
+                <th>Total cast</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody>
-              {tallyResults.map(tally => (
+              {tallyResults.map((tally) => (
                 <tr key={tally.id}>
-                  <td style={{ fontWeight: '600' }}>{tally.pollingStationName}</td>
-                  <td style={{ fontWeight: '700', color: '#818cf8' }}>{tally.candAVotes}</td>
+                  <td style={{ fontWeight: 600 }}>{tally.pollingStationName}</td>
+                  <td style={{ fontWeight: 700, color: '#006B3F' }}>{tally.candAVotes}</td>
                   <td>{tally.candBVotes}</td>
                   <td>{tally.candCVotes}</td>
-                  <td style={{ fontWeight: '700' }}>{tally.totalVotesCast}</td>
-                  <td>
-                    <span className={`status-pill ${tally.status.toLowerCase()}`}>{tally.status}</span>
-                  </td>
+                  <td style={{ fontWeight: 700 }}>{tally.totalVotesCast}</td>
+                  <td><span className={`status-pill ${tally.status.toLowerCase()}`}>{tally.status}</span></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
+      </article>
     </div>
   );
 };

@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { 
-  FileText, 
-  CheckCircle, 
-  Eye, 
-  Download, 
+import {
+  CheckCircle,
+  Eye,
+  Download,
   Clock,
   AlertTriangle,
   UserPlus,
@@ -14,6 +13,7 @@ import {
 import { ApprovalWorkflowModal } from '../modules/ApprovalWorkflowModal';
 import { PdfReportGenerator } from '../modules/PdfReportGenerator';
 import { AddAgentModal } from '../modules/AddAgentModal';
+import './DashboardShared.css';
 
 export const AspirantDashboard = () => {
   const { currentUser } = useAuth();
@@ -30,130 +30,90 @@ export const AspirantDashboard = () => {
   const mismatchSubmissions = scopedSubmissions.filter(s => s.status === 'Mismatch');
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-      {/* Header Banner */}
-      <div 
-        className="glass-card" 
-        style={{
-          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, var(--bg-surface-card) 100%)',
-          border: '1px solid rgba(245, 158, 11, 0.25)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1rem'
-        }}
-      >
+    <div className="role-dash">
+      <header className="admin-page-head">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <span className="role-badge role-aspirant">Aspirant Command Hub</span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Candidate: {currentUser?.name}</span>
-          </div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '0.25rem' }}>
-            Agent Evidence Approval & Isolation
-          </h1>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-            Manage strictly your own assigned agents, verify Form 34A evidence photos, and generate verified PDF dossier logs.
+          <h1>Agent Evidence Approval</h1>
+          <p>
+            Manage assigned agents, verify Form 34A evidence, and generate verified PDF dossier logs for {currentUser?.name}.
           </p>
         </div>
-
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button 
-            className="btn btn-secondary"
-            onClick={() => setShowAddAgent(true)}
-          >
-            <UserPlus style={{ width: '16px', height: '16px' }} />
-            <span>Add Candidate Agent</span>
+        <div className="admin-head-actions">
+          <button type="button" className="admin-btn admin-btn-ghost" onClick={() => setShowAddAgent(true)}>
+            <UserPlus strokeWidth={1.75} />
+            Add Candidate Agent
           </button>
-          <button 
-            className="btn btn-primary"
-            onClick={() => setShowPdfExport(true)}
-            style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}
-          >
-            <Download style={{ width: '16px', height: '16px' }} />
-            <span>Export Verified Dossier</span>
+          <button type="button" className="admin-btn admin-btn-primary" onClick={() => setShowPdfExport(true)}>
+            <Download strokeWidth={1.75} />
+            Export Verified Dossier
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* Quick Summary Cards */}
-      <div className="grid-stats">
-        <div className="glass-card stat-box">
+      <section className="admin-metric-grid">
+        <article className="admin-metric is-featured">
+          <div className="admin-metric-top">
+            <span>Assigned Agents</span>
+            <div className="admin-metric-icon"><Users strokeWidth={1.75} /></div>
+          </div>
+          <strong>{scopedAgents.length}</strong>
+          <small>Bound to Candidate</small>
+        </article>
+
+        <article className="admin-metric">
+          <div className="admin-metric-top">
+            <span>Pending Approval Queue</span>
+            <div className="admin-metric-icon"><Clock strokeWidth={1.75} /></div>
+          </div>
+          <strong>{pendingSubmissions.length}</strong>
+          <small>Requires Sign-off</small>
+        </article>
+
+        <article className="admin-metric">
+          <div className="admin-metric-top">
+            <span>Approved Submissions</span>
+            <div className="admin-metric-icon"><CheckCircle strokeWidth={1.75} /></div>
+          </div>
+          <strong>{approvedSubmissions.length}</strong>
+          <small>Form 34A Validated</small>
+        </article>
+
+        <article className="admin-metric">
+          <div className="admin-metric-top">
+            <span>Flagged Discrepancies</span>
+            <div className="admin-metric-icon"><AlertTriangle strokeWidth={1.75} /></div>
+          </div>
+          <strong>{mismatchSubmissions.length}</strong>
+          <small>Broadcast Variance</small>
+        </article>
+      </section>
+
+      <article className="admin-card">
+        <div className="admin-card-head">
           <div>
-            <div className="stat-label">Assigned Agents</div>
-            <div className="stat-val" style={{ color: 'var(--color-primary)' }}>{scopedAgents.length}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Bound to Candidate</div>
-          </div>
-          <div className="stat-icon" style={{ color: '#818cf8', background: 'rgba(99, 102, 241, 0.15)' }}>
-            <Users style={{ width: '24px', height: '24px' }} />
+            <h2>My Candidate Agents ({scopedAgents.length})</h2>
+            <p>Isolated Tenant Access</p>
           </div>
         </div>
-
-        <div className="glass-card stat-box">
-          <div>
-            <div className="stat-label">Pending Approval Queue</div>
-            <div className="stat-val" style={{ color: '#d97706' }}>{pendingSubmissions.length}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>Requires Sign-off</div>
-          </div>
-          <div className="stat-icon" style={{ color: '#f59e0b', background: 'rgba(245, 158, 11, 0.15)' }}>
-            <Clock style={{ width: '24px', height: '24px' }} />
-          </div>
-        </div>
-
-        <div className="glass-card stat-box">
-          <div>
-            <div className="stat-label">Approved Submissions</div>
-            <div className="stat-val" style={{ color: '#059669' }}>{approvedSubmissions.length}</div>
-            <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '0.2rem' }}>Form 34A Validated</div>
-          </div>
-          <div className="stat-icon" style={{ color: '#10b981', background: 'rgba(16, 185, 129, 0.15)' }}>
-            <CheckCircle style={{ width: '24px', height: '24px' }} />
-          </div>
-        </div>
-
-        <div className="glass-card stat-box">
-          <div>
-            <div className="stat-label">Flagged Discrepancies</div>
-            <div className="stat-val" style={{ color: mismatchSubmissions.length > 0 ? '#dc2626' : '#059669' }}>
-              {mismatchSubmissions.length}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>IEBC Broadcast Variance</div>
-          </div>
-          <div className="stat-icon" style={{ color: '#f87171', background: 'rgba(239, 68, 68, 0.15)' }}>
-            <AlertTriangle style={{ width: '24px', height: '24px' }} />
-          </div>
-        </div>
-      </div>
-
-      {/* Agents Roster Section */}
-      <div className="glass-card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>
-            My Candidate Agents ({scopedAgents.length})
-          </h3>
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Isolated Tenant Access</span>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+        <div className="admin-agent-grid">
           {scopedAgents.map(ag => (
-            <div key={ag.id} className="glass-card" style={{ background: 'var(--bg-surface-elevated)', padding: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <img src={ag.avatar} alt={ag.name} style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }} />
-              <div>
-                <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{ag.name}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{ag.entityName}</div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--color-primary)', marginTop: '0.1rem' }}>{ag.email}</div>
-              </div>
+            <div key={ag.id} className="admin-agent-tile">
+              <img src={ag.avatar} alt={ag.name} />
+              <strong>{ag.name}</strong>
+              <span>{ag.entityName}</span>
+              <span>{ag.email}</span>
             </div>
           ))}
         </div>
-      </div>
+      </article>
 
-      {/* Submissions Table with Approval Actions */}
-      <div className="glass-card">
-        <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem' }}>
-          Candidate Evidence Submissions Ledger
-        </h3>
-
+      <article className="admin-card">
+        <div className="admin-card-head">
+          <div>
+            <h2>Candidate Evidence Submissions Ledger</h2>
+            <p>Review and approve Form 34A evidence from assigned agents</p>
+          </div>
+        </div>
         <div className="custom-table-container">
           <table className="custom-table">
             <thead>
@@ -170,13 +130,13 @@ export const AspirantDashboard = () => {
             <tbody>
               {scopedSubmissions.map(sub => (
                 <tr key={sub.id}>
-                  <td style={{ fontFamily: 'var(--font-mono)', fontWeight: '600', color: 'var(--color-warning)' }}>{sub.id}</td>
+                  <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#006B3F' }}>{sub.id}</td>
                   <td>
-                    <div style={{ fontWeight: '600' }}>{sub.pollingStationName}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ID: {sub.pollingStationId}</div>
+                    <div style={{ fontWeight: 600 }}>{sub.pollingStationName}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#6B756F' }}>ID: {sub.pollingStationId}</div>
                   </td>
                   <td>{sub.agentName}</td>
-                  <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  <td style={{ fontSize: '0.8rem', color: '#6B756F' }}>
                     {new Date(sub.timestamp).toLocaleTimeString()}
                   </td>
                   <td style={{ fontSize: '0.82rem' }}>
@@ -188,12 +148,14 @@ export const AspirantDashboard = () => {
                     </span>
                   </td>
                   <td style={{ textAlign: 'right' }}>
-                    <button 
-                      className="btn btn-secondary btn-sm"
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-ghost"
+                      style={{ height: 36, padding: '0 0.75rem', fontSize: '0.78rem' }}
                       onClick={() => setSelectedSubmission(sub)}
                     >
-                      <Eye style={{ width: '14px', height: '14px' }} />
-                      <span>Review Evidence</span>
+                      <Eye strokeWidth={1.75} />
+                      Review Evidence
                     </button>
                   </td>
                 </tr>
@@ -201,9 +163,8 @@ export const AspirantDashboard = () => {
             </tbody>
           </table>
         </div>
-      </div>
+      </article>
 
-      {/* Workflow Modal for Review */}
       {selectedSubmission && (
         <ApprovalWorkflowModal
           submission={selectedSubmission}
@@ -219,7 +180,6 @@ export const AspirantDashboard = () => {
         />
       )}
 
-      {/* Add Agent Modal */}
       {showAddAgent && (
         <AddAgentModal
           defaultAspirantId={currentUser.id}
@@ -227,7 +187,6 @@ export const AspirantDashboard = () => {
         />
       )}
 
-      {/* PDF Export Modal */}
       {showPdfExport && (
         <PdfReportGenerator
           submissions={scopedSubmissions}

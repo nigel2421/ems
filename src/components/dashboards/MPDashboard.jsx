@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { Building2, Vote, Award, AlertTriangle, CheckCircle2, UserPlus, Users } from 'lucide-react';
+import { Award, CheckCircle2, UserPlus, Users } from 'lucide-react';
 import { AddAgentModal } from '../modules/AddAgentModal';
+import './DashboardShared.css';
 
 export const MPDashboard = () => {
   const { currentUser } = useAuth();
@@ -28,145 +29,97 @@ export const MPDashboard = () => {
   const leadingMargin = wanyonyiVotes - haviVotes;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Header Banner */}
-      <div 
-        className="glass-card" 
-        style={{
-          background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, var(--bg-surface-card) 100%)',
-          border: '1px solid rgba(6, 182, 212, 0.25)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1rem'
-        }}
-      >
+    <div className="role-dash">
+      <header className="admin-page-head">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <span className="role-badge role-mp">MP Constituency View</span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>IEBC Code: CONST-01</span>
-          </div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '0.25rem' }}>
-            {constituency.name} Command Center
-          </h1>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+          <h1>{constituency.name} Command Center</h1>
+          <p>
             Constituency-level Parliamentary vote tally, candidate margins, and ward stream monitoring.
           </p>
         </div>
+        <div className="admin-head-actions">
+          <button type="button" className="admin-btn admin-btn-primary" onClick={() => setShowAddAgent(true)}>
+            <UserPlus strokeWidth={1.75} />
+            Add MP Constituency Agent
+          </button>
+        </div>
+      </header>
 
-        <button className="btn btn-primary" onClick={() => setShowAddAgent(true)}>
-          <UserPlus style={{ width: '16px', height: '16px' }} />
-          <span>Add MP Constituency Agent</span>
-        </button>
-      </div>
+      <section className="admin-metric-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+        <article className="admin-metric is-featured">
+          <div className="admin-metric-top">
+            <span>Candidate Tally ({currentUser?.name || 'Hon. Tim Wanyonyi'})</span>
+            <div className="admin-metric-icon"><Award strokeWidth={1.75} /></div>
+          </div>
+          <strong>{wanyonyiVotes.toLocaleString()}</strong>
+          <small>Verified Form 34A Agent Votes · Margin +{leadingMargin.toLocaleString()}</small>
+        </article>
 
-      {/* Top Stat Cards */}
-      <div className="grid-stats">
-        <div className="glass-card stat-box">
+        <article className="admin-metric">
+          <div className="admin-metric-top">
+            <span>Active Candidate Agents</span>
+            <div className="admin-metric-icon"><Users strokeWidth={1.75} /></div>
+          </div>
+          <strong>{scopedAgents.length}</strong>
+          <small>Assigned Polling Stations</small>
+        </article>
+
+        <article className="admin-metric">
+          <div className="admin-metric-top">
+            <span>Agent Submissions</span>
+            <div className="admin-metric-icon"><CheckCircle2 strokeWidth={1.75} /></div>
+          </div>
+          <strong>{constituencySubmissions.length}</strong>
+          <small>Verified Physical Evidence</small>
+        </article>
+      </section>
+
+      <article className="admin-card">
+        <div className="admin-card-head">
           <div>
-            <div className="stat-label">Candidate Tally ({currentUser?.name || 'Hon. Tim Wanyonyi'})</div>
-            <div className="stat-val" style={{ color: '#0284c7' }}>{wanyonyiVotes.toLocaleString()}</div>
-            <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '0.2rem' }}>
-              Verified Form 34A Agent Votes
-            </div>
-          </div>
-          <div className="stat-icon" style={{ color: '#06b6d4', background: 'rgba(6, 182, 212, 0.15)' }}>
-            <Award style={{ width: '24px', height: '24px' }} />
+            <h2>My Candidate Agents ({scopedAgents.length})</h2>
+            <p>Bound to {currentUser?.name || 'Candidate'} Ticket</p>
           </div>
         </div>
-
-        <div className="glass-card stat-box">
-          <div>
-            <div className="stat-label">Active Candidate Agents</div>
-            <div className="stat-val" style={{ color: '#d97706' }}>{scopedAgents.length}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-              Assigned Polling Stations
-            </div>
-          </div>
-          <div className="stat-icon" style={{ color: '#f59e0b', background: 'rgba(245, 158, 11, 0.15)' }}>
-            <Users style={{ width: '24px', height: '24px' }} />
-          </div>
-        </div>
-
-        <div className="glass-card stat-box">
-          <div>
-            <div className="stat-label">Agent Submissions</div>
-            <div className="stat-val" style={{ color: '#059669' }}>{constituencySubmissions.length}</div>
-            <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: '0.2rem' }}>
-              Verified Physical Evidence
-            </div>
-          </div>
-          <div className="stat-icon" style={{ color: '#10b981', background: 'rgba(16, 185, 129, 0.15)' }}>
-            <CheckCircle2 style={{ width: '24px', height: '24px' }} />
-          </div>
-        </div>
-      </div>
-
-      {/* MP Constituency Agents Roster */}
-      <div className="glass-card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>
-            My Candidate Agents ({scopedAgents.length})
-          </h3>
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Bound to {currentUser?.name || 'Candidate'} Ticket</span>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+        <div className="admin-agent-grid">
           {scopedAgents.map(ag => (
-            <div key={ag.id} className="glass-card" style={{ background: 'var(--bg-surface-elevated)', padding: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <img src={ag.avatar} alt={ag.name} style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }} />
-              <div>
-                <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{ag.name}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{ag.entityName}</div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--color-primary)', marginTop: '0.1rem' }}>{ag.email}</div>
-              </div>
+            <div key={ag.id} className="admin-agent-tile">
+              <img src={ag.avatar} alt={ag.name} />
+              <strong>{ag.name}</strong>
+              <span>{ag.entityName}</span>
+              <span>{ag.email}</span>
             </div>
           ))}
         </div>
-      </div>
+      </article>
 
-      {/* Wards Breakdown Cards */}
-      <div className="glass-card">
-        <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1rem' }}>
-          Ward Tally Matrix ({geography.wards.length} Wards)
-        </h3>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+      <article className="admin-card">
+        <div className="admin-card-head">
+          <div>
+            <h2>Ward Tally Matrix ({geography.wards.length} Wards)</h2>
+            <p>Constituency ward-level vote aggregation</p>
+          </div>
+        </div>
+        <div className="admin-list">
           {geography.wards.map(ward => {
             const wardSubs = constituencySubmissions.filter(s => s.wardId === ward.id);
             const wardTally = wardSubs.reduce((acc, curr) => acc + (curr.tallies.mp?.Wanyonyi || curr.tallies.mp?.candidateCount || 0), 0);
             return (
-              <div 
-                key={ward.id} 
-                className="glass-card" 
-                style={{ background: 'var(--bg-surface-elevated)', padding: '1rem' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>{ward.name}</div>
-                  <span className="status-pill approved" style={{ fontSize: '0.7rem' }}>
-                    {wardSubs.length} / {ward.pollingStationsCount} PS
-                  </span>
+              <div key={ward.id} className="admin-list-item">
+                <div>
+                  <strong>{ward.name}</strong>
+                  <span>Reg. Voters: {ward.registeredVoters.toLocaleString()}</span>
                 </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                  Reg. Voters: {ward.registeredVoters.toLocaleString()}
-                </div>
-
-                <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                    <span>{currentUser?.name || 'Candidate'} Tally:</span>
-                    <strong style={{ color: '#0284c7', fontWeight: '800' }}>
-                      {wardTally} votes
-                    </strong>
-                  </div>
-                </div>
+                <span className="admin-chip">{wardSubs.length} / {ward.pollingStationsCount} PS</span>
+                <strong style={{ marginLeft: '0.5rem', color: '#006B3F', fontSize: '0.9rem' }}>
+                  {wardTally} votes
+                </strong>
               </div>
             );
           })}
         </div>
-      </div>
+      </article>
 
-      {/* Add Agent Modal */}
       {showAddAgent && (
         <AddAgentModal
           defaultAspirantId={currentUser.id}
