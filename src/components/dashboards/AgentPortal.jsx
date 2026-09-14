@@ -3,17 +3,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { 
   Camera, 
-  Upload, 
   Save, 
   Send, 
   CheckCircle, 
-  FileText, 
-  MapPin, 
-  Smartphone, 
-  Clock,
-  ShieldCheck,
-  AlertCircle
+  MapPin
 } from 'lucide-react';
+import './DashboardShared.css';
 
 export const AgentPortal = () => {
   const { currentUser } = useAuth();
@@ -141,175 +136,121 @@ export const AgentPortal = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-      {/* Header Banner */}
-      <div 
-        className="glass-card" 
-        style={{
-          background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, var(--bg-surface-card) 100%)',
-          border: '1px solid rgba(236, 72, 153, 0.25)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1rem'
-        }}
-      >
+    <div className="role-dash">
+      <header className="admin-page-head">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <span className="role-badge role-agent">Polling Station Agent Terminal</span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Code: {assignedPs.code}</span>
-          </div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '0.25rem' }}>
-            {assignedPs.name}
-          </h1>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-            Restricted agent boundary: Form 34A evidence capture, auto-compression, and tally submission.
+          <h1>{assignedPs.name}</h1>
+          <p>
+            <MapPin style={{ width: 14, height: 14, display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />
+            Agent terminal · Code {assignedPs.code} · Form 34A capture and tally submission
           </p>
         </div>
-
         {savedNotice && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#059669', fontSize: '0.85rem', fontWeight: '600' }}>
-            <CheckCircle style={{ width: '16px', height: '16px' }} /> Draft Saved Auto-Persisted!
+          <div className="admin-chip" style={{ height: 42, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0 0.9rem' }}>
+            <CheckCircle strokeWidth={1.75} style={{ width: 15, height: 15 }} />
+            Draft saved
           </div>
         )}
-      </div>
+      </header>
 
       {submittedSuccess ? (
-        <div className="glass-card" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
-          <CheckCircle style={{ width: '64px', height: '64px', color: '#10b981', margin: '0 auto 1rem auto' }} />
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '800' }}>Form 34A Submitted Successfully!</h2>
-          <p style={{ color: 'var(--text-muted)', maxWdith: '500px', margin: '0.5rem auto 1.5rem auto' }}>
-            Your tally entry and compressed evidence photo have been locked and submitted to your Aspirant for sign-off.
+        <div className="admin-card" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
+          <CheckCircle strokeWidth={1.75} style={{ width: 56, height: 56, color: '#006B3F', margin: '0 auto 1rem' }} />
+          <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800 }}>Form 34A submitted</h2>
+          <p style={{ color: '#6B756F', maxWidth: 480, margin: '0.5rem auto 1.25rem' }}>
+            Your tally entry and evidence photo are locked and sent for aspirant sign-off.
           </p>
-          <button className="btn btn-secondary" onClick={() => setSubmittedSuccess(false)}>
-            Submit Another Entry / Edit Draft
+          <button type="button" className="admin-btn admin-btn-ghost" onClick={() => setSubmittedSuccess(false)}>
+            Submit another entry
           </button>
         </div>
       ) : (
-        <form onSubmit={handleSubmitFinal} className="grid-dashboard">
-          {/* Left Column: Form 34A Photo Capture & Auto-Compression */}
-          <div className="glass-card col-span-5" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>Form 34A Image Capture & Metadata</h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Auto-compresses high-res photo for low-bandwidth cellular upload</p>
+        <form onSubmit={handleSubmitFinal} className="admin-grid-2">
+          <div className="admin-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="admin-card-head">
+              <div>
+                <h2>Form 34A capture</h2>
+                <p>Photo evidence with auto-compression metadata</p>
+              </div>
             </div>
 
-            <div style={{ position: 'relative', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px dashed var(--border-glow)', background: 'rgba(0,0,0,0.3)' }}>
-              <img 
-                src={evidencePhoto} 
-                alt="Form 34A Evidence Preview" 
-                style={{ width: '100%', height: '240px', objectFit: 'cover' }} 
+            <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', border: '1px solid #E6EBE8' }}>
+              <img
+                src={evidencePhoto}
+                alt="Form 34A evidence preview"
+                style={{ width: '100%', height: 240, objectFit: 'cover', display: 'block' }}
               />
-              <div 
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'rgba(0,0,0,0.4)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: 0,
-                  transition: 'opacity 0.2s'
-                }}
-                onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                onMouseLeave={e => e.currentTarget.style.opacity = 0}
-              >
-                <label className="btn btn-primary" style={{ cursor: 'pointer' }}>
-                  <Camera style={{ width: '16px', height: '16px' }} />
-                  <span>Snap New Photo</span>
-                  <input type="file" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} />
-                </label>
-              </div>
+              <label className="admin-btn admin-btn-primary" style={{ position: 'absolute', left: 12, bottom: 12, cursor: 'pointer' }}>
+                <Camera strokeWidth={1.75} />
+                Snap photo
+                <input type="file" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} />
+              </label>
             </div>
 
-            {/* Compression Metadata Details */}
-            <div style={{ background: 'var(--bg-surface-elevated)', padding: '1rem', borderRadius: 'var(--radius-sm)', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.82rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Original Size:</span>
-                <strong>{(compressionStats.originalKb / 1024).toFixed(2)} MB</strong>
+            <div className="admin-list">
+              <div className="admin-list-item">
+                <div>
+                  <strong>Original size</strong>
+                  <span>{(compressionStats.originalKb / 1024).toFixed(2)} MB</span>
+                </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Compressed Upload:</span>
-                <strong style={{ color: '#059669' }}>{compressionStats.compressedKb} KB ({compressionStats.ratio})</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-muted)' }}>GPS Timestamp:</span>
-                <span>{new Date().toLocaleTimeString()} • -1.2676, 36.8111</span>
+              <div className="admin-list-item">
+                <div>
+                  <strong>Compressed upload</strong>
+                  <span>{compressionStats.compressedKb} KB ({compressionStats.ratio})</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Right Column: Vote Tally Entry */}
-          <div className="glass-card col-span-7" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>Polling Station Results Tally</h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Enter exact figures counted from official physical ballots</p>
+          <div className="admin-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="admin-card-head">
+              <div>
+                <h2>Station results tally</h2>
+                <p>Enter figures from the official ballot count</p>
+              </div>
             </div>
 
-            {/* Presidential Tally */}
-            <div style={{ background: 'var(--bg-surface-elevated)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-primary)', marginBottom: '0.75rem' }}>
-                Presidential Election
+            <div style={{ padding: '1rem', borderRadius: 16, background: '#F3F6F4', border: '1px solid #E6EBE8' }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#006B3F', marginBottom: '0.75rem', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                Presidential
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Candidate A (Ruto / Coalition)</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    value={tallies.candidateA} 
-                    onChange={e => handleInputChange('candidateA', e.target.value)} 
-                  />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Candidate A</label>
+                  <input type="number" className="form-input" value={tallies.candidateA} onChange={(e) => handleInputChange('candidateA', e.target.value)} />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Candidate B (Raila / Coalition)</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    value={tallies.candidateB} 
-                    onChange={e => handleInputChange('candidateB', e.target.value)} 
-                  />
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Candidate B</label>
+                  <input type="number" className="form-input" value={tallies.candidateB} onChange={(e) => handleInputChange('candidateB', e.target.value)} />
                 </div>
               </div>
             </div>
 
-            {/* Gubernatorial Tally */}
-            <div style={{ background: 'var(--bg-surface-elevated)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-primary)', marginBottom: '0.75rem' }}>
-                Gubernatorial Election (Nairobi)
+            <div style={{ padding: '1rem', borderRadius: 16, background: '#F3F6F4', border: '1px solid #E6EBE8' }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#006B3F', marginBottom: '0.75rem', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                Gubernatorial
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Johnson Sakaja (UDA)</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    value={tallies.sakaja} 
-                    onChange={e => handleInputChange('sakaja', e.target.value)} 
-                  />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Johnson Sakaja</label>
+                  <input type="number" className="form-input" value={tallies.sakaja} onChange={(e) => handleInputChange('sakaja', e.target.value)} />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Polycarp Igathe (Jubilee/Azimio)</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    value={tallies.igathe} 
-                    onChange={e => handleInputChange('igathe', e.target.value)} 
-                  />
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Polycarp Igathe</label>
+                  <input type="number" className="form-input" value={tallies.igathe} onChange={(e) => handleInputChange('igathe', e.target.value)} />
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-              <button type="button" className="btn btn-secondary" onClick={handleSaveDraft} style={{ flex: 1 }}>
-                <Save style={{ width: '16px', height: '16px' }} />
-                <span>Save Draft Auto-Persist</span>
+            <div className="admin-head-actions">
+              <button type="button" className="admin-btn admin-btn-ghost" onClick={handleSaveDraft}>
+                <Save strokeWidth={1.75} />
+                Save draft
               </button>
-              <button type="submit" className="btn btn-primary" style={{ flex: 2, background: 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)' }}>
-                <Send style={{ width: '16px', height: '16px' }} />
-                <span>Submit Form 34A to Aspirant</span>
+              <button type="submit" className="admin-btn admin-btn-primary">
+                <Send strokeWidth={1.75} />
+                Submit Form 34A
               </button>
             </div>
           </div>
