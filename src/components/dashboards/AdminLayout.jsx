@@ -335,10 +335,17 @@ export const AdminLayout = ({
         {showProfilePanel && (
           <div
             id="admin-profile-panel"
-            className="admin-profile-panel"
+            className="admin-profile-overlay"
             role="dialog"
+            aria-modal="true"
             aria-label="Account profile"
           >
+            <button
+              type="button"
+              className="admin-profile-backdrop"
+              aria-label="Close profile"
+              onClick={() => onCloseProfilePanel?.()}
+            />
             <div className="admin-profile-panel-card">
               <div className="admin-profile-panel-head">
                 <div className="admin-profile-panel-identity">

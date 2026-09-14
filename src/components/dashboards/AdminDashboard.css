@@ -286,31 +286,61 @@
   box-shadow: inset 0 0 0 1px rgba(0, 107, 63, 0.18);
 }
 
-.admin-profile-panel {
-  margin: 1.15rem 1.15rem 0;
-  width: fit-content;
-  max-width: min(380px, calc(100% - 2.3rem));
-  animation: admin-profile-in 0.22s ease;
+.admin-profile-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 1.15rem;
+  animation: admin-profile-in 0.2s ease;
+}
+
+.admin-profile-backdrop {
+  appearance: none;
+  position: absolute;
+  inset: 0;
+  border: none;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  background: rgba(243, 246, 244, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 @keyframes admin-profile-in {
   from {
     opacity: 0;
-    transform: translateY(-8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 .admin-profile-panel-card {
-  width: 100%;
+  position: relative;
+  z-index: 1;
+  width: fit-content;
+  max-width: min(360px, calc(100% - 0.5rem));
   background: var(--admin-surface);
   border: 1px solid var(--admin-line);
   border-radius: 18px;
   padding: 1rem 1.05rem 1.1rem;
-  box-shadow: 0 10px 28px rgba(7, 51, 34, 0.08);
+  box-shadow: 0 16px 40px rgba(7, 51, 34, 0.16);
+  animation: admin-profile-card-in 0.22s ease;
+}
+
+@keyframes admin-profile-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .admin-profile-panel-head {
@@ -496,6 +526,7 @@
 }
 
 .admin-layout-main {
+  position: relative;
   padding: 1.35rem 1.5rem 2rem;
   overflow-y: auto;
   max-height: 100vh;
