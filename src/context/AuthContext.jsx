@@ -178,6 +178,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const deleteUser = (userId) => {
+    setUsers(prev => prev.filter(u => u.id !== userId));
+    if (currentUser && currentUser.id === userId) {
+      logout();
+    }
+  };
+
   const toggle2FAStatus = () => {
     setIs2FAVerified(prev => !prev);
   };
@@ -230,6 +237,7 @@ export const AuthProvider = ({ children }) => {
         switchUser,
         addUser,
         updateUserProfile,
+        deleteUser,
         is2FAVerified,
         setIs2FAVerified,
         toggle2FAStatus,

@@ -41,7 +41,6 @@ const MORE_MODULES = [
 
 const ADMIN_TOOLS = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { id: 'add_aspirant', label: 'Add Candidate', icon: UserPlus },
   { id: 'user_directory', label: 'Accounts', icon: UserCheck }
 ];
 
