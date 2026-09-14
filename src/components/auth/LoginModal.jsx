@@ -52,6 +52,12 @@ export const LoginModal = () => {
     }, 280);
   };
 
+  const workspaceLabel = (user) => {
+    const duplicates = (users || []).filter((item) => item.role === user.role).length > 1;
+    if (!duplicates) return user.role;
+    return user.name.split(/[\s(/]/)[0];
+  };
+
   const handleWorkspaceSelect = (user) => {
     setEmail(user.email);
     setPassword(user.password || '');
@@ -124,7 +130,7 @@ export const LoginModal = () => {
                       className={`auth-chip${email === user.email ? ' is-active' : ''}`}
                       onClick={() => handleWorkspaceSelect(user)}
                     >
-                      {user.role}
+                      {workspaceLabel(user)}
                     </button>
                   ))}
                 </div>
