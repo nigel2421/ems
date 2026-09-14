@@ -22,34 +22,34 @@ import './CampaignStrategy.css';
 
 const PHASE_ICONS = [Megaphone, Users, Network, Radio, Vote];
 
-const CircularProgress = ({ value = 0, size = 'neutral', size = 88 }) => {
+const CircularProgress = ({ value = 0, variant = 'neutral', diameter = 88 }) => {
   const stroke = 7;
-  const radius = (size - stroke) / 2;
+  const radius = (diameter - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (Math.min(100, Math.max(0, value)) / 100) * circumference;
 
   return (
-    <div className={`strategy-ring strategy-ring-${tone}`} style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
+    <div className={`strategy-ring strategy-ring-${variant}`} style={{ width: diameter, height: diameter }}>
+      <svg width={diameter} height={diameter} viewBox={`0 0 ${diameter} ${diameter}`} aria-hidden="true">
         <circle
           className="strategy-ring-track"
-          cx={size / 2}
-          cy={size / 2}
+          cx={diameter / 2}
+          cy={diameter / 2}
           r={radius}
           strokeWidth={stroke}
           fill="none"
         />
         <circle
           className="strategy-ring-value"
-          cx={size / 2}
-          cy={size / 2}
+          cx={diameter / 2}
+          cy={diameter / 2}
           r={radius}
           strokeWidth={stroke}
           fill="none"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           strokeLinecap="round"
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          transform={`rotate(-90 ${diameter / 2} ${diameter / 2})`}
         />
       </svg>
       <div className="strategy-ring-label">
@@ -59,7 +59,7 @@ const CircularProgress = ({ value = 0, size = 'neutral', size = 88 }) => {
   );
 };
 
-const statusTone = (status) => {
+const getStatusVariant = (status) => {
   if (status === 'Completed') return 'done';
   if (status === 'Active') return 'active';
   return 'pending';
@@ -106,7 +106,7 @@ export const CampaignStrategy = ({ onClose }) => {
           </p>
         </div>
         <div className="strategy-hero-stat">
-          <CircularProgress value={overallProgress} tone="active" size={96} />
+          <CircularProgress value={overallProgress} variant="active" diameter={96} />
           <div>
             <strong>Overall progress</strong>
             <span>{campaignPhases.length} phases in the master plan</span>
@@ -117,19 +117,19 @@ export const CampaignStrategy = ({ onClose }) => {
       <section className="strategy-phase-grid">
         {campaignPhases.map((phase, index) => {
           const Icon = PHASE_ICONS[index % PHASE_ICONS.length] || Flag;
-          const tone = statusTone(phase.status);
+          const variant = getStatusVariant(phase.status);
           return (
             <button
               key={phase.id}
               type="button"
-              className={`strategy-phase-card strategy-phase-card-${tone}`}
+              className={`strategy-phase-card strategy-phase-card-${variant}`}
               onClick={() => setSelectedPhaseId(phase.id)}
             >
               <div className="strategy-phase-top">
                 <div className="strategy-phase-icon">
                   <Icon strokeWidth={1.75} />
                 </div>
-                <span className={`strategy-status strategy-status-${tone}`}>{phase.status}</span>
+                <span className={`strategy-status strategy-status-${variant}`}>{phase.status}</span>
               </div>
 
               <div className="strategy-phase-mid">
@@ -139,7 +139,7 @@ export const CampaignStrategy = ({ onClose }) => {
               </div>
 
               <div className="strategy-phase-foot">
-                <CircularProgress value={phase.progressPct} tone={tone} size={84} />
+                <CircularProgress value={phase.progressPct} variant={variant} diameter={84} />
                 <div className="strategy-phase-meta">
                   <div>
                     <Calendar strokeWidth={1.75} />
@@ -172,9 +172,13 @@ export const CampaignStrategy = ({ onClose }) => {
           >
             <div className="strategy-modal-head">
               <div className="strategy-modal-title-row">
-                <CircularProgress value={selectedPhase.progressPct} tone={statusTone(selectedPhase.status)} size={72} />
+                <CircularProgress
+                  value={selectedPhase.progressPct}
+                  variant={getStatusVariant(selectedPhase.status)}
+                  diameter={72}
+                />
                 <div>
-                  <span className={`strategy-status strategy-status-${statusTone(selectedPhase.status)}`}>
+                  <span className={`strategy-status strategy-status-${getStatusVariant(selectedPhase.status)}`}>
                     {selectedPhase.status}
                   </span>
                   <h2 id="strategy-phase-title">

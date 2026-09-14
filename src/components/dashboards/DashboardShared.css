@@ -1,0 +1,411 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+.role-dash {
+  --dash-green: #006B3F;
+  --dash-green-deep: #073322;
+  --dash-green-mid: #0E7A45;
+  --dash-soft: #E8F5EE;
+  --dash-mint: #D8F3E4;
+  --dash-gold: #C9A227;
+  --dash-red: #BB0A21;
+  --dash-ink: #1A1F1C;
+  --dash-muted: #6B756F;
+  --dash-line: #E6EBE8;
+  --dash-surface: #FFFFFF;
+  --dash-canvas: #F3F6F4;
+  --dash-font: 'Inter', 'Segoe UI', system-ui, sans-serif;
+
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  font-family: var(--dash-font);
+  color: var(--dash-ink);
+}
+
+.role-dash .admin-page-head h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--dash-ink);
+}
+
+.role-dash .admin-page-head p {
+  margin: 0.3rem 0 0;
+  font-size: 0.88rem;
+  color: var(--dash-muted);
+  max-width: 56ch;
+}
+
+.role-dash .admin-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.role-dash .admin-head-actions {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.role-dash .admin-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  height: 42px;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.role-dash .admin-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.role-dash .admin-btn-primary {
+  background: var(--dash-green);
+  color: #fff;
+}
+
+.role-dash .admin-btn-primary:hover {
+  background: var(--dash-green-deep);
+}
+
+.role-dash .admin-btn-ghost {
+  background: #fff;
+  border-color: var(--dash-line);
+  color: var(--dash-ink);
+}
+
+.role-dash .admin-btn-ghost:hover {
+  border-color: var(--dash-green);
+  color: var(--dash-green-deep);
+}
+
+.role-dash .admin-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.role-dash .admin-metric {
+  padding: 1.1rem 1.05rem;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid var(--dash-line);
+  box-shadow: 0 8px 24px -20px rgba(7, 51, 34, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-height: 132px;
+}
+
+.role-dash .admin-metric.is-featured {
+  background: #006B3F;
+  border-color: transparent;
+  color: #fff;
+}
+
+.role-dash .admin-metric-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.role-dash .admin-metric-top span {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--dash-muted);
+}
+
+.role-dash .admin-metric.is-featured .admin-metric-top span {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.role-dash .admin-metric-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dash-soft);
+  color: var(--dash-green);
+}
+
+.role-dash .admin-metric.is-featured .admin-metric-icon {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.role-dash .admin-metric-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.role-dash .admin-metric strong {
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.role-dash .admin-metric small {
+  font-size: 0.75rem;
+  color: var(--dash-muted);
+}
+
+.role-dash .admin-metric.is-featured small {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.role-dash .admin-grid-2 {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 0.9rem;
+}
+
+.role-dash .admin-card {
+  background: #fff;
+  border: 1px solid var(--dash-line);
+  border-radius: 20px;
+  padding: 1.15rem 1.2rem;
+  box-shadow: 0 8px 24px -20px rgba(7, 51, 34, 0.35);
+}
+
+.role-dash .admin-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.role-dash .admin-card-head h2,
+.role-dash .admin-card-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.role-dash .admin-card-head p {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: var(--dash-muted);
+}
+
+.role-dash .admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.role-dash .admin-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.75rem;
+  border-radius: 14px;
+  background: var(--dash-canvas);
+}
+
+.role-dash .admin-list-item img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.role-dash .admin-list-item strong {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.role-dash .admin-list-item span {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--dash-muted);
+  margin-top: 0.1rem;
+}
+
+.role-dash .admin-chip {
+  margin-left: auto;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: var(--dash-mint);
+  color: var(--dash-green-deep);
+  white-space: nowrap;
+}
+
+.role-dash .admin-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.role-dash .admin-progress-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--dash-line);
+  overflow: hidden;
+}
+
+.role-dash .admin-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--dash-green);
+}
+
+.role-dash .admin-progress strong {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--dash-green);
+}
+
+.role-dash .admin-op-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.9rem;
+}
+
+.role-dash .admin-op-card {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  text-align: left;
+  padding: 1.15rem;
+  border-radius: 20px;
+  border: 1px solid var(--dash-line);
+  background: #fff;
+  box-shadow: 0 8px 24px -20px rgba(7, 51, 34, 0.35);
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.role-dash .admin-op-card:hover {
+  border-color: var(--dash-green);
+  transform: translateY(-1px);
+}
+
+.role-dash .admin-op-card .admin-metric-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.role-dash .admin-op-card .admin-metric-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.role-dash .admin-op-card strong {
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.role-dash .admin-op-card span {
+  font-size: 0.78rem;
+  color: var(--dash-muted);
+  line-height: 1.4;
+}
+
+.role-dash .admin-empty {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--dash-muted);
+  font-size: 0.88rem;
+}
+
+.role-dash .admin-agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.role-dash .admin-agent-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.9rem 0.75rem;
+  border-radius: 16px;
+  background: var(--dash-canvas);
+  border: 1px solid var(--dash-line);
+  text-align: center;
+}
+
+.role-dash .admin-agent-tile img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.role-dash .admin-agent-tile strong {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.role-dash .admin-agent-tile span {
+  font-size: 0.72rem;
+  color: var(--dash-muted);
+}
+
+.role-dash .custom-table-container {
+  border-radius: 14px;
+  border: 1px solid var(--dash-line);
+  overflow: auto;
+}
+
+.role-dash .custom-table th {
+  background: var(--dash-canvas);
+  color: var(--dash-muted);
+}
+
+.role-dash .custom-table td {
+  color: var(--dash-ink);
+}
+
+.role-dash .status-pill {
+  text-transform: none;
+}
+
+@media (max-width: 1100px) {
+  .role-dash .admin-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .role-dash .admin-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .role-dash .admin-metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .role-dash .admin-page-head h1 {
+    font-size: 1.4rem;
+  }
+}

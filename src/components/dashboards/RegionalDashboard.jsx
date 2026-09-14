@@ -2,220 +2,161 @@ import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import {
-  MapPin,
   Users,
-  CheckCircle,
   AlertTriangle,
   UserCheck,
-  Building,
+  Building2,
   Activity,
-  ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  ArrowUpRight
 } from 'lucide-react';
+import './DashboardShared.css';
+
+const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
 
 export const RegionalDashboard = ({ onOpenModule }) => {
   const { currentUser } = useAuth();
-  const { agents, geography, fieldReports, tallyResults, updateAgentStatus, getScopedAgents } = useData();
+  const { agents, fieldReports, tallyResults, getScopedAgents } = useData();
 
   const scopedAgents = getScopedAgents ? getScopedAgents(currentUser, agents) : agents;
-  const regionName = currentUser?.entityName || currentUser?.assignedEntity || 'Regional Operations Hub';
-  const regionalIncidents = fieldReports.filter(r => (r.locationName && regionName && r.locationName.toLowerCase().includes(regionName.toLowerCase())) || r.severityLevel === 'High' || r.severityLevel === 'Critical');
-  const pendingTallyVerifications = tallyResults.filter(t => t.status === 'Submitted' || t.status === 'Mismatch');
+  const regionName = currentUser?.entityName || currentUser?.assignedEntity || 'Regional Operations';
+  const regionalIncidents = fieldReports.filter(
+    (r) =>
+      (r.locationName && regionName && r.locationName.toLowerCase().includes(regionName.toLowerCase())) ||
+      r.severityLevel === 'High' ||
+      r.severityLevel === 'Critical'
+  );
+  const pendingTallyVerifications = tallyResults.filter((t) => t.status === 'Submitted' || t.status === 'Mismatch');
+  const activeAgents = scopedAgents.filter((a) => a.status === 'Active' || a.status === 'On Duty').length;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Header Banner */}
-      <div 
-        className="glass-card"
-        style={{
-          background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%)',
-          border: '1px solid rgba(6, 182, 212, 0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          padding: '1.5rem 1.75rem'
-        }}
-      >
+    <div className="role-dash">
+      <header className="admin-page-head">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#22d3ee', fontSize: '0.82rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            <MapPin style={{ width: '16px', height: '16px' }} />
-            <span>Regional Operations Hub</span>
-          </div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '0.25rem', color: '#fff' }}>
-            {regionName} Regional Coordinator Portal
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '0.25rem' }}>
-            Manage regional field agents, monitor assigned polling station activities, and verify incoming election tallies.
-          </p>
+          <h1>{regionName}</h1>
+          <p>Regional operations — field agents, station coverage, and tally verification queue.</p>
         </div>
-
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button className="btn btn-primary" onClick={() => onOpenModule('agent_management')}>
-            <UserCheck style={{ width: '16px', height: '16px' }} />
-            <span>Assign Field Agents</span>
+        <div className="admin-head-actions">
+          <button type="button" className="admin-btn admin-btn-primary" onClick={() => onOpenModule('agents')}>
+            <UserCheck strokeWidth={1.75} />
+            Assign agents
           </button>
-          <button className="btn btn-secondary" onClick={() => onOpenModule('tally_center')}>
-            <ShieldCheck style={{ width: '16px', height: '16px' }} />
-            <span>Tally Verification Queue ({pendingTallyVerifications.length})</span>
+          <button type="button" className="admin-btn admin-btn-ghost" onClick={() => onOpenModule('tally_center')}>
+            <ShieldCheck strokeWidth={1.75} />
+            Tally queue ({pendingTallyVerifications.length})
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* Metrics Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-        <div className="glass-card" style={{ padding: '1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Assigned Field Agents</span>
-            <Users style={{ width: '18px', height: '18px', color: '#06b6d4' }} />
+      <section className="admin-metric-grid">
+        <article className="admin-metric is-featured">
+          <div className="admin-metric-top">
+            <span>Field agents</span>
+            <div className="admin-metric-icon"><Users strokeWidth={1.75} /></div>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '0.5rem', color: '#22d3ee' }}>
-            {scopedAgents.length}
+          <strong>{formatCount(scopedAgents.length)}</strong>
+          <small>{activeAgents} active / on duty</small>
+        </article>
+        <article className="admin-metric">
+          <div className="admin-metric-top">
+            <span>Station coverage</span>
+            <div className="admin-metric-icon"><Building2 strokeWidth={1.75} /></div>
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            {scopedAgents.filter(a => a.status === 'Active' || a.status === 'On Duty').length} Active / On Duty
+          <strong>94.2%</strong>
+          <small>Agents on gazetted streams</small>
+        </article>
+        <article className="admin-metric">
+          <div className="admin-metric-top">
+            <span>Pending tallies</span>
+            <div className="admin-metric-icon"><AlertTriangle strokeWidth={1.75} /></div>
           </div>
-        </div>
+          <strong>{formatCount(pendingTallyVerifications.length)}</strong>
+          <small>{tallyResults.filter((t) => t.status === 'Mismatch').length} mismatch flags</small>
+        </article>
+        <article className="admin-metric">
+          <div className="admin-metric-top">
+            <span>Incidents</span>
+            <div className="admin-metric-icon"><Activity strokeWidth={1.75} /></div>
+          </div>
+          <strong>{formatCount(regionalIncidents.length)}</strong>
+          <small>Field reports in scope</small>
+        </article>
+      </section>
 
-        <div className="glass-card" style={{ padding: '1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Polling Station Coverage</span>
-            <Building style={{ width: '18px', height: '18px', color: '#10b981' }} />
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '0.5rem', color: '#34d399' }}>
-            94.2%
-          </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Agents deployed across gazetted streams
-          </div>
-        </div>
-
-        <div className="glass-card" style={{ padding: '1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Pending Tally Verifications</span>
-            <AlertTriangle style={{ width: '18px', height: '18px', color: '#f59e0b' }} />
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '0.5rem', color: '#fbbf24' }}>
-            {pendingTallyVerifications.length}
-          </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            {tallyResults.filter(t => t.status === 'Mismatch').length} Math Mismatch flagged
-          </div>
-        </div>
-
-        <div className="glass-card" style={{ padding: '1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Regional Incident Feed</span>
-            <Activity style={{ width: '18px', height: '18px', color: '#ec4899' }} />
-          </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '0.5rem', color: '#f472b6' }}>
-            {regionalIncidents.length}
-          </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Reports submitted by field agents
-          </div>
-        </div>
-      </div>
-
-      {/* Main Grid */}
-      <div className="responsive-split">
-        {/* Regional Agents Directory & Activity */}
-        <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <section className="admin-grid-2">
+        <article className="admin-card">
+          <div className="admin-card-head">
             <div>
-              <h2 style={{ fontSize: '1.15rem', fontWeight: '800' }}>Regional Field Agents Roster</h2>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                Monitor assigned polling stations, live activity status, and performance ratings.
-              </p>
+              <h2>Field agents roster</h2>
+              <p>Assigned stations, status, and performance</p>
             </div>
-            <button className="btn btn-secondary btn-sm" onClick={() => onOpenModule('agent_management')}>
-              Manage Directory
+            <button type="button" className="admin-btn admin-btn-ghost" onClick={() => onOpenModule('agents')}>
+              Directory
+              <ArrowUpRight strokeWidth={1.75} />
             </button>
           </div>
-
           <div className="custom-table-container">
             <table className="custom-table">
               <thead>
                 <tr>
-                  <th>Agent Name</th>
-                  <th>Assigned Region / Ward</th>
+                  <th>Agent</th>
+                  <th>Region / ward</th>
                   <th>Status</th>
-                  <th>Reports / Surveys</th>
+                  <th>Activity</th>
                   <th>Rating</th>
                 </tr>
               </thead>
               <tbody>
                 {scopedAgents.length > 0 ? (
-                  scopedAgents.map(ag => (
+                  scopedAgents.map((ag) => (
                     <tr key={ag.id}>
-                      <td style={{ fontWeight: '600' }}>{ag.fullName || ag.name}</td>
-                      <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{ag.region}</td>
+                      <td style={{ fontWeight: 600 }}>{ag.fullName || ag.name}</td>
+                      <td>{ag.region}</td>
+                      <td><span className={`status-pill ${String(ag.status).toLowerCase().replace(' ', '-')}`}>{ag.status}</span></td>
                       <td>
-                        <span className={`status-pill ${ag.status.toLowerCase().replace(' ', '-')}`}>
-                          {ag.status}
-                        </span>
+                        {ag.reportsSubmittedCount || 0} reps / {ag.surveysCompletedCount || 0} surv
                       </td>
-                      <td style={{ fontSize: '0.82rem' }}>
-                        <strong>{ag.reportsSubmittedCount || 0}</strong> reps / <strong>{ag.surveysCompletedCount || 0}</strong> surv
-                      </td>
-                      <td style={{ color: '#fbbf24', fontWeight: '700' }}>
-                        ★ {ag.performanceRating || '4.5'}
-                      </td>
+                      <td style={{ fontWeight: 700, color: '#006B3F' }}>★ {ag.performanceRating || '4.5'}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                      No field agents assigned to {regionName} yet. Click "Assign Field Agents" to bind agents to polling stations in this constituency/ward.
+                    <td colSpan="5">
+                      <div className="admin-empty">No field agents assigned to {regionName} yet.</div>
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
-        </div>
+        </article>
 
-        {/* Pending Tally Verification Cards */}
-        <div className="glass-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: '800' }}>Tally Sign-Off Queue</h3>
-            <button className="btn btn-secondary btn-sm" onClick={() => onOpenModule('tally_center')}>
-              Open Tally Center
+        <article className="admin-card">
+          <div className="admin-card-head">
+            <div>
+              <h2>Tally sign-off queue</h2>
+              <p>Incoming Form 34A returns</p>
+            </div>
+            <button type="button" className="admin-btn admin-btn-ghost" onClick={() => onOpenModule('tally_center')}>
+              Open tally
             </button>
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {tallyResults.map(tally => (
-              <div 
-                key={tally.id}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '12px',
-                  padding: '0.85rem 1rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.5rem'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: '700' }}>{tally.pollingStationName}</span>
-                  <span className={`status-pill ${tally.status.toLowerCase()}`}>{tally.status}</span>
+          <div className="admin-list">
+            {tallyResults.map((tally) => (
+              <div key={tally.id} className="admin-list-item">
+                <div className="admin-metric-icon"><ShieldCheck strokeWidth={1.75} /></div>
+                <div>
+                  <strong>{tally.pollingStationName}</strong>
+                  <span>
+                    Votes cast {tally.totalVotesCast} · Reg {tally.registeredVoters}
+                  </span>
                 </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                  Total Votes Cast: <strong>{tally.totalVotesCast}</strong> (Reg: {tally.registeredVoters})
-                </div>
-                {tally.approvalComment && (
-                  <div style={{ fontSize: '0.75rem', color: tally.status === 'Mismatch' ? '#f87171' : '#34d399', background: 'rgba(0,0,0,0.2)', padding: '0.35rem 0.5rem', borderRadius: '6px' }}>
-                    {tally.approvalComment}
-                  </div>
-                )}
+                <span className="admin-chip">{tally.status}</span>
               </div>
             ))}
           </div>
-        </div>
-      </div>
+        </article>
+      </section>
     </div>
   );
 };
