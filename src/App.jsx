@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider, useData } from './context/DataContext';
-import { Navbar } from './components/Navbar';
 import { AdminLayout } from './components/dashboards/AdminLayout';
 import { AdminDashboard } from './components/dashboards/AdminDashboard';
 import { StrategyDashboard } from './components/dashboards/StrategyDashboard';
@@ -30,18 +29,18 @@ const MainAppContent = () => {
   const [showAuditLogs, setShowAuditLogs] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [showProfilePanel, setShowProfilePanel] = useState(false);
 
   if (!isAuthenticated || !currentUser) {
     return <LoginModal />;
   }
-
-  const isAdmin = currentUser.role === 'Admin' || currentUser.role === 'Super Admin';
 
   const openModule = (mod) => {
     if (mod === 'ai_assistant') {
       setShowAIAssistant(true);
       return;
     }
+    setShowProfilePanel(false);
     setCurrentModule(mod);
     if (mod === 'dashboard') {
       setAdminPanel((prev) => prev || 'overview');
@@ -122,31 +121,21 @@ const MainAppContent = () => {
   const content = renderActiveModuleContent();
 
   return (
-    <div className={`app-container${isAdmin ? ' is-admin-shell' : ''}`}>
-      {!isAdmin && (
-        <Navbar
-          currentModule={currentModule}
-          onOpenModule={openModule}
-          onOpenNotifications={() => setShowNotifications(true)}
-          onOpenAuditLogs={() => setShowAuditLogs(true)}
-        />
-      )}
-
-      {isAdmin ? (
-        <AdminLayout
-          currentModule={currentModule}
-          adminPanel={adminPanel}
-          onAdminPanelChange={setAdminPanel}
-          onOpenModule={openModule}
-          onOpenNotifications={() => setShowNotifications(true)}
-          onOpenAuditLogs={() => setShowAuditLogs(true)}
-          onOpenGeographic={() => setCurrentModule('polling_stations')}
-        >
-          {content}
-        </AdminLayout>
-      ) : (
-        <main className="main-content">{content}</main>
-      )}
+    <div className="app-container is-admin-shell">
+      <AdminLayout
+        currentModule={currentModule}
+        adminPanel={adminPanel}
+        onAdminPanelChange={setAdminPanel}
+        onOpenModule={openModule}
+        onOpenNotifications={() => setShowNotifications(true)}
+        onOpenAuditLogs={() => setShowAuditLogs(true)}
+        onOpenGeographic={() => setCurrentModule('polling_stations')}
+        showProfilePanel={showProfilePanel}
+        onToggleProfilePanel={() => setShowProfilePanel((v) => !v)}
+        onCloseProfilePanel={() => setShowProfilePanel(false)}
+      >
+        {content}
+      </AdminLayout>
 
       {showAuditLogs && <AuditLogViewer onClose={() => setShowAuditLogs(false)} />}
       {showAIAssistant && <AIAssistantModal onClose={() => setShowAIAssistant(false)} />}
