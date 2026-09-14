@@ -124,8 +124,8 @@ export const TeamMobilization = ({ onClose }) => {
       </div>
 
       {/* Filter Bar */}
-      <div className="glass-card" style={{ padding: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <select className="form-select" style={{ width: '220px', padding: '0.45rem' }} value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
+      <div className="glass-card responsive-filter-bar" style={{ padding: '1rem' }}>
+        <select className="form-select" style={{ width: 'auto', flex: '1 1 200px', padding: '0.45rem' }} value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
           <option value="">All Categories (7 Types)</option>
           <option value="Village Elders">Village Elders</option>
           <option value="Clergy">Clergy</option>
@@ -136,7 +136,7 @@ export const TeamMobilization = ({ onClose }) => {
           <option value="Community Organizers">Community Organizers</option>
         </select>
 
-        <select className="form-select" style={{ width: '160px', padding: '0.45rem' }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+        <select className="form-select" style={{ width: 'auto', flex: '1 1 160px', padding: '0.45rem' }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
           <option value="">All Support Statuses</option>
           <option value="Supportive">Supportive</option>
           <option value="Engaged">Engaged</option>
@@ -225,7 +225,7 @@ export const TeamMobilization = ({ onClose }) => {
                 <input type="text" className="form-input" placeholder="e.g. Pastor Joseph Mwangi" value={name} onChange={e => setName(e.target.value)} required />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="responsive-form-grid">
                 <div className="form-group">
                   <label className="form-label">Category</label>
                   <select className="form-select" value={category} onChange={e => setCategory(e.target.value)}>
@@ -250,7 +250,7 @@ export const TeamMobilization = ({ onClose }) => {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="responsive-form-grid">
                 <div className="form-group">
                   <label className="form-label">Influence Rating (1 - 10)</label>
                   <input type="number" min="1" max="10" className="form-input" value={influenceRating} onChange={e => setInfluenceRating(e.target.value)} />
