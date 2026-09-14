@@ -8,6 +8,7 @@
   justify-content: center;
   padding: 28px;
   background: #d8d2c8;
+  overflow-x: hidden;
   font-family: var(--auth-sans);
   color: #111111;
 }
@@ -105,9 +106,10 @@
 }
 
 .auth-device-stat {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
 }
 
 .auth-device-label {
@@ -139,15 +141,29 @@
 .auth-device-rows {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
-.auth-device-rows span {
-  display: block;
-  height: 28px;
+.auth-device-metric {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 10px;
   border-radius: 10px;
   background: #fff;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.auth-device-metric strong {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.auth-device-metric span {
+  font-size: 10px;
+  color: #6b6b6b;
 }
 
 .auth-panel {
@@ -314,36 +330,197 @@
   color: #8a8a8a;
 }
 
-@media (max-width: 900px) {
-  .auth-shell {
-    padding: 12px;
-  }
+.auth-mobile-stats {
+  display: none;
+  width: 100%;
+}
 
-  .auth-frame {
-    grid-template-columns: 1fr;
-    min-height: calc(100vh - 24px);
-    border-radius: 20px;
-  }
+.auth-shell button {
+  width: auto;
+  max-width: none;
+}
 
+.auth-shell .auth-submit {
+  width: 100%;
+}
+
+@media (max-width: 1100px) {
   .auth-brand {
-    min-height: 280px;
-    padding: 28px 24px 0;
+    padding: 32px 28px 28px;
   }
 
   .auth-brand h1 {
-    font-size: 40px;
+    font-size: 52px;
+  }
+
+  .auth-panel {
+    padding: 24px 32px 20px;
+  }
+}
+
+@media (max-width: 900px) {
+  .auth-shell {
+    min-height: 100dvh;
+    min-height: 100svh;
+    align-items: stretch;
+    padding: 0;
+    background: #fff;
+  }
+
+  .auth-frame {
+    width: 100%;
+    min-height: 100dvh;
+    min-height: 100svh;
+    grid-template-columns: 1fr;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .auth-brand {
+    min-height: 0;
+    padding: calc(16px + env(safe-area-inset-top)) 20px 16px;
+    justify-content: flex-start;
+    gap: 12px;
+  }
+
+  .auth-brand::before {
+    width: 280px;
+    height: 280px;
+    top: 70%;
+  }
+
+  .auth-brand::after {
+    width: 420px;
+    height: 420px;
+  }
+
+  .auth-brand-kicker {
+    font-size: 12px;
+    max-width: none;
+  }
+
+  .auth-brand h1 {
+    font-size: 34px;
   }
 
   .auth-device {
     display: none;
   }
 
+  .auth-mobile-stats {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin: 14px 0 4px;
+  }
+
+  .auth-mobile-stats > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid #e6e6e6;
+    background: #f7f7f5;
+    text-align: left;
+  }
+
+  .auth-mobile-stats strong {
+    display: block;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    color: #006B3F;
+  }
+
+  .auth-mobile-stats span {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: #5c6560;
+    text-align: right;
+  }
+
   .auth-panel {
-    padding: 20px 24px 18px;
+    flex: 1;
+    padding: 16px 20px calc(16px + env(safe-area-inset-bottom));
+    min-height: 0;
+  }
+
+  .auth-form {
+    margin: 12px auto 28px;
   }
 
   .auth-form h2 {
-    font-size: 32px;
-    margin-bottom: 20px;
+    font-size: 30px;
+    margin-bottom: 18px;
+  }
+
+  .auth-panel-foot {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-brand {
+    padding: calc(12px + env(safe-area-inset-top)) 16px 14px;
+  }
+
+  .auth-brand h1 {
+    font-size: 28px;
+  }
+
+  .auth-mobile-stats {
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .auth-mobile-stats > div {
+    padding: 11px 12px;
+  }
+
+  .auth-mobile-stats strong {
+    font-size: 16px;
+  }
+
+  .auth-panel {
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+  }
+
+  .auth-form {
+    margin: 16px auto 20px;
+  }
+
+  .auth-form h2 {
+    font-size: 26px;
+    margin-bottom: 16px;
+  }
+
+  .auth-input,
+  .auth-submit {
+    height: 48px;
+    font-size: 16px;
+  }
+
+  .auth-panel-foot {
+    font-size: 11px;
+  }
+}
+
+@media (max-height: 700px) and (max-width: 900px) {
+  .auth-brand-kicker {
+    display: none;
+  }
+
+  .auth-brand h1 {
+    font-size: 26px;
+  }
+
+  .auth-form {
+    margin: 12px auto 16px;
   }
 }

@@ -1,16 +1,41 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
 import { ThemeSwitcher } from '../common/ThemeSwitcher';
 import { ArrowRight, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import './LoginPage.css';
 
+const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
+
 export const LoginModal = () => {
   const { login } = useAuth();
+  const { geography } = useData();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const registerStats = useMemo(() => {
+    const counties = geography?.counties || [];
+    const stations = geography?.pollingStations || [];
+    const totalVoters = counties.reduce((sum, county) => sum + (Number(county.registeredVoters) || 0), 0);
+    const maxCountyVoters = Math.max(...counties.map((county) => Number(county.registeredVoters) || 0), 1);
+    const bars = [...counties]
+      .sort((a, b) => (Number(b.registeredVoters) || 0) - (Number(a.registeredVoters) || 0))
+      .slice(0, 6)
+      .map((county) => ({
+        id: county.id,
+        pct: Math.max(12, Math.round(((Number(county.registeredVoters) || 0) / maxCountyVoters) * 100))
+      }));
+
+    return {
+      totalVoters,
+      stationCount: stations.length,
+      countyCount: counties.length,
+      bars
+    };
+  }, [geography]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -39,22 +64,24 @@ export const LoginModal = () => {
             <span>Management</span>
           </h1>
 
-          <div className="auth-device" aria-hidden="true">
+          <div className="auth-device">
             <div className="auth-device-screen">
-              <div className="auth-device-stat">22.3M</div>
+              <div className="auth-device-stat">{formatCount(registerStats.totalVoters)}</div>
               <div className="auth-device-label">Registered voters</div>
-              <div className="auth-device-bars">
-                <i style={{ height: '72%' }} />
-                <i style={{ height: '46%' }} />
-                <i style={{ height: '88%' }} />
-                <i style={{ height: '38%' }} />
-                <i style={{ height: '61%' }} />
-                <i style={{ height: '54%' }} />
+              <div className="auth-device-bars" aria-hidden="true">
+                {registerStats.bars.map((bar) => (
+                  <i key={bar.id} style={{ height: `${bar.pct}%` }} />
+                ))}
               </div>
               <div className="auth-device-rows">
-                <span />
-                <span />
-                <span />
+                <div className="auth-device-metric">
+                  <strong>{formatCount(registerStats.stationCount)}</strong>
+                  <span>Polling stations</span>
+                </div>
+                <div className="auth-device-metric">
+                  <strong>{formatCount(registerStats.countyCount)}</strong>
+                  <span>Counties</span>
+                </div>
               </div>
             </div>
           </div>
@@ -68,6 +95,21 @@ export const LoginModal = () => {
             </div>
             <ThemeSwitcher compact={true} />
           </header>
+
+          <div className="auth-mobile-stats" aria-label="Register summary">
+            <div>
+              <strong>{formatCount(registerStats.totalVoters)}</strong>
+              <span>Registered voters</span>
+            </div>
+            <div>
+              <strong>{formatCount(registerStats.stationCount)}</strong>
+              <span>Polling stations</span>
+            </div>
+            <div>
+              <strong>{formatCount(registerStats.countyCount)}</strong>
+              <span>Counties</span>
+            </div>
+          </div>
 
           <form className="auth-form" onSubmit={handleSubmit}>
             <h2>Sign In</h2>
