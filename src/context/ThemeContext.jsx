@@ -5,19 +5,19 @@ const ThemeContext = createContext(null);
 export const ThemeProvider = ({ children }) => {
   const [theme, setThemeState] = useState(() => {
     try {
-      return localStorage.getItem('ems_theme') || 'system';
+      return localStorage.getItem('ems_theme') || 'light';
     } catch (e) {
-      return 'system';
+      return 'light';
     }
   });
 
   const getSystemTheme = useCallback(() => {
-    if (typeof window === 'undefined') return 'dark';
+    if (typeof window === 'undefined') return 'light';
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }, []);
 
   const [resolvedTheme, setResolvedTheme] = useState(() => {
-    const initialTheme = localStorage.getItem('ems_theme') || 'system';
+    const initialTheme = localStorage.getItem('ems_theme') || 'light';
     return initialTheme === 'system' ? getSystemTheme() : initialTheme;
   });
 

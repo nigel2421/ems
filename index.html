@@ -4,14 +4,14 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CI-EMS | Election Management System</title>
+    <title>IEBC | Election Management System</title>
     <!-- FOUC-Proof Theme Initialization Script -->
     <script>
       (function() {
         try {
           const stored = localStorage.getItem('ems_theme');
           const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          const isDark = stored === 'dark' || (stored === 'system' && prefersDark) || (!stored && prefersDark);
+          const isDark = stored === 'dark' || (stored === 'system' && prefersDark);
           if (isDark) {
             document.documentElement.classList.add('dark');
             document.documentElement.setAttribute('data-theme', 'dark');

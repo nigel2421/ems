@@ -1,0 +1,22 @@
+---
+description: IEBC frontend visual system for EMS
+alwaysApply: true
+---
+
+# IEBC frontend system
+
+Keep every new UI aligned with the official commission look, starting from the login page.
+
+## Brand
+- Colors: green `#006B3F` / `#004C2C`, red `#BB0A21`, gold `#C9A227`, black `#141414`, paper `#F4F1EA`, white `#FFFFFF`.
+- Default theme is **light**. Dark mode may exist, but public/auth screens stay official light green.
+- Type: IBM Plex Sans. Condensed weights only for titles. No indigo, cyan, or glassmorphism.
+
+## Layout
+- Compact: 8px spacing, 40–42px inputs/buttons, 6–10px radii.
+- Minimal Lucide icons at **16px**, `strokeWidth={1.75}`, no filled decorative icons.
+- Prefer CSS classes over large inline style objects.
+- Do not reproduce the official IEBC emblem; use the geometric flag mark already on login.
+
+## Voice
+- Professional, short, government-grade copy. Avoid startup slogans and “PRO / v4.0” chrome.

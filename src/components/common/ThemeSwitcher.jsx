@@ -48,7 +48,7 @@ export const ThemeSwitcher = ({ compact = false, className = '' }) => {
               minHeight: '36px',
               borderRadius: 'var(--radius-full)',
               border: isActive ? '1px solid var(--accent-primary)' : '1px solid transparent',
-              background: isActive ? 'rgba(59, 130, 246, 0.18)' : 'transparent',
+              background: isActive ? 'rgba(0, 107, 63, 0.14)' : 'transparent',
               color: isActive ? 'var(--accent-primary)' : 'var(--text-muted)',
               fontSize: '0.75rem',
               fontWeight: isActive ? '700' : '500',
