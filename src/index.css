@@ -202,6 +202,11 @@ body {
   letter-spacing: -0.02em;
 }
 
+html.dark .brand-logo,
+[data-theme="dark"] .brand-logo {
+  color: #F4F1EA;
+}
+
 .role-badge {
   display: inline-flex;
   align-items: center;
