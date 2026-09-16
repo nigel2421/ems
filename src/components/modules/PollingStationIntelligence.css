@@ -1,6 +1,9 @@
-.psi-shell {
-  gap: 0.85rem;
+.psi-error-copy {
+  margin: 0.45rem 0 1rem;
+  font-size: 0.86rem;
+  color: #6B756F;
 }
+
 
 .psi-top {
   display: flex;

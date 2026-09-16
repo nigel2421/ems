@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Component, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { parsePollingStationsCSV } from '../../services/api';
@@ -25,13 +25,64 @@ const PAGE_SIZE = 5;
 
 const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
 
-export const PollingStationIntelligence = ({ onClose }) => {
+class PsiErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, message: '' };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, message: error?.message || 'Unexpected error' };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="role-dash psi-shell">
+          <div className="psi-panel">
+            <h2>Polling intelligence unavailable</h2>
+            <p className="psi-error-copy">{this.state.message}</p>
+            <button type="button" className="admin-btn admin-btn-primary" onClick={() => this.setState({ hasError: false, message: '' })}>
+              Try again
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const resolveLocation = (ps, lookups) => {
+  if (!ps) {
+    return { county: '', constituency: '', ward: '', village: '', line: 'Location unavailable', detail: null };
+  }
+
+  const county = ps.county || lookups.counties.get(ps.countyId) || '';
+  const constituency = ps.constituency || lookups.constituencies.get(ps.constituencyId) || '';
+  const ward = ps.ward || lookups.wards.get(ps.wardId) || '';
+  const village = ps.village || '';
+
+  return {
+    county,
+    constituency,
+    ward,
+    village,
+    line: [county, constituency, ward].filter(Boolean).join(' · ') || 'Location unavailable',
+    detail: village || null
+  };
+};
+
+const PollingStationIntelligenceInner = () => {
   const { currentUser } = useAuth();
   const { geography, stationIntelligence, updateStationIntelligence, bulkImportPollingStations } = useData();
 
+  const counties = geography?.counties || [];
+  const defaultCountyId = counties[0]?.id || '';
+
   const [activeTab, setActiveTab] = useState('list');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCounty, setSelectedCounty] = useState('');
+  const [selectedCounty, setSelectedCounty] = useState(defaultCountyId);
   const [selectedRisk, setSelectedRisk] = useState('');
   const [selectedImportance, setSelectedImportance] = useState('');
   const [page, setPage] = useState(1);
@@ -60,88 +111,65 @@ export const PollingStationIntelligence = ({ onClose }) => {
     currentUser?.role === 'Admin' ||
     currentUser?.role === 'Strategy Team';
 
-  const geoLookups = useMemo(() => {
-    const counties = new Map();
-    const constituencies = new Map();
-    const wards = new Map();
-
-    (geography.counties || []).forEach((c) => {
-      if (c?.id != null) counties.set(c.id, c.name || '');
-    });
-    (geography.constituencies || []).forEach((c) => {
-      if (c?.id != null) constituencies.set(c.id, c.name || '');
-    });
-    (geography.wards || []).forEach((w) => {
-      if (w?.id != null) wards.set(w.id, w.name || '');
-    });
-
-    return { counties, constituencies, wards };
-  }, [geography.counties, geography.constituencies, geography.wards]);
-
-  const resolveLocation = (ps) => {
-    if (!ps) {
-      return {
-        county: '',
-        constituency: '',
-        ward: '',
-        village: '',
-        line: 'Location unavailable',
-        detail: null
-      };
+  useEffect(() => {
+    if (!selectedCounty && defaultCountyId) {
+      setSelectedCounty(defaultCountyId);
     }
+  }, [defaultCountyId, selectedCounty]);
 
-    const county = ps.county || geoLookups.counties.get(ps.countyId) || '';
-    const constituency = ps.constituency || geoLookups.constituencies.get(ps.constituencyId) || '';
-    const ward = ps.ward || geoLookups.wards.get(ps.wardId) || '';
-    const village = ps.village || '';
+  const geoLookups = useMemo(() => {
+    const countyMap = new Map();
+    const constituencyMap = new Map();
+    const wardMap = new Map();
 
-    return {
-      county,
-      constituency,
-      ward,
-      village,
-      line: [county, constituency, ward].filter(Boolean).join(' · ') || 'Location unavailable',
-      detail: village || null
-    };
-  };
+    counties.forEach((c) => {
+      if (c?.id != null) countyMap.set(c.id, c.name || '');
+    });
+    (geography?.constituencies || []).forEach((c) => {
+      if (c?.id != null) constituencyMap.set(c.id, c.name || '');
+    });
+    (geography?.wards || []).forEach((w) => {
+      if (w?.id != null) wardMap.set(w.id, w.name || '');
+    });
+
+    return { counties: countyMap, constituencies: constituencyMap, wards: wardMap };
+  }, [counties, geography?.constituencies, geography?.wards]);
+
+  // Keep list work county-scoped so we never scan the full national register for render.
+  const countyStations = useMemo(() => {
+    if (!selectedCounty) return [];
+    const list = geography?.pollingStations || [];
+    const out = [];
+    for (let i = 0; i < list.length; i += 1) {
+      const ps = list[i];
+      if (ps && ps.countyId === selectedCounty) out.push(ps);
+    }
+    return out;
+  }, [geography?.pollingStations, selectedCounty]);
 
   const filteredStations = useMemo(() => {
-    const stations = geography.pollingStations || [];
     const term = searchTerm.trim().toLowerCase();
+    const intelMap = stationIntelligence || {};
 
-    return stations.filter((ps) => {
-      if (!ps) return false;
-
-      const intel = stationIntelligence?.[ps.id] || {};
-      const matchesCounty = !selectedCounty || ps.county === selectedCounty || ps.countyId === selectedCounty;
-      const matchesRisk = !selectedRisk || intel.riskLevel === selectedRisk;
-      const matchesImportance = !selectedImportance || intel.strategicImportance === selectedImportance;
-
-      if (!matchesCounty || !matchesRisk || !matchesImportance) return false;
+    return countyStations.filter((ps) => {
+      const intel = intelMap[ps.id] || {};
+      if (selectedRisk && intel.riskLevel !== selectedRisk) return false;
+      if (selectedImportance && intel.strategicImportance !== selectedImportance) return false;
 
       if (!term) return true;
 
-      const nameMatch = ps.name?.toLowerCase().includes(term);
-      const codeMatch = ps.code?.toLowerCase().includes(term);
-      if (nameMatch || codeMatch) return true;
+      if (ps.name?.toLowerCase().includes(term) || ps.code?.toLowerCase().includes(term)) {
+        return true;
+      }
 
-      const location = resolveLocation(ps);
+      const location = resolveLocation(ps, geoLookups);
       return (
         location.ward.toLowerCase().includes(term) ||
-        location.county.toLowerCase().includes(term) ||
         location.constituency.toLowerCase().includes(term) ||
         location.village.toLowerCase().includes(term)
       );
     });
-  }, [
-    geography.pollingStations,
-    stationIntelligence,
-    searchTerm,
-    selectedCounty,
-    selectedRisk,
-    selectedImportance,
-    geoLookups
-  ]);
+  }, [countyStations, stationIntelligence, searchTerm, selectedRisk, selectedImportance, geoLookups]);
 
   const totalPages = Math.max(1, Math.ceil(filteredStations.length / PAGE_SIZE));
 
@@ -160,9 +188,10 @@ export const PollingStationIntelligence = ({ onClose }) => {
 
   const rangeStart = filteredStations.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const rangeEnd = Math.min(page * PAGE_SIZE, filteredStations.length);
+  const selectedCountyName = geoLookups.counties.get(selectedCounty) || 'Selected county';
 
   const handleEditClick = (ps) => {
-    const existing = stationIntelligence[ps.id] || {
+    const existing = stationIntelligence?.[ps.id] || {
       partyAdvantageScore: 60,
       incumbencyScore: 50,
       oppositionStrength: 40,
@@ -201,7 +230,8 @@ export const PollingStationIntelligence = ({ onClose }) => {
 
   const handleBulkUpdate = (e) => {
     e.preventDefault();
-    filteredStations.forEach((ps) => {
+    // Cap updates to keep the UI responsive.
+    filteredStations.slice(0, 250).forEach((ps) => {
       updateStationIntelligence(
         ps.id,
         { riskLevel: bulkRisk, strategicImportance: bulkImportance },
@@ -224,13 +254,24 @@ export const PollingStationIntelligence = ({ onClose }) => {
     }
   };
 
+  if (!geography || !Array.isArray(geography.pollingStations)) {
+    return (
+      <div className="role-dash psi-shell">
+        <div className="psi-panel">
+          <h2>Loading polling register…</h2>
+          <p className="psi-error-copy">Geography data is not ready yet.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="role-dash psi-shell">
       <header className="psi-top">
         <div>
           <h1>Polling intelligence</h1>
           <p>
-            {formatCount(filteredStations.length)} matching · {formatCount(geography.pollingStations?.length || 0)} national
+            {selectedCountyName}: {formatCount(filteredStations.length)} matching · {formatCount(geography.pollingStations.length)} national
           </p>
         </div>
 
@@ -318,9 +359,13 @@ export const PollingStationIntelligence = ({ onClose }) => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <select className="form-select" value={selectedCounty} onChange={(e) => setSelectedCounty(e.target.value)}>
-          <option value="">All counties</option>
-          {(geography.counties || []).map((c) => (
+        <select
+          className="form-select"
+          value={selectedCounty}
+          onChange={(e) => setSelectedCounty(e.target.value)}
+          required
+        >
+          {counties.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
             </option>
@@ -364,12 +409,12 @@ export const PollingStationIntelligence = ({ onClose }) => {
                   </tr>
                 ) : (
                   pageStations.map((ps) => {
-                    const intel = stationIntelligence[ps.id] || {
+                    const intel = stationIntelligence?.[ps.id] || {
                       partyAdvantageScore: 65,
                       riskLevel: 'Low'
                     };
-                    const score = intel.partyAdvantageScore || 50;
-                    const location = resolveLocation(ps);
+                    const score = Number(intel.partyAdvantageScore ?? 50);
+                    const location = resolveLocation(ps, geoLookups);
                     return (
                       <tr key={ps.id}>
                         <td>
@@ -389,7 +434,7 @@ export const PollingStationIntelligence = ({ onClose }) => {
                               <div
                                 className="psi-bar-fill"
                                 style={{
-                                  width: `${score}%`,
+                                  width: `${Math.min(100, Math.max(0, score))}%`,
                                   background: score >= 50 ? '#006B3F' : '#BB0A21'
                                 }}
                               />
@@ -461,13 +506,13 @@ export const PollingStationIntelligence = ({ onClose }) => {
           </div>
           <div className="psi-map-grid">
             {pageStations.slice(0, 8).map((ps, idx) => {
-              const intel = stationIntelligence[ps.id] || { riskLevel: 'Low', partyAdvantageScore: 65 };
+              const intel = stationIntelligence?.[ps.id] || { riskLevel: 'Low' };
               const risk = intel.riskLevel || 'Low';
               return (
                 <button
                   key={ps.id}
                   type="button"
-                  className={`psi-map-card risk-${risk.toLowerCase()}`}
+                  className={`psi-map-card risk-${String(risk).toLowerCase()}`}
                   onClick={() => handleEditClick(ps)}
                 >
                   <div className="psi-map-card-top">
@@ -544,12 +589,7 @@ export const PollingStationIntelligence = ({ onClose }) => {
                   {editingStation.code} · {editingStation.name}
                 </p>
               </div>
-              <button
-                type="button"
-                className="psi-icon-action"
-                onClick={() => setEditingStation(null)}
-                aria-label="Close"
-              >
+              <button type="button" className="psi-icon-action" onClick={() => setEditingStation(null)} aria-label="Close">
                 <X strokeWidth={1.75} />
               </button>
             </div>
@@ -659,7 +699,9 @@ export const PollingStationIntelligence = ({ onClose }) => {
             <div className="admin-modal-head">
               <div>
                 <h3>Bulk update</h3>
-                <p>{formatCount(filteredStations.length)} matching stations</p>
+                <p>
+                  Applies to up to 250 of {formatCount(filteredStations.length)} matching stations in {selectedCountyName}
+                </p>
               </div>
               <button type="button" className="psi-icon-action" onClick={() => setShowBulkUpdate(false)} aria-label="Close">
                 <X strokeWidth={1.75} />
@@ -693,3 +735,9 @@ export const PollingStationIntelligence = ({ onClose }) => {
     </div>
   );
 };
+
+export const PollingStationIntelligence = () => (
+  <PsiErrorBoundary>
+    <PollingStationIntelligenceInner />
+  </PsiErrorBoundary>
+);
