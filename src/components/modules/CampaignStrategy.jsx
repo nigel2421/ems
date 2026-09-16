@@ -35,51 +35,65 @@ const INTEL_FACTORS = [
     id: 'sentiment',
     label: 'Candidate favourability',
     help: 'Share of likely voters leaning toward your candidate',
-    icon: TrendingUp
+    icon: TrendingUp,
+    agentCanInput: false
   },
   {
     id: 'turnout',
     label: 'Turnout likelihood',
     help: 'Expected participation among your base and swing voters',
-    icon: Vote
+    icon: Vote,
+    agentCanInput: true
   },
   {
     id: 'groundGame',
     label: 'Ground organisation',
     help: 'Ward structures, agents, and door-to-door capacity',
-    icon: Users
+    icon: Users,
+    agentCanInput: true
   },
   {
     id: 'messageReach',
     label: 'Message penetration',
     help: 'How widely campaign messaging is understood and recalled',
-    icon: MessageSquare
+    icon: MessageSquare,
+    agentCanInput: true
   },
   {
     id: 'opponentPressure',
     label: 'Opponent pressure',
     help: 'Strength of competing campaigns in contested stations',
-    icon: ShieldAlert
+    icon: ShieldAlert,
+    agentCanInput: true
   },
   {
     id: 'agentCoverage',
     label: 'Polling agent coverage',
     help: 'Share of stations with deployed and trained agents',
-    icon: MapPinned
+    icon: MapPinned,
+    agentCanInput: true
   },
   {
     id: 'resourceReadiness',
     label: 'Resource readiness',
     help: 'Logistics, materials, and funding for the next 14 days',
-    icon: Wallet
+    icon: Wallet,
+    agentCanInput: false
   },
   {
     id: 'youthEngagement',
     label: 'Youth engagement',
     help: 'Digital reach and mobilisation among first-time voters',
-    icon: UserRound
+    icon: UserRound,
+    agentCanInput: true
   }
 ];
+
+const clampPercent = (value) => {
+  const num = Number(value);
+  if (Number.isNaN(num)) return 0;
+  return Math.min(100, Math.max(0, Math.round(num)));
+};
 
 const defaultScores = () =>
   INTEL_FACTORS.reduce((acc, f) => {
@@ -93,6 +107,15 @@ const scoreBand = (value) => {
   return 'weak';
 };
 
+const scoreRingVariant = (value) => {
+  if (value >= 70) return 'done';
+  if (value >= 40) return 'active';
+  return 'pending';
+};
+
+const isAgentRole = (role) => role === 'Field Agent' || role === 'Agent';
+
+
 const generateStrategies = (scores) => {
   const avg =
     INTEL_FACTORS.reduce((sum, f) => sum + Number(scores[f.id] || 0), 0) / INTEL_FACTORS.length;
@@ -104,7 +127,7 @@ const generateStrategies = (scores) => {
       id: 'sentiment-rebuild',
       priority: 'Critical',
       title: 'Rebuild favourability in swing wards',
-      rationale: `Favourability is at ${scores.sentiment}/100 — below competitive threshold.`,
+      rationale: `Favourability is at ${scores.sentiment}% — below competitive threshold.`,
       actions: [
         'Deploy candidate walkabouts in top 10 swing wards',
         'Issue a 72-hour issue-based messaging burst',
@@ -116,7 +139,7 @@ const generateStrategies = (scores) => {
       id: 'sentiment-defend',
       priority: 'High',
       title: 'Defend strong favourability lead',
-      rationale: `Favourability is strong at ${scores.sentiment}/100.`,
+      rationale: `Favourability is strong at ${scores.sentiment}%.`,
       actions: [
         'Increase positive reinforcement media',
         'Protect soft supporters with reminder SMS',
@@ -130,7 +153,7 @@ const generateStrategies = (scores) => {
       id: 'turnout-lift',
       priority: 'Critical',
       title: 'Lift base turnout operations',
-      rationale: `Turnout likelihood is only ${scores.turnout}/100.`,
+      rationale: `Turnout likelihood is only ${scores.turnout}%.`,
       actions: [
         'Build same-day transport and water points near stations',
         'Assign turnout captains per stream',
@@ -144,7 +167,7 @@ const generateStrategies = (scores) => {
       id: 'ground-rebuild',
       priority: 'High',
       title: 'Strengthen ward command structure',
-      rationale: `Ground organisation scores ${scores.groundGame}/100.`,
+      rationale: `Ground organisation scores ${scores.groundGame}%.`,
       actions: [
         'Fill vacant ward coordinator roles within 5 days',
         'Run weekend agent drills with attendance logs',
@@ -158,7 +181,7 @@ const generateStrategies = (scores) => {
       id: 'message-amplify',
       priority: 'High',
       title: 'Amplify core message penetration',
-      rationale: `Message recall is weak at ${scores.messageReach}/100.`,
+      rationale: `Message recall is weak at ${scores.messageReach}%.`,
       actions: [
         'Simplify manifesto to three recallable pledges',
         'Flood vernacular radio and WhatsApp clusters',
@@ -172,7 +195,7 @@ const generateStrategies = (scores) => {
       id: 'opponent-counter',
       priority: 'Critical',
       title: 'Counter opponent pressure zones',
-      rationale: `Opponent pressure is elevated at ${scores.opponentPressure}/100.`,
+      rationale: `Opponent pressure is elevated at ${scores.opponentPressure}%.`,
       actions: [
         'Map contested stations and assign rapid-response teams',
         'Increase presence of party agents and legal desks',
@@ -186,7 +209,7 @@ const generateStrategies = (scores) => {
       id: 'agent-coverage',
       priority: 'Critical',
       title: 'Close polling agent coverage gaps',
-      rationale: `Agent coverage stands at ${scores.agentCoverage}/100.`,
+      rationale: `Agent coverage stands at ${scores.agentCoverage}%.`,
       actions: [
         'Bind agents to uncovered stations immediately',
         'Prioritise high-registration streams first',
@@ -200,7 +223,7 @@ const generateStrategies = (scores) => {
       id: 'resource-surge',
       priority: 'High',
       title: 'Surge logistics and campaign materials',
-      rationale: `Resource readiness is at ${scores.resourceReadiness}/100.`,
+      rationale: `Resource readiness is at ${scores.resourceReadiness}%.`,
       actions: [
         'Reallocate fuel and branded materials to hot wards',
         'Pre-position Election Day kits by Thursday',
@@ -214,7 +237,7 @@ const generateStrategies = (scores) => {
       id: 'youth-engage',
       priority: 'Medium',
       title: 'Boost youth and first-time voter engagement',
-      rationale: `Youth engagement scores ${scores.youthEngagement}/100.`,
+      rationale: `Youth engagement scores ${scores.youthEngagement}%.`,
       actions: [
         'Launch campus and estate digital town halls',
         'Partner with youth organisers for registration reminders',
@@ -228,7 +251,7 @@ const generateStrategies = (scores) => {
       id: 'balanced-hold',
       priority: 'Medium',
       title: 'Maintain balanced hold strategy',
-      rationale: `Overall intelligence average is ${Math.round(avg)}/100 with no critical gaps.`,
+      rationale: `Overall intelligence average is ${Math.round(avg)}% with no critical gaps.`,
       actions: [
         'Continue current phase roadmap with weekly reviews',
         'Protect leads while harvesting soft undecided voters',
@@ -301,6 +324,20 @@ export const CampaignStrategy = ({ onClose }) => {
   const [scores, setScores] = useState(defaultScores);
   const [strategyPlan, setStrategyPlan] = useState(null);
 
+  const agentMode = isAgentRole(currentUser?.role);
+
+  const editableFactors = useMemo(
+    () => (agentMode ? INTEL_FACTORS.filter((f) => f.agentCanInput) : INTEL_FACTORS),
+    [agentMode]
+  );
+
+  const intelAverage = useMemo(() => {
+    const list = agentMode ? editableFactors : INTEL_FACTORS;
+    if (!list.length) return 0;
+    const total = list.reduce((sum, f) => sum + Number(scores[f.id] || 0), 0);
+    return Math.round(total / list.length);
+  }, [agentMode, editableFactors, scores]);
+
   const selectedPhase = useMemo(
     () => campaignPhases.find((p) => p.id === selectedPhaseId) || null,
     [campaignPhases, selectedPhaseId]
@@ -324,7 +361,7 @@ export const CampaignStrategy = ({ onClose }) => {
   };
 
   const handleScoreChange = (id, value) => {
-    setScores((prev) => ({ ...prev, [id]: Number(value) }));
+    setScores((prev) => ({ ...prev, [id]: clampPercent(value) }));
   };
 
   const handleGenerate = (e) => {
@@ -377,7 +414,7 @@ export const CampaignStrategy = ({ onClose }) => {
               <h2>Recommended strategies</h2>
               <p>
                 Posture: <strong>{strategyPlan.posture}</strong> · Average score{' '}
-                <strong>{strategyPlan.average}/100</strong>
+                <strong>{strategyPlan.average}%</strong>
               </p>
             </div>
             <CircularProgress
@@ -388,7 +425,7 @@ export const CampaignStrategy = ({ onClose }) => {
           </div>
 
           <div className="strategy-intel-score-strip">
-            {INTEL_FACTORS.map((factor) => {
+            {(agentMode ? editableFactors : INTEL_FACTORS).map((factor) => {
               const value = scores[factor.id];
               return (
                 <div key={factor.id} className={`strategy-intel-chip strategy-intel-chip-${scoreBand(value)}`}>
@@ -480,13 +517,21 @@ export const CampaignStrategy = ({ onClose }) => {
           >
             <div className="strategy-modal-head">
               <div className="strategy-modal-title-row">
-                <div className="strategy-intel-mark">
-                  <BrainCircuit strokeWidth={1.75} />
-                </div>
+                <CircularProgress
+                  value={intelAverage}
+                  variant={scoreRingVariant(intelAverage)}
+                  diameter={72}
+                />
                 <div>
-                  <span className="strategy-status strategy-status-active">Intelligence intake</span>
+                  <span className="strategy-status strategy-status-active">
+                    {agentMode ? 'Agent field intake' : 'Intelligence intake'}
+                  </span>
                   <h2 id="strategy-intel-title">Poll intelligence factors</h2>
-                  <p>Score each factor from 0–100. Strategies are generated from the profile.</p>
+                  <p>
+                    {agentMode
+                      ? 'Enter field percentages for the factors assigned to agents. Circular progress updates as you type.'
+                      : 'Enter each factor as a percentage (0–100). Circular progress updates as you type.'}
+                  </p>
                 </div>
               </div>
               <button
@@ -499,34 +544,53 @@ export const CampaignStrategy = ({ onClose }) => {
               </button>
             </div>
 
+            {agentMode && (
+              <div className="strategy-intel-note">
+                Agents report turnout, ground organisation, message reach, opponent pressure, agent coverage, and youth
+                engagement. Command-level favourability and resource readiness stay with strategy leadership.
+              </div>
+            )}
+
             <div className="strategy-intel-grid">
-              {INTEL_FACTORS.map((factor) => {
+              {editableFactors.map((factor) => {
                 const Icon = factor.icon;
                 const value = scores[factor.id];
                 return (
-                  <label key={factor.id} className="strategy-intel-field">
+                  <div key={factor.id} className="strategy-intel-field">
                     <div className="strategy-intel-field-head">
                       <span>
                         <Icon strokeWidth={1.75} />
                         {factor.label}
                       </span>
-                      <strong>{value}%</strong>
+                      {factor.agentCanInput && (
+                        <em className="strategy-intel-agent-tag">Agent input</em>
+                      )}
                     </div>
                     <p>{factor.help}</p>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      step="1"
-                      value={value}
-                      onChange={(e) => handleScoreChange(factor.id, e.target.value)}
-                    />
-                    <div className="strategy-intel-scale">
-                      <span>0%</span>
-                      <span>50%</span>
-                      <span>100%</span>
+                    <div className="strategy-intel-control">
+                      <CircularProgress
+                        value={value}
+                        variant={scoreRingVariant(value)}
+                        diameter={68}
+                      />
+                      <label className="strategy-intel-percent-input">
+                        <span>Score</span>
+                        <div>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="1"
+                            inputMode="numeric"
+                            value={value}
+                            onChange={(e) => handleScoreChange(factor.id, e.target.value)}
+                            aria-label={`${factor.label} percentage`}
+                          />
+                          <span>%</span>
+                        </div>
+                      </label>
                     </div>
-                  </label>
+                  </div>
                 );
               })}
             </div>
@@ -537,7 +601,7 @@ export const CampaignStrategy = ({ onClose }) => {
               </button>
               <button type="submit" className="strategy-btn-primary">
                 <Sparkles strokeWidth={1.75} />
-                Generate strategies
+                {agentMode ? 'Submit field scores' : 'Generate strategies'}
               </button>
             </div>
           </form>

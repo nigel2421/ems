@@ -664,12 +664,18 @@
   color: var(--st-green);
 }
 
-.strategy-intel-field-head strong {
-  font-size: 0.95rem;
+.strategy-intel-agent-tag {
+  font-style: normal;
+  font-size: 0.64rem;
   font-weight: 800;
-  color: var(--st-green-deep);
-  min-width: 2ch;
-  text-align: right;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--st-green);
+  background: var(--st-soft);
+  border: 1px solid rgba(0, 107, 63, 0.18);
+  border-radius: 999px;
+  padding: 0.18rem 0.45rem;
+  white-space: nowrap;
 }
 
 .strategy-intel-field > p {
@@ -679,19 +685,69 @@
   color: var(--st-muted);
 }
 
-.strategy-intel-field input[type='range'] {
-  width: 100%;
-  accent-color: var(--st-green);
-  cursor: pointer;
+.strategy-intel-control {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-top: 0.35rem;
 }
 
-.strategy-intel-scale {
+.strategy-intel-percent-input {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.strategy-intel-percent-input > span {
   font-size: 0.68rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--st-muted);
 }
+
+.strategy-intel-percent-input > div {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 44px;
+  padding: 0 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--st-line);
+  background: #fff;
+}
+
+.strategy-intel-percent-input input {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--st-ink);
+}
+
+.strategy-intel-percent-input > div > span {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--st-green);
+}
+
+.strategy-intel-note {
+  margin-top: 0.95rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 14px;
+  background: var(--st-soft);
+  border: 1px solid rgba(0, 107, 63, 0.16);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--st-green-deep);
+}
+
 
 .strategy-intel-actions {
   display: flex;
