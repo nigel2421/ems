@@ -60,21 +60,56 @@ export const PollingStationIntelligence = ({ onClose }) => {
     currentUser?.role === 'Admin' ||
     currentUser?.role === 'Strategy Team';
 
+  const locationByStationId = useMemo(() => {
+    const counties = new Map((geography.counties || []).map((c) => [c.id, c.name]));
+    const constituencies = new Map((geography.constituencies || []).map((c) => [c.id, c.name]));
+    const wards = new Map((geography.wards || []).map((w) => [w.id, w.name]));
+
+    const map = {};
+    (geography.pollingStations || []).forEach((ps) => {
+      const county = ps.county || counties.get(ps.countyId) || '';
+      const constituency = ps.constituency || constituencies.get(ps.constituencyId) || '';
+      const ward = ps.ward || wards.get(ps.wardId) || '';
+      const village = ps.village || '';
+      map[ps.id] = {
+        county,
+        constituency,
+        ward,
+        village,
+        line: [county, constituency, ward].filter(Boolean).join(' · ') || 'Location unavailable',
+        detail: village || null
+      };
+    });
+    return map;
+  }, [geography]);
+
   const filteredStations = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     return (geography.pollingStations || []).filter((ps) => {
       const intel = stationIntelligence[ps.id] || {};
+      const location = locationByStationId[ps.id] || {};
       const matchesSearch =
         !term ||
         ps.name?.toLowerCase().includes(term) ||
         ps.code?.toLowerCase().includes(term) ||
-        (ps.ward && String(ps.ward).toLowerCase().includes(term));
+        location.ward?.toLowerCase().includes(term) ||
+        location.county?.toLowerCase().includes(term) ||
+        location.constituency?.toLowerCase().includes(term) ||
+        location.village?.toLowerCase().includes(term);
       const matchesCounty = !selectedCounty || ps.county === selectedCounty || ps.countyId === selectedCounty;
       const matchesRisk = !selectedRisk || intel.riskLevel === selectedRisk;
       const matchesImportance = !selectedImportance || intel.strategicImportance === selectedImportance;
       return matchesSearch && matchesCounty && matchesRisk && matchesImportance;
     });
-  }, [geography.pollingStations, stationIntelligence, searchTerm, selectedCounty, selectedRisk, selectedImportance]);
+  }, [
+    geography.pollingStations,
+    stationIntelligence,
+    searchTerm,
+    selectedCounty,
+    selectedRisk,
+    selectedImportance,
+    locationByStationId
+  ]);
 
   const totalPages = Math.max(1, Math.ceil(filteredStations.length / PAGE_SIZE));
 
@@ -246,7 +281,7 @@ export const PollingStationIntelligence = ({ onClose }) => {
           <Search strokeWidth={1.75} />
           <input
             type="search"
-            placeholder="Search station, code, or ward"
+            placeholder="Search station, code, or location"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -302,6 +337,13 @@ export const PollingStationIntelligence = ({ onClose }) => {
                       riskLevel: 'Low'
                     };
                     const score = intel.partyAdvantageScore || 50;
+                    const location = locationByStationId[ps.id] || {
+                      line: 'Location unavailable',
+                      detail: null,
+                      county: '',
+                      constituency: '',
+                      ward: ''
+                    };
                     return (
                       <tr key={ps.id}>
                         <td>
@@ -309,8 +351,8 @@ export const PollingStationIntelligence = ({ onClose }) => {
                           <span className="psi-meta">{ps.code}</span>
                         </td>
                         <td>
-                          <span className="psi-loc">{ps.ward || '—'}</span>
-                          <span className="psi-meta">{ps.village || '—'}</span>
+                          <span className="psi-loc">{location.line}</span>
+                          {location.detail ? <span className="psi-meta">{location.detail}</span> : null}
                         </td>
                         <td>
                           <strong>{formatCount(ps.registeredVoters || 0)}</strong>
