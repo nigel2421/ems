@@ -608,6 +608,67 @@
   width: min(920px, 100%);
 }
 
+.strategy-intel-modal-step {
+  width: min(420px, 100%);
+  max-height: none;
+  padding: 1.1rem 1.15rem 1.2rem;
+}
+
+.strategy-intel-step-track {
+  height: 6px;
+  margin-top: 0.95rem;
+  border-radius: 999px;
+  background: var(--st-line);
+  overflow: hidden;
+}
+
+.strategy-intel-step-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--st-green);
+  transition: width 0.2s ease;
+}
+
+.strategy-intel-step-card {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--st-line);
+  background: var(--st-canvas);
+}
+
+.strategy-intel-step-card > p {
+  margin: 0.45rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--st-muted);
+}
+
+.strategy-intel-control-step {
+  margin-top: 0.85rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.85rem;
+}
+
+.strategy-intel-control-step .strategy-ring {
+  align-self: center;
+}
+
+.strategy-intel-actions-step {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.strategy-intel-actions-step .strategy-btn-primary {
+  margin-left: auto;
+}
+
+.strategy-intel-actions-step .strategy-btn-ghost:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .strategy-intel-mark {
   width: 52px;
   height: 52px;
