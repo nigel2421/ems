@@ -399,7 +399,7 @@ export const AgentManagement = ({ onClose }) => {
 
               <button type="submit" className="admin-btn admin-btn-primary" style={{ width: '100%', height: 46 }}>
                 <UserCheck strokeWidth={1.75} />
-                Confirm binding
+                Confirm assignment
               </button>
             </form>
           </div>
