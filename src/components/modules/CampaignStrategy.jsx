@@ -323,6 +323,7 @@ export const CampaignStrategy = ({ onClose }) => {
   const [showIntelModal, setShowIntelModal] = useState(true);
   const [scores, setScores] = useState(defaultScores);
   const [strategyPlan, setStrategyPlan] = useState(null);
+  const [intelStep, setIntelStep] = useState(0);
 
   const agentMode = isAgentRole(currentUser?.role);
 
@@ -331,12 +332,24 @@ export const CampaignStrategy = ({ onClose }) => {
     [agentMode]
   );
 
-  const intelAverage = useMemo(() => {
-    const list = agentMode ? editableFactors : INTEL_FACTORS;
-    if (!list.length) return 0;
-    const total = list.reduce((sum, f) => sum + Number(scores[f.id] || 0), 0);
-    return Math.round(total / list.length);
-  }, [agentMode, editableFactors, scores]);
+  const currentFactor = editableFactors[intelStep] || editableFactors[0];
+  const StepIcon = currentFactor?.icon;
+  const stepValue = currentFactor ? scores[currentFactor.id] : 0;
+  const isLastIntelStep = intelStep >= editableFactors.length - 1;
+  const stepProgress = editableFactors.length
+    ? Math.round(((intelStep + 1) / editableFactors.length) * 100)
+    : 0;
+
+  const openIntelModal = () => {
+    setIntelStep(0);
+    setShowIntelModal(true);
+  };
+
+  useEffect(() => {
+    if (intelStep > editableFactors.length - 1) {
+      setIntelStep(Math.max(0, editableFactors.length - 1));
+    }
+  }, [editableFactors.length, intelStep]);
 
   const selectedPhase = useMemo(
     () => campaignPhases.find((p) => p.id === selectedPhaseId) || null,
@@ -388,7 +401,7 @@ export const CampaignStrategy = ({ onClose }) => {
           <button
             type="button"
             className="strategy-intel-launch"
-            onClick={() => setShowIntelModal(true)}
+            onClick={openIntelModal}
           >
             <BrainCircuit strokeWidth={1.75} />
             Poll intelligence
@@ -505,32 +518,35 @@ export const CampaignStrategy = ({ onClose }) => {
         })}
       </section>
 
-      {showIntelModal && (
+      {showIntelModal && currentFactor && (
         <div className="strategy-modal-overlay" onClick={() => setShowIntelModal(false)}>
           <form
-            className="strategy-modal strategy-intel-modal"
+            className="strategy-modal strategy-intel-modal strategy-intel-modal-step"
             role="dialog"
             aria-modal="true"
             aria-labelledby="strategy-intel-title"
             onClick={(e) => e.stopPropagation()}
-            onSubmit={handleGenerate}
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (isLastIntelStep) {
+                handleGenerate(e);
+              } else {
+                setIntelStep((step) => Math.min(step + 1, editableFactors.length - 1));
+              }
+            }}
           >
             <div className="strategy-modal-head">
               <div className="strategy-modal-title-row">
-                <CircularProgress
-                  value={intelAverage}
-                  variant={scoreRingVariant(intelAverage)}
-                  diameter={72}
-                />
+                <div className="strategy-intel-mark">
+                  <BrainCircuit strokeWidth={1.75} />
+                </div>
                 <div>
                   <span className="strategy-status strategy-status-active">
                     {agentMode ? 'Agent field intake' : 'Intelligence intake'}
                   </span>
-                  <h2 id="strategy-intel-title">Poll intelligence factors</h2>
+                  <h2 id="strategy-intel-title">Poll intelligence</h2>
                   <p>
-                    {agentMode
-                      ? 'Enter field percentages for the factors assigned to agents. Circular progress updates as you type.'
-                      : 'Enter each factor as a percentage (0–100). Circular progress updates as you type.'}
+                    Step {intelStep + 1} of {editableFactors.length}
                   </p>
                 </div>
               </div>
@@ -544,64 +560,72 @@ export const CampaignStrategy = ({ onClose }) => {
               </button>
             </div>
 
-            {agentMode && (
-              <div className="strategy-intel-note">
-                Agents report turnout, ground organisation, message reach, opponent pressure, agent coverage, and youth
-                engagement. Command-level favourability and resource readiness stay with strategy leadership.
-              </div>
-            )}
-
-            <div className="strategy-intel-grid">
-              {editableFactors.map((factor) => {
-                const Icon = factor.icon;
-                const value = scores[factor.id];
-                return (
-                  <div key={factor.id} className="strategy-intel-field">
-                    <div className="strategy-intel-field-head">
-                      <span>
-                        <Icon strokeWidth={1.75} />
-                        {factor.label}
-                      </span>
-                      {factor.agentCanInput && (
-                        <em className="strategy-intel-agent-tag">Agent input</em>
-                      )}
-                    </div>
-                    <p>{factor.help}</p>
-                    <div className="strategy-intel-control">
-                      <CircularProgress
-                        value={value}
-                        variant={scoreRingVariant(value)}
-                        diameter={68}
-                      />
-                      <label className="strategy-intel-percent-input">
-                        <span>Score</span>
-                        <div>
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="1"
-                            inputMode="numeric"
-                            value={value}
-                            onChange={(e) => handleScoreChange(factor.id, e.target.value)}
-                            aria-label={`${factor.label} percentage`}
-                          />
-                          <span>%</span>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="strategy-intel-step-track" aria-hidden="true">
+              <div className="strategy-intel-step-fill" style={{ width: `${stepProgress}%` }} />
             </div>
 
-            <div className="strategy-intel-actions">
+            <div className="strategy-intel-step-card">
+              <div className="strategy-intel-field-head">
+                <span>
+                  {StepIcon ? <StepIcon strokeWidth={1.75} /> : null}
+                  {currentFactor.label}
+                </span>
+                {currentFactor.agentCanInput && (
+                  <em className="strategy-intel-agent-tag">Agent input</em>
+                )}
+              </div>
+              <p>{currentFactor.help}</p>
+              <div className="strategy-intel-control strategy-intel-control-step">
+                <CircularProgress
+                  value={stepValue}
+                  variant={scoreRingVariant(stepValue)}
+                  diameter={96}
+                />
+                <label className="strategy-intel-percent-input">
+                  <span>Enter percentage</span>
+                  <div>
+                    <input
+                      key={currentFactor.id}
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      inputMode="numeric"
+                      autoFocus
+                      value={stepValue}
+                      onChange={(e) => handleScoreChange(currentFactor.id, e.target.value)}
+                      aria-label={`${currentFactor.label} percentage`}
+                    />
+                    <span>%</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div className="strategy-intel-actions strategy-intel-actions-step">
+              <button
+                type="button"
+                className="strategy-btn-ghost"
+                disabled={intelStep === 0}
+                onClick={() => setIntelStep((step) => Math.max(0, step - 1))}
+              >
+                Back
+              </button>
               <button type="button" className="strategy-btn-ghost" onClick={() => setShowIntelModal(false)}>
-                Skip for now
+                Skip
               </button>
               <button type="submit" className="strategy-btn-primary">
-                <Sparkles strokeWidth={1.75} />
-                {agentMode ? 'Submit field scores' : 'Generate strategies'}
+                {isLastIntelStep ? (
+                  <>
+                    <Sparkles strokeWidth={1.75} />
+                    {agentMode ? 'Submit scores' : 'Generate strategies'}
+                  </>
+                ) : (
+                  <>
+                    Next
+                    <ArrowRight strokeWidth={1.75} />
+                  </>
+                )}
               </button>
             </div>
           </form>
