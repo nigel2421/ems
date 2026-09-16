@@ -14,16 +14,14 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   ShieldAlert,
   Users,
-  Layers
+  MoreHorizontal
 } from 'lucide-react';
 import '../dashboards/DashboardShared.css';
 import './PollingStationIntelligence.css';
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 5;
 
 const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
 
@@ -37,6 +35,7 @@ export const PollingStationIntelligence = ({ onClose }) => {
   const [selectedRisk, setSelectedRisk] = useState('');
   const [selectedImportance, setSelectedImportance] = useState('');
   const [page, setPage] = useState(1);
+  const [showTools, setShowTools] = useState(false);
 
   const [editingStation, setEditingStation] = useState(null);
   const [intelForm, setIntelForm] = useState({
@@ -160,94 +159,94 @@ export const PollingStationIntelligence = ({ onClose }) => {
 
   return (
     <div className="role-dash psi-shell">
-      <header className="admin-page-head">
+      <header className="psi-top">
         <div>
           <h1>Polling intelligence</h1>
           <p>
-            Station register, risk scores, and bulk operations across {formatCount(geography.pollingStations?.length || 0)} gazetted streams.
+            {formatCount(filteredStations.length)} matching · {formatCount(geography.pollingStations?.length || 0)} national
           </p>
         </div>
-        <div className="admin-head-actions">
-          <button
-            type="button"
-            className={`admin-btn ${activeTab === 'list' ? 'admin-btn-primary' : 'admin-btn-ghost'}`}
-            onClick={() => setActiveTab('list')}
-          >
-            <Building2 strokeWidth={1.75} />
-            Stations
-          </button>
-          <button
-            type="button"
-            className={`admin-btn ${activeTab === 'gis' ? 'admin-btn-primary' : 'admin-btn-ghost'}`}
-            onClick={() => setActiveTab('gis')}
-          >
-            <Map strokeWidth={1.75} />
-            Map
-          </button>
-          <button
-            type="button"
-            className={`admin-btn ${activeTab === 'analytics' ? 'admin-btn-primary' : 'admin-btn-ghost'}`}
-            onClick={() => setActiveTab('analytics')}
-          >
-            <BarChart3 strokeWidth={1.75} />
-            Analytics
-          </button>
+
+        <div className="psi-top-right">
+          <div className="psi-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'list'}
+              className={activeTab === 'list' ? 'is-active' : ''}
+              onClick={() => setActiveTab('list')}
+            >
+              <Building2 strokeWidth={1.75} />
+              Stations
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'gis'}
+              className={activeTab === 'gis' ? 'is-active' : ''}
+              onClick={() => setActiveTab('gis')}
+            >
+              <Map strokeWidth={1.75} />
+              Map
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'analytics'}
+              className={activeTab === 'analytics' ? 'is-active' : ''}
+              onClick={() => setActiveTab('analytics')}
+            >
+              <BarChart3 strokeWidth={1.75} />
+              Analytics
+            </button>
+          </div>
+
           {canManage && (
-            <>
-              <button type="button" className="admin-btn admin-btn-ghost" onClick={() => setShowBulkImport(true)}>
-                <Upload strokeWidth={1.75} />
-                Import CSV
+            <div className="psi-tools">
+              <button
+                type="button"
+                className="psi-tools-toggle"
+                aria-expanded={showTools}
+                onClick={() => setShowTools((v) => !v)}
+              >
+                <MoreHorizontal strokeWidth={1.75} />
+                Tools
               </button>
-              <button type="button" className="admin-btn admin-btn-ghost" onClick={() => setShowBulkUpdate(true)}>
-                <Sliders strokeWidth={1.75} />
-                Bulk update
-              </button>
-            </>
+              {showTools && (
+                <div className="psi-tools-menu">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTools(false);
+                      setShowBulkImport(true);
+                    }}
+                  >
+                    <Upload strokeWidth={1.75} />
+                    Import CSV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTools(false);
+                      setShowBulkUpdate(true);
+                    }}
+                  >
+                    <Sliders strokeWidth={1.75} />
+                    Bulk update
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </header>
 
-      <section className="admin-metric-grid">
-        <article className="admin-metric is-featured">
-          <div className="admin-metric-top">
-            <span>Matching stations</span>
-            <div className="admin-metric-icon"><Building2 strokeWidth={1.75} /></div>
-          </div>
-          <strong>{formatCount(filteredStations.length)}</strong>
-          <small>After search and filters</small>
-        </article>
-        <article className="admin-metric">
-          <div className="admin-metric-top">
-            <span>National register</span>
-            <div className="admin-metric-icon"><Layers strokeWidth={1.75} /></div>
-          </div>
-          <strong>{formatCount(geography.pollingStations?.length || 0)}</strong>
-          <small>Total gazetted streams</small>
-        </article>
-        <article className="admin-metric">
-          <div className="admin-metric-top">
-            <span>Counties</span>
-            <div className="admin-metric-icon"><MapPin strokeWidth={1.75} /></div>
-          </div>
-          <strong>{formatCount(geography.counties?.length || 0)}</strong>
-          <small>Coverage units</small>
-        </article>
-        <article className="admin-metric">
-          <div className="admin-metric-top">
-            <span>Page size</span>
-            <div className="admin-metric-icon"><Users strokeWidth={1.75} /></div>
-          </div>
-          <strong>{PAGE_SIZE}</strong>
-          <small>Stations per page</small>
-        </article>
-      </section>
-
-      <article className="admin-card psi-filters">
+      <div className="psi-toolbar">
         <div className="psi-search">
           <Search strokeWidth={1.75} />
           <input
             type="search"
-            placeholder="Search by station name, code, or ward…"
+            placeholder="Search station, code, or ward"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -261,7 +260,7 @@ export const PollingStationIntelligence = ({ onClose }) => {
           ))}
         </select>
         <select className="form-select" value={selectedRisk} onChange={(e) => setSelectedRisk(e.target.value)}>
-          <option value="">All risk levels</option>
+          <option value="">All risk</option>
           <option value="Low">Low</option>
           <option value="Medium">Medium</option>
           <option value="High">High</option>
@@ -273,37 +272,26 @@ export const PollingStationIntelligence = ({ onClose }) => {
           <option value="Medium">Medium</option>
           <option value="Low">Low</option>
         </select>
-      </article>
+      </div>
 
       {activeTab === 'list' && (
-        <article className="admin-card">
-          <div className="admin-card-head">
-            <div>
-              <h2>Gazetted polling stations</h2>
-              <p>
-                Showing {formatCount(rangeStart)}–{formatCount(rangeEnd)} of {formatCount(filteredStations.length)}
-              </p>
-            </div>
-          </div>
-
-          <div className="custom-table-container">
-            <table className="custom-table">
+        <article className="psi-panel">
+          <div className="custom-table-container psi-table-wrap">
+            <table className="custom-table psi-table">
               <thead>
                 <tr>
                   <th>Station</th>
                   <th>Location</th>
                   <th>Voters</th>
-                  <th>Party advantage</th>
-                  <th>Competitor</th>
-                  <th>Priority</th>
+                  <th>Advantage</th>
                   <th>Risk</th>
-                  <th>Actions</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
                 {pageStations.length === 0 ? (
                   <tr>
-                    <td colSpan="8">
+                    <td colSpan="6">
                       <div className="admin-empty">No stations match the current filters.</div>
                     </td>
                   </tr>
@@ -311,29 +299,24 @@ export const PollingStationIntelligence = ({ onClose }) => {
                   pageStations.map((ps) => {
                     const intel = stationIntelligence[ps.id] || {
                       partyAdvantageScore: 65,
-                      competitorActivityLevel: 'Medium',
-                      strategicImportance: 'Medium',
                       riskLevel: 'Low'
                     };
                     const score = intel.partyAdvantageScore || 50;
                     return (
                       <tr key={ps.id}>
                         <td>
-                          <strong style={{ display: 'block' }}>{ps.name}</strong>
-                          <span style={{ fontSize: '0.75rem', color: '#6B756F' }}>Code {ps.code}</span>
+                          <strong className="psi-station-name">{ps.name}</strong>
+                          <span className="psi-meta">{ps.code}</span>
                         </td>
                         <td>
-                          <div>{ps.ward || '—'}</div>
-                          <span style={{ fontSize: '0.75rem', color: '#6B756F' }}>{ps.village || '—'}</span>
+                          <span className="psi-loc">{ps.ward || '—'}</span>
+                          <span className="psi-meta">{ps.village || '—'}</span>
                         </td>
                         <td>
                           <strong>{formatCount(ps.registeredVoters || 0)}</strong>
-                          <div style={{ fontSize: '0.72rem', color: '#006B3F' }}>
-                            Turnout {ps.historicalTurnoutPct || 75}%
-                          </div>
                         </td>
                         <td>
-                          <div className="psi-bar">
+                          <div className="psi-bar" title={`${score}%`}>
                             <div className="psi-bar-track">
                               <div
                                 className="psi-bar-fill"
@@ -346,15 +329,17 @@ export const PollingStationIntelligence = ({ onClose }) => {
                             <span>{score}%</span>
                           </div>
                         </td>
-                        <td>{intel.competitorActivityLevel || 'Medium'}</td>
-                        <td>{intel.strategicImportance || 'Medium'}</td>
                         <td>
                           <span className={riskClass(intel.riskLevel || 'Low')}>{intel.riskLevel || 'Low'}</span>
                         </td>
                         <td>
-                          <button type="button" className="admin-btn admin-btn-ghost" style={{ height: 34, padding: '0 0.7rem' }} onClick={() => handleEditClick(ps)}>
+                          <button
+                            type="button"
+                            className="psi-icon-action"
+                            onClick={() => handleEditClick(ps)}
+                            aria-label={`Edit ${ps.name}`}
+                          >
                             <Pencil strokeWidth={1.75} />
-                            Edit
                           </button>
                         </td>
                       </tr>
@@ -367,20 +352,29 @@ export const PollingStationIntelligence = ({ onClose }) => {
 
           <div className="psi-pagination">
             <span>
-              Page {page} of {totalPages}
+              {formatCount(rangeStart)}–{formatCount(rangeEnd)} of {formatCount(filteredStations.length)}
             </span>
             <div className="psi-pagination-controls">
-              <button type="button" className="psi-page-btn" disabled={page <= 1} onClick={() => setPage(1)} aria-label="First page">
-                <ChevronsLeft strokeWidth={1.75} />
-              </button>
-              <button type="button" className="psi-page-btn" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} aria-label="Previous page">
+              <button
+                type="button"
+                className="psi-page-btn"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                aria-label="Previous page"
+              >
                 <ChevronLeft strokeWidth={1.75} />
               </button>
-              <button type="button" className="psi-page-btn" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} aria-label="Next page">
+              <span className="psi-page-label">
+                {page}/{totalPages}
+              </span>
+              <button
+                type="button"
+                className="psi-page-btn"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                aria-label="Next page"
+              >
                 <ChevronRight strokeWidth={1.75} />
-              </button>
-              <button type="button" className="psi-page-btn" disabled={page >= totalPages} onClick={() => setPage(totalPages)} aria-label="Last page">
-                <ChevronsRight strokeWidth={1.75} />
               </button>
             </div>
           </div>
@@ -388,12 +382,9 @@ export const PollingStationIntelligence = ({ onClose }) => {
       )}
 
       {activeTab === 'gis' && (
-        <article className="admin-card">
-          <div className="admin-card-head">
-            <div>
-              <h2>Spatial station view</h2>
-              <p>Risk-coded stations from the current filter set (page sample)</p>
-            </div>
+        <article className="psi-panel">
+          <div className="psi-panel-head">
+            <h2>Spatial sample</h2>
             <div className="psi-legend">
               <span><i className="psi-dot low" /> Stronghold</span>
               <span><i className="psi-dot mid" /> Swing</span>
@@ -401,24 +392,29 @@ export const PollingStationIntelligence = ({ onClose }) => {
             </div>
           </div>
           <div className="psi-map-grid">
-            {pageStations.slice(0, 12).map((ps, idx) => {
+            {pageStations.slice(0, 8).map((ps, idx) => {
               const intel = stationIntelligence[ps.id] || { riskLevel: 'Low', partyAdvantageScore: 65 };
               const risk = intel.riskLevel || 'Low';
               return (
-                <div key={ps.id} className={`psi-map-card risk-${risk.toLowerCase()}`}>
+                <button
+                  key={ps.id}
+                  type="button"
+                  className={`psi-map-card risk-${risk.toLowerCase()}`}
+                  onClick={() => handleEditClick(ps)}
+                >
                   <div className="psi-map-card-top">
                     <MapPin strokeWidth={1.75} />
                     <span>{ps.code}</span>
                   </div>
                   <strong>{ps.name}</strong>
                   <span>
-                    GPS {-1.2676 - idx * 0.015}, {36.8111 + idx * 0.012}
+                    {-1.2676 - idx * 0.015}, {36.8111 + idx * 0.012}
                   </span>
                   <div className="psi-map-card-foot">
-                    <span>Reg {formatCount(ps.registeredVoters || 0)}</span>
+                    <span>{formatCount(ps.registeredVoters || 0)} voters</span>
                     <span className={riskClass(risk)}>{risk}</span>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -426,68 +422,45 @@ export const PollingStationIntelligence = ({ onClose }) => {
       )}
 
       {activeTab === 'analytics' && (
-        <section className="admin-grid-2">
-          <article className="admin-card">
-            <div className="admin-card-head">
+        <section className="psi-analytics">
+          <article className="psi-panel">
+            <h2>Advantage mix</h2>
+            <div className="psi-stat-row">
               <div>
-                <h2>Party advantage mix</h2>
-                <p>Strategic distribution snapshot</p>
+                <ShieldAlert strokeWidth={1.75} />
+                <span>Stronghold</span>
               </div>
+              <strong>65%</strong>
             </div>
-            <div className="admin-list">
-              <div className="admin-list-item">
-                <div className="admin-metric-icon"><ShieldAlert strokeWidth={1.75} /></div>
-                <div style={{ flex: 1 }}>
-                  <strong>Stronghold stations (&gt;70%)</strong>
-                  <div className="admin-progress">
-                    <div className="admin-progress-track"><div className="admin-progress-fill" style={{ width: '65%' }} /></div>
-                    <strong>65%</strong>
-                  </div>
-                </div>
+            <div className="psi-stat-row">
+              <div>
+                <BarChart3 strokeWidth={1.75} />
+                <span>Swing</span>
               </div>
-              <div className="admin-list-item">
-                <div className="admin-metric-icon"><BarChart3 strokeWidth={1.75} /></div>
-                <div style={{ flex: 1 }}>
-                  <strong>Swing stations (40–70%)</strong>
-                  <div className="admin-progress">
-                    <div className="admin-progress-track"><div className="admin-progress-fill" style={{ width: '25%', background: '#0E7A45' }} /></div>
-                    <strong>25%</strong>
-                  </div>
-                </div>
+              <strong>25%</strong>
+            </div>
+            <div className="psi-stat-row">
+              <div>
+                <Users strokeWidth={1.75} />
+                <span>Opponent</span>
               </div>
-              <div className="admin-list-item">
-                <div className="admin-metric-icon"><Users strokeWidth={1.75} /></div>
-                <div style={{ flex: 1 }}>
-                  <strong>Opponent priority (&lt;40%)</strong>
-                  <div className="admin-progress">
-                    <div className="admin-progress-track"><div className="admin-progress-fill" style={{ width: '10%', background: '#BB0A21' }} /></div>
-                    <strong>10%</strong>
-                  </div>
-                </div>
-              </div>
+              <strong>10%</strong>
             </div>
           </article>
 
-          <article className="admin-card">
-            <div className="admin-card-head">
-              <div>
-                <h2>Risk breakdown</h2>
-                <p>Operational risk bands</p>
-              </div>
+          <article className="psi-panel">
+            <h2>Risk bands</h2>
+            <div className="psi-stat-row">
+              <span className="psi-risk psi-risk-low">Low</span>
+              <strong>1,840</strong>
             </div>
-            <div className="admin-list">
-              <div className="admin-list-item">
-                <span className="psi-risk psi-risk-low">Low</span>
-                <div><strong>1,840 stations</strong><span>Stable coverage</span></div>
-              </div>
-              <div className="admin-list-item">
-                <span className="psi-risk psi-risk-medium">Medium</span>
-                <div><strong>420 stations</strong><span>Watch list</span></div>
-              </div>
-              <div className="admin-list-item">
-                <span className="psi-risk psi-risk-severe">Severe</span>
-                <div><strong>18 wards</strong><span>Priority response</span></div>
-              </div>
+            <div className="psi-stat-row">
+              <span className="psi-risk psi-risk-medium">Medium</span>
+              <strong>420</strong>
+            </div>
+            <div className="psi-stat-row">
+              <span className="psi-risk psi-risk-severe">Severe</span>
+              <strong>18 wards</strong>
             </div>
           </article>
         </section>
@@ -499,31 +472,58 @@ export const PollingStationIntelligence = ({ onClose }) => {
             <div className="admin-modal-head">
               <div>
                 <h3>Edit intelligence</h3>
-                <p>{editingStation.code} · {editingStation.name}</p>
+                <p>
+                  {editingStation.code} · {editingStation.name}
+                </p>
               </div>
-              <button type="button" className="admin-btn admin-btn-ghost" style={{ height: 34, width: 34, padding: 0 }} onClick={() => setEditingStation(null)} aria-label="Close">
+              <button
+                type="button"
+                className="psi-icon-action"
+                onClick={() => setEditingStation(null)}
+                aria-label="Close"
+              >
                 <X strokeWidth={1.75} />
               </button>
             </div>
             <form onSubmit={handleSaveIntelligence} className="psi-form">
               <div className="form-group">
                 <label className="form-label">Party advantage ({intelForm.partyAdvantageScore}%)</label>
-                <input type="range" min="0" max="100" value={intelForm.partyAdvantageScore} onChange={(e) => setIntelForm({ ...intelForm, partyAdvantageScore: Number(e.target.value) })} />
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={intelForm.partyAdvantageScore}
+                  onChange={(e) => setIntelForm({ ...intelForm, partyAdvantageScore: Number(e.target.value) })}
+                />
               </div>
-              <div className="responsive-form-grid">
+              <div className="psi-form-grid">
                 <div className="form-group">
-                  <label className="form-label">Incumbency score</label>
-                  <input type="number" className="form-input" value={intelForm.incumbencyScore} onChange={(e) => setIntelForm({ ...intelForm, incumbencyScore: Number(e.target.value) })} />
+                  <label className="form-label">Incumbency</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={intelForm.incumbencyScore}
+                    onChange={(e) => setIntelForm({ ...intelForm, incumbencyScore: Number(e.target.value) })}
+                  />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Opposition strength</label>
-                  <input type="number" className="form-input" value={intelForm.oppositionStrength} onChange={(e) => setIntelForm({ ...intelForm, oppositionStrength: Number(e.target.value) })} />
+                  <label className="form-label">Opposition</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={intelForm.oppositionStrength}
+                    onChange={(e) => setIntelForm({ ...intelForm, oppositionStrength: Number(e.target.value) })}
+                  />
                 </div>
               </div>
-              <div className="responsive-form-grid">
+              <div className="psi-form-grid">
                 <div className="form-group">
-                  <label className="form-label">Competitor activity</label>
-                  <select className="form-select" value={intelForm.competitorActivityLevel} onChange={(e) => setIntelForm({ ...intelForm, competitorActivityLevel: e.target.value })}>
+                  <label className="form-label">Competitor</label>
+                  <select
+                    className="form-select"
+                    value={intelForm.competitorActivityLevel}
+                    onChange={(e) => setIntelForm({ ...intelForm, competitorActivityLevel: e.target.value })}
+                  >
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
                     <option value="High">High</option>
@@ -531,8 +531,12 @@ export const PollingStationIntelligence = ({ onClose }) => {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Risk level</label>
-                  <select className="form-select" value={intelForm.riskLevel} onChange={(e) => setIntelForm({ ...intelForm, riskLevel: e.target.value })}>
+                  <label className="form-label">Risk</label>
+                  <select
+                    className="form-select"
+                    value={intelForm.riskLevel}
+                    onChange={(e) => setIntelForm({ ...intelForm, riskLevel: e.target.value })}
+                  >
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
                     <option value="High">High</option>
@@ -540,8 +544,8 @@ export const PollingStationIntelligence = ({ onClose }) => {
                   </select>
                 </div>
               </div>
-              <button type="submit" className="admin-btn admin-btn-primary" style={{ width: '100%', height: 46 }}>
-                Save intelligence
+              <button type="submit" className="admin-btn admin-btn-primary" style={{ width: '100%', height: 44 }}>
+                Save
               </button>
             </form>
           </div>
@@ -553,10 +557,10 @@ export const PollingStationIntelligence = ({ onClose }) => {
           <div className="admin-modal psi-modal" onClick={(e) => e.stopPropagation()}>
             <div className="admin-modal-head">
               <div>
-                <h3>Bulk CSV import</h3>
-                <p>Paste station rows to import</p>
+                <h3>Import CSV</h3>
+                <p>Paste station rows</p>
               </div>
-              <button type="button" className="admin-btn admin-btn-ghost" style={{ height: 34, width: 34, padding: 0 }} onClick={() => setShowBulkImport(false)} aria-label="Close">
+              <button type="button" className="psi-icon-action" onClick={() => setShowBulkImport(false)} aria-label="Close">
                 <X strokeWidth={1.75} />
               </button>
             </div>
@@ -565,17 +569,16 @@ export const PollingStationIntelligence = ({ onClose }) => {
               <div className="form-group">
                 <label className="form-label">CSV content</label>
                 <textarea
-                  rows={8}
+                  rows={6}
                   className="form-input"
                   placeholder="Code,Name,County,Constituency,Ward,Village,RegisteredVoters,ActiveVoters,TurnoutPct"
                   value={csvText}
                   onChange={(e) => setCsvText(e.target.value)}
-                  style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }}
                 />
               </div>
-              <button type="submit" className="admin-btn admin-btn-primary" style={{ width: '100%', height: 46 }}>
+              <button type="submit" className="admin-btn admin-btn-primary" style={{ width: '100%', height: 44 }}>
                 <Upload strokeWidth={1.75} />
-                Import stations
+                Import
               </button>
             </form>
           </div>
@@ -587,10 +590,10 @@ export const PollingStationIntelligence = ({ onClose }) => {
           <div className="admin-modal psi-modal" onClick={(e) => e.stopPropagation()}>
             <div className="admin-modal-head">
               <div>
-                <h3>Mass update</h3>
-                <p>Apply to {formatCount(filteredStations.length)} matching stations</p>
+                <h3>Bulk update</h3>
+                <p>{formatCount(filteredStations.length)} matching stations</p>
               </div>
-              <button type="button" className="admin-btn admin-btn-ghost" style={{ height: 34, width: 34, padding: 0 }} onClick={() => setShowBulkUpdate(false)} aria-label="Close">
+              <button type="button" className="psi-icon-action" onClick={() => setShowBulkUpdate(false)} aria-label="Close">
                 <X strokeWidth={1.75} />
               </button>
             </div>
@@ -605,15 +608,15 @@ export const PollingStationIntelligence = ({ onClose }) => {
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">Strategic importance</label>
+                <label className="form-label">Priority</label>
                 <select className="form-select" value={bulkImportance} onChange={(e) => setBulkImportance(e.target.value)}>
                   <option value="High">High</option>
                   <option value="Medium">Medium</option>
                   <option value="Low">Low</option>
                 </select>
               </div>
-              <button type="submit" className="admin-btn admin-btn-primary" style={{ width: '100%', height: 46 }}>
-                Apply update
+              <button type="submit" className="admin-btn admin-btn-primary" style={{ width: '100%', height: 44 }}>
+                Apply
               </button>
             </form>
           </div>
