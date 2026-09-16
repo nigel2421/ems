@@ -353,7 +353,7 @@ export const AdminDashboard = ({
       subtitle: 'Provision login credentials and bind the account to county, constituency, or ward.'
     },
     assign_agent: {
-      title: 'Bind Agent',
+      title: 'Assign Agent',
       subtitle: 'Assign polling station agents to gazette streams by location sieve.'
     },
     user_directory: {
@@ -527,7 +527,7 @@ export const AdminDashboard = ({
                 </button>
                 <button type="button" className="admin-btn admin-btn-ghost" onClick={() => setTab('assign_agent')}>
                   <MapPin strokeWidth={1.75} />
-                  Bind agent to station
+                  Assign agent to station
                 </button>
                 <button type="button" className="admin-btn admin-btn-ghost" onClick={onOpenAuditLogs}>
                   <Activity strokeWidth={1.75} />
@@ -721,7 +721,7 @@ export const AdminDashboard = ({
 
               <button type="submit" className="admin-btn admin-btn-primary" style={{ height: 48, width: '100%' }}>
                 <MapPin strokeWidth={1.75} />
-                Bind agent to selected stream
+                Assign agent to selected stream
               </button>
 
               {assignmentNotice && (

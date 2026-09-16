@@ -150,7 +150,7 @@ export const AgentManagement = ({ onClose }) => {
       <header className="admin-page-head">
         <div>
           <h1>Agent management</h1>
-          <p>Deploy field agents, bind polling stations, and monitor duty status and performance.</p>
+          <p>Deploy field agents, assign polling stations, and monitor duty status and performance.</p>
         </div>
         <div className="admin-head-actions">
           <button type="button" className="admin-btn admin-btn-primary" onClick={() => setShowAddModal(true)}>
@@ -292,7 +292,7 @@ export const AgentManagement = ({ onClose }) => {
                       <div className="agm-row-actions">
                         <button type="button" className="admin-btn admin-btn-ghost agm-action-btn" onClick={() => handleOpenAssignModal(ag)}>
                           <MapPin strokeWidth={1.75} />
-                          Bind
+                          Assign
                         </button>
                         <button type="button" className="admin-btn admin-btn-ghost agm-action-btn" onClick={() => setViewingActivityAgent(ag)}>
                           <Activity strokeWidth={1.75} />
@@ -339,7 +339,7 @@ export const AgentManagement = ({ onClose }) => {
           <div className="agm-modal" onClick={(e) => e.stopPropagation()}>
             <div className="agm-modal-head">
               <div>
-                <h3>Bind polling station</h3>
+                <h3>Assign polling station</h3>
                 <p>{selectedAgentForAssign.fullName || selectedAgentForAssign.name}</p>
               </div>
               <button type="button" className="admin-btn admin-btn-ghost agm-icon-btn" onClick={() => setSelectedAgentForAssign(null)} aria-label="Close">
