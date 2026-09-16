@@ -211,7 +211,7 @@ const generateStrategies = (scores) => {
       title: 'Close polling agent coverage gaps',
       rationale: `Agent coverage stands at ${scores.agentCoverage}%.`,
       actions: [
-        'Bind agents to uncovered stations immediately',
+        'Assign agents to uncovered stations immediately',
         'Prioritise high-registration streams first',
         'Verify accreditation packs before deployment'
       ]

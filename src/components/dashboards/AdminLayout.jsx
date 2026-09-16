@@ -256,7 +256,7 @@ export const AdminLayout = ({
                         }}
                       >
                         <MapPin strokeWidth={1.75} />
-                        <span>Bind agent</span>
+                        <span>Assign agent</span>
                       </button>
                     </div>
                   )}
