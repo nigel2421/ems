@@ -16,11 +16,239 @@ import {
   ListChecks,
   Gauge,
   CircleDot,
-  ArrowRight
+  ArrowRight,
+  BrainCircuit,
+  Sparkles,
+  ShieldAlert,
+  TrendingUp,
+  MapPinned,
+  MessageSquare,
+  Wallet,
+  UserRound
 } from 'lucide-react';
 import './CampaignStrategy.css';
 
 const PHASE_ICONS = [Megaphone, Users, Network, Radio, Vote];
+
+const INTEL_FACTORS = [
+  {
+    id: 'sentiment',
+    label: 'Candidate favourability',
+    help: 'Share of likely voters leaning toward your candidate',
+    icon: TrendingUp
+  },
+  {
+    id: 'turnout',
+    label: 'Turnout likelihood',
+    help: 'Expected participation among your base and swing voters',
+    icon: Vote
+  },
+  {
+    id: 'groundGame',
+    label: 'Ground organisation',
+    help: 'Ward structures, agents, and door-to-door capacity',
+    icon: Users
+  },
+  {
+    id: 'messageReach',
+    label: 'Message penetration',
+    help: 'How widely campaign messaging is understood and recalled',
+    icon: MessageSquare
+  },
+  {
+    id: 'opponentPressure',
+    label: 'Opponent pressure',
+    help: 'Strength of competing campaigns in contested stations',
+    icon: ShieldAlert
+  },
+  {
+    id: 'agentCoverage',
+    label: 'Polling agent coverage',
+    help: 'Share of stations with deployed and trained agents',
+    icon: MapPinned
+  },
+  {
+    id: 'resourceReadiness',
+    label: 'Resource readiness',
+    help: 'Logistics, materials, and funding for the next 14 days',
+    icon: Wallet
+  },
+  {
+    id: 'youthEngagement',
+    label: 'Youth engagement',
+    help: 'Digital reach and mobilisation among first-time voters',
+    icon: UserRound
+  }
+];
+
+const defaultScores = () =>
+  INTEL_FACTORS.reduce((acc, f) => {
+    acc[f.id] = 50;
+    return acc;
+  }, {});
+
+const scoreBand = (value) => {
+  if (value >= 70) return 'strong';
+  if (value >= 40) return 'moderate';
+  return 'weak';
+};
+
+const generateStrategies = (scores) => {
+  const avg =
+    INTEL_FACTORS.reduce((sum, f) => sum + Number(scores[f.id] || 0), 0) / INTEL_FACTORS.length;
+
+  const recommendations = [];
+
+  if (scores.sentiment < 45) {
+    recommendations.push({
+      id: 'sentiment-rebuild',
+      priority: 'Critical',
+      title: 'Rebuild favourability in swing wards',
+      rationale: `Favourability is at ${scores.sentiment}/100 — below competitive threshold.`,
+      actions: [
+        'Deploy candidate walkabouts in top 10 swing wards',
+        'Issue a 72-hour issue-based messaging burst',
+        'Activate local influencers and faith networks'
+      ]
+    });
+  } else if (scores.sentiment >= 70) {
+    recommendations.push({
+      id: 'sentiment-defend',
+      priority: 'High',
+      title: 'Defend strong favourability lead',
+      rationale: `Favourability is strong at ${scores.sentiment}/100.`,
+      actions: [
+        'Increase positive reinforcement media',
+        'Protect soft supporters with reminder SMS',
+        'Avoid high-risk controversy windows'
+      ]
+    });
+  }
+
+  if (scores.turnout < 50) {
+    recommendations.push({
+      id: 'turnout-lift',
+      priority: 'Critical',
+      title: 'Lift base turnout operations',
+      rationale: `Turnout likelihood is only ${scores.turnout}/100.`,
+      actions: [
+        'Build same-day transport and water points near stations',
+        'Assign turnout captains per stream',
+        'Run GOTV call banks 48 hours before Election Day'
+      ]
+    });
+  }
+
+  if (scores.groundGame < 55) {
+    recommendations.push({
+      id: 'ground-rebuild',
+      priority: 'High',
+      title: 'Strengthen ward command structure',
+      rationale: `Ground organisation scores ${scores.groundGame}/100.`,
+      actions: [
+        'Fill vacant ward coordinator roles within 5 days',
+        'Run weekend agent drills with attendance logs',
+        'Set daily field reporting cut-off at 18:00'
+      ]
+    });
+  }
+
+  if (scores.messageReach < 50) {
+    recommendations.push({
+      id: 'message-amplify',
+      priority: 'High',
+      title: 'Amplify core message penetration',
+      rationale: `Message recall is weak at ${scores.messageReach}/100.`,
+      actions: [
+        'Simplify manifesto to three recallable pledges',
+        'Flood vernacular radio and WhatsApp clusters',
+        'Use polling-station leafleting in morning peaks'
+      ]
+    });
+  }
+
+  if (scores.opponentPressure >= 60) {
+    recommendations.push({
+      id: 'opponent-counter',
+      priority: 'Critical',
+      title: 'Counter opponent pressure zones',
+      rationale: `Opponent pressure is elevated at ${scores.opponentPressure}/100.`,
+      actions: [
+        'Map contested stations and assign rapid-response teams',
+        'Increase presence of party agents and legal desks',
+        'Track narrative attacks every 4 hours'
+      ]
+    });
+  }
+
+  if (scores.agentCoverage < 65) {
+    recommendations.push({
+      id: 'agent-coverage',
+      priority: 'Critical',
+      title: 'Close polling agent coverage gaps',
+      rationale: `Agent coverage stands at ${scores.agentCoverage}/100.`,
+      actions: [
+        'Bind agents to uncovered stations immediately',
+        'Prioritise high-registration streams first',
+        'Verify accreditation packs before deployment'
+      ]
+    });
+  }
+
+  if (scores.resourceReadiness < 50) {
+    recommendations.push({
+      id: 'resource-surge',
+      priority: 'High',
+      title: 'Surge logistics and campaign materials',
+      rationale: `Resource readiness is at ${scores.resourceReadiness}/100.`,
+      actions: [
+        'Reallocate fuel and branded materials to hot wards',
+        'Pre-position Election Day kits by Thursday',
+        'Lock vendor SLAs for same-day replenishment'
+      ]
+    });
+  }
+
+  if (scores.youthEngagement < 55) {
+    recommendations.push({
+      id: 'youth-engage',
+      priority: 'Medium',
+      title: 'Boost youth and first-time voter engagement',
+      rationale: `Youth engagement scores ${scores.youthEngagement}/100.`,
+      actions: [
+        'Launch campus and estate digital town halls',
+        'Partner with youth organisers for registration reminders',
+        'Use short-form video with clear polling-day instructions'
+      ]
+    });
+  }
+
+  if (!recommendations.length) {
+    recommendations.push({
+      id: 'balanced-hold',
+      priority: 'Medium',
+      title: 'Maintain balanced hold strategy',
+      rationale: `Overall intelligence average is ${Math.round(avg)}/100 with no critical gaps.`,
+      actions: [
+        'Continue current phase roadmap with weekly reviews',
+        'Protect leads while harvesting soft undecided voters',
+        'Keep contingency teams ready for late swings'
+      ]
+    });
+  }
+
+  const priorityWeight = { Critical: 0, High: 1, Medium: 2 };
+  recommendations.sort(
+    (a, b) => (priorityWeight[a.priority] ?? 9) - (priorityWeight[b.priority] ?? 9)
+  );
+
+  return {
+    average: Math.round(avg),
+    posture:
+      avg >= 70 ? 'Advantage' : avg >= 50 ? 'Competitive' : 'Recovery',
+    recommendations
+  };
+};
 
 const CircularProgress = ({ value = 0, variant = 'neutral', diameter = 88 }) => {
   const stroke = 7;
@@ -69,6 +297,9 @@ export const CampaignStrategy = ({ onClose }) => {
   const { currentUser } = useAuth();
   const { campaignPhases, updateCampaignTask } = useData();
   const [selectedPhaseId, setSelectedPhaseId] = useState(null);
+  const [showIntelModal, setShowIntelModal] = useState(true);
+  const [scores, setScores] = useState(defaultScores);
+  const [strategyPlan, setStrategyPlan] = useState(null);
 
   const selectedPhase = useMemo(
     () => campaignPhases.find((p) => p.id === selectedPhaseId) || null,
@@ -92,6 +323,17 @@ export const CampaignStrategy = ({ onClose }) => {
     updateCampaignTask(phaseId, taskId, { status: nextStatus }, currentUser);
   };
 
+  const handleScoreChange = (id, value) => {
+    setScores((prev) => ({ ...prev, [id]: Number(value) }));
+  };
+
+  const handleGenerate = (e) => {
+    e.preventDefault();
+    const plan = generateStrategies(scores);
+    setStrategyPlan(plan);
+    setShowIntelModal(false);
+  };
+
   return (
     <div className="strategy-shell">
       <header className="strategy-hero">
@@ -102,17 +344,82 @@ export const CampaignStrategy = ({ onClose }) => {
           </div>
           <h1>Strategy phase roadmap</h1>
           <p>
-            Select a phase to review objectives, action tasks, and KPI progress. Each phase is tracked independently.
+            Score poll intelligence factors to unlock recommended strategies, then track phase objectives and KPIs.
           </p>
         </div>
-        <div className="strategy-hero-stat">
-          <CircularProgress value={overallProgress} variant="active" diameter={96} />
-          <div>
-            <strong>Overall progress</strong>
-            <span>{campaignPhases.length} phases in the master plan</span>
+        <div className="strategy-hero-actions">
+          <button
+            type="button"
+            className="strategy-intel-launch"
+            onClick={() => setShowIntelModal(true)}
+          >
+            <BrainCircuit strokeWidth={1.75} />
+            Poll intelligence
+          </button>
+          <div className="strategy-hero-stat">
+            <CircularProgress value={overallProgress} variant="active" diameter={96} />
+            <div>
+              <strong>Overall progress</strong>
+              <span>{campaignPhases.length} phases in the master plan</span>
+            </div>
           </div>
         </div>
       </header>
+
+      {strategyPlan && (
+        <section className="strategy-intel-results">
+          <div className="strategy-intel-results-head">
+            <div>
+              <div className="strategy-kicker strategy-kicker-dark">
+                <Sparkles strokeWidth={1.75} />
+                <span>Generated from poll intelligence</span>
+              </div>
+              <h2>Recommended strategies</h2>
+              <p>
+                Posture: <strong>{strategyPlan.posture}</strong> · Average score{' '}
+                <strong>{strategyPlan.average}/100</strong>
+              </p>
+            </div>
+            <CircularProgress
+              value={strategyPlan.average}
+              variant={strategyPlan.average >= 70 ? 'done' : strategyPlan.average >= 50 ? 'active' : 'pending'}
+              diameter={84}
+            />
+          </div>
+
+          <div className="strategy-intel-score-strip">
+            {INTEL_FACTORS.map((factor) => {
+              const value = scores[factor.id];
+              return (
+                <div key={factor.id} className={`strategy-intel-chip strategy-intel-chip-${scoreBand(value)}`}>
+                  <span>{factor.label}</span>
+                  <strong>{value}</strong>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="strategy-reco-grid">
+            {strategyPlan.recommendations.map((reco) => (
+              <article key={reco.id} className={`strategy-reco-card strategy-reco-${reco.priority.toLowerCase()}`}>
+                <div className="strategy-reco-top">
+                  <span>{reco.priority}</span>
+                  <h3>{reco.title}</h3>
+                  <p>{reco.rationale}</p>
+                </div>
+                <ul>
+                  {reco.actions.map((action) => (
+                    <li key={action}>
+                      <CheckCircle2 strokeWidth={1.75} />
+                      <span>{action}</span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="strategy-phase-grid">
         {campaignPhases.map((phase, index) => {
@@ -160,6 +467,82 @@ export const CampaignStrategy = ({ onClose }) => {
           );
         })}
       </section>
+
+      {showIntelModal && (
+        <div className="strategy-modal-overlay" onClick={() => setShowIntelModal(false)}>
+          <form
+            className="strategy-modal strategy-intel-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="strategy-intel-title"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={handleGenerate}
+          >
+            <div className="strategy-modal-head">
+              <div className="strategy-modal-title-row">
+                <div className="strategy-intel-mark">
+                  <BrainCircuit strokeWidth={1.75} />
+                </div>
+                <div>
+                  <span className="strategy-status strategy-status-active">Intelligence intake</span>
+                  <h2 id="strategy-intel-title">Poll intelligence factors</h2>
+                  <p>Score each factor from 0–100. Strategies are generated from the profile.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="strategy-icon-btn"
+                aria-label="Close intelligence form"
+                onClick={() => setShowIntelModal(false)}
+              >
+                <X strokeWidth={1.75} />
+              </button>
+            </div>
+
+            <div className="strategy-intel-grid">
+              {INTEL_FACTORS.map((factor) => {
+                const Icon = factor.icon;
+                const value = scores[factor.id];
+                return (
+                  <label key={factor.id} className="strategy-intel-field">
+                    <div className="strategy-intel-field-head">
+                      <span>
+                        <Icon strokeWidth={1.75} />
+                        {factor.label}
+                      </span>
+                      <strong>{value}</strong>
+                    </div>
+                    <p>{factor.help}</p>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={value}
+                      onChange={(e) => handleScoreChange(factor.id, e.target.value)}
+                    />
+                    <div className="strategy-intel-scale">
+                      <span>Weak</span>
+                      <span>Moderate</span>
+                      <span>Strong</span>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="strategy-intel-actions">
+              <button type="button" className="strategy-btn-ghost" onClick={() => setShowIntelModal(false)}>
+                Skip for now
+              </button>
+              <button type="submit" className="strategy-btn-primary">
+                <Sparkles strokeWidth={1.75} />
+                Generate strategies
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {selectedPhase && (
         <div className="strategy-modal-overlay" onClick={() => setSelectedPhaseId(null)}>
