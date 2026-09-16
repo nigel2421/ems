@@ -510,7 +510,7 @@ export const CampaignStrategy = ({ onClose }) => {
                         <Icon strokeWidth={1.75} />
                         {factor.label}
                       </span>
-                      <strong>{value}</strong>
+                      <strong>{value}%</strong>
                     </div>
                     <p>{factor.help}</p>
                     <input
@@ -522,9 +522,9 @@ export const CampaignStrategy = ({ onClose }) => {
                       onChange={(e) => handleScoreChange(factor.id, e.target.value)}
                     />
                     <div className="strategy-intel-scale">
-                      <span>Weak</span>
-                      <span>Moderate</span>
-                      <span>Strong</span>
+                      <span>0%</span>
+                      <span>50%</span>
+                      <span>100%</span>
                     </div>
                   </label>
                 );
