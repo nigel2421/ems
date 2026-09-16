@@ -393,7 +393,7 @@ export const CampaignStrategy = ({ onClose }) => {
               return (
                 <div key={factor.id} className={`strategy-intel-chip strategy-intel-chip-${scoreBand(value)}`}>
                   <span>{factor.label}</span>
-                  <strong>{value}</strong>
+                  <strong>{value}%</strong>
                 </div>
               );
             })}
