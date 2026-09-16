@@ -235,8 +235,15 @@
   border-bottom: none;
 }
 
-.psi-station-name,
 .psi-loc {
+  display: block;
+  font-weight: 600;
+  color: #1A1F1C;
+  line-height: 1.35;
+  max-width: 280px;
+}
+
+.psi-station-name {
   display: block;
   font-weight: 700;
   color: #1A1F1C;
