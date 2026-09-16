@@ -60,46 +60,78 @@ export const PollingStationIntelligence = ({ onClose }) => {
     currentUser?.role === 'Admin' ||
     currentUser?.role === 'Strategy Team';
 
-  const locationByStationId = useMemo(() => {
-    const counties = new Map((geography.counties || []).map((c) => [c.id, c.name]));
-    const constituencies = new Map((geography.constituencies || []).map((c) => [c.id, c.name]));
-    const wards = new Map((geography.wards || []).map((w) => [w.id, w.name]));
+  const geoLookups = useMemo(() => {
+    const counties = new Map();
+    const constituencies = new Map();
+    const wards = new Map();
 
-    const map = {};
-    (geography.pollingStations || []).forEach((ps) => {
-      const county = ps.county || counties.get(ps.countyId) || '';
-      const constituency = ps.constituency || constituencies.get(ps.constituencyId) || '';
-      const ward = ps.ward || wards.get(ps.wardId) || '';
-      const village = ps.village || '';
-      map[ps.id] = {
-        county,
-        constituency,
-        ward,
-        village,
-        line: [county, constituency, ward].filter(Boolean).join(' · ') || 'Location unavailable',
-        detail: village || null
-      };
+    (geography.counties || []).forEach((c) => {
+      if (c?.id != null) counties.set(c.id, c.name || '');
     });
-    return map;
-  }, [geography]);
+    (geography.constituencies || []).forEach((c) => {
+      if (c?.id != null) constituencies.set(c.id, c.name || '');
+    });
+    (geography.wards || []).forEach((w) => {
+      if (w?.id != null) wards.set(w.id, w.name || '');
+    });
+
+    return { counties, constituencies, wards };
+  }, [geography.counties, geography.constituencies, geography.wards]);
+
+  const resolveLocation = (ps) => {
+    if (!ps) {
+      return {
+        county: '',
+        constituency: '',
+        ward: '',
+        village: '',
+        line: 'Location unavailable',
+        detail: null
+      };
+    }
+
+    const county = ps.county || geoLookups.counties.get(ps.countyId) || '';
+    const constituency = ps.constituency || geoLookups.constituencies.get(ps.constituencyId) || '';
+    const ward = ps.ward || geoLookups.wards.get(ps.wardId) || '';
+    const village = ps.village || '';
+
+    return {
+      county,
+      constituency,
+      ward,
+      village,
+      line: [county, constituency, ward].filter(Boolean).join(' · ') || 'Location unavailable',
+      detail: village || null
+    };
+  };
 
   const filteredStations = useMemo(() => {
+    const stations = geography.pollingStations || [];
     const term = searchTerm.trim().toLowerCase();
-    return (geography.pollingStations || []).filter((ps) => {
-      const intel = stationIntelligence[ps.id] || {};
-      const location = locationByStationId[ps.id] || {};
-      const matchesSearch =
-        !term ||
-        ps.name?.toLowerCase().includes(term) ||
-        ps.code?.toLowerCase().includes(term) ||
-        location.ward?.toLowerCase().includes(term) ||
-        location.county?.toLowerCase().includes(term) ||
-        location.constituency?.toLowerCase().includes(term) ||
-        location.village?.toLowerCase().includes(term);
+
+    return stations.filter((ps) => {
+      if (!ps) return false;
+
+      const intel = stationIntelligence?.[ps.id] || {};
       const matchesCounty = !selectedCounty || ps.county === selectedCounty || ps.countyId === selectedCounty;
       const matchesRisk = !selectedRisk || intel.riskLevel === selectedRisk;
       const matchesImportance = !selectedImportance || intel.strategicImportance === selectedImportance;
-      return matchesSearch && matchesCounty && matchesRisk && matchesImportance;
+
+      if (!matchesCounty || !matchesRisk || !matchesImportance) return false;
+
+      if (!term) return true;
+
+      const nameMatch = ps.name?.toLowerCase().includes(term);
+      const codeMatch = ps.code?.toLowerCase().includes(term);
+      if (nameMatch || codeMatch) return true;
+
+      const location = resolveLocation(ps);
+      return (
+        location.ward.toLowerCase().includes(term) ||
+        location.county.toLowerCase().includes(term) ||
+        location.constituency.toLowerCase().includes(term) ||
+        location.village.toLowerCase().includes(term)
+      );
     });
   }, [
     geography.pollingStations,
@@ -108,7 +140,7 @@ export const PollingStationIntelligence = ({ onClose }) => {
     selectedCounty,
     selectedRisk,
     selectedImportance,
-    locationByStationId
+    geoLookups
   ]);
 
   const totalPages = Math.max(1, Math.ceil(filteredStations.length / PAGE_SIZE));
@@ -337,13 +369,7 @@ export const PollingStationIntelligence = ({ onClose }) => {
                       riskLevel: 'Low'
                     };
                     const score = intel.partyAdvantageScore || 50;
-                    const location = locationByStationId[ps.id] || {
-                      line: 'Location unavailable',
-                      detail: null,
-                      county: '',
-                      constituency: '',
-                      ward: ''
-                    };
+                    const location = resolveLocation(ps);
                     return (
                       <tr key={ps.id}>
                         <td>
