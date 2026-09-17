@@ -12,13 +12,14 @@ import {
   ArrowUpRight,
   FileText
 } from 'lucide-react';
+import { JurisdictionVoterAnalytics } from './JurisdictionVoterAnalytics';
 import './DashboardShared.css';
 
 const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
 
 export const StrategyDashboard = ({ onOpenModule, onOpenAIAssistant }) => {
   const { currentUser } = useAuth();
-  const { campaignPhases, stationIntelligence, fieldReports, stakeholders, surveys } = useData();
+  const { campaignPhases, stationIntelligence, fieldReports, stakeholders, surveys, geography } = useData();
 
   const activePhase = campaignPhases.find((p) => p.status === 'Active') || campaignPhases[2];
   const highRiskStations = Object.entries(stationIntelligence || {}).filter(
@@ -27,13 +28,29 @@ export const StrategyDashboard = ({ onOpenModule, onOpenAIAssistant }) => {
   const totalReachEstimate = stakeholders.reduce((acc, curr) => acc + (curr.reachEstimate || 0), 0);
   const surveyResponses = surveys.reduce((acc, s) => acc + (s.responseCount || 0), 0);
 
+  const personaKey = `${currentUser?.role || ''} ${currentUser?.name || ''} ${currentUser?.email || ''} ${currentUser?.entityName || ''}`.toLowerCase();
+  const isGovernor = currentUser?.role === 'Governor' || personaKey.includes('governor');
+  const isSenator = currentUser?.role === 'Senator' || personaKey.includes('senator');
+  const isCountyExecutive =
+    isGovernor ||
+    isSenator ||
+    currentUser?.role === 'Strategy Team';
+
+  const commandTitle = isGovernor
+    ? 'Governor command'
+    : isSenator
+      ? 'Senator command'
+      : 'Strategy command';
+
   return (
     <div className="role-dash">
       <header className="admin-page-head">
         <div>
-          <h1>Strategy command</h1>
+          <h1>{commandTitle}</h1>
           <p>
-            Campaign intelligence for {currentUser?.name || 'strategy team'} — phase KPIs, field risks, and AI briefings.
+            {isCountyExecutive
+              ? `County voter intelligence and campaign operations for ${currentUser?.entityName || currentUser?.county || 'your jurisdiction'}.`
+              : `Campaign intelligence for ${currentUser?.name || 'strategy team'} — phase KPIs, field risks, and AI briefings.`}
           </p>
         </div>
         <div className="admin-head-actions">
@@ -47,6 +64,10 @@ export const StrategyDashboard = ({ onOpenModule, onOpenAIAssistant }) => {
           </button>
         </div>
       </header>
+
+      {isCountyExecutive && (
+        <JurisdictionVoterAnalytics user={currentUser} geography={geography} onOpenModule={onOpenModule} />
+      )}
 
       <section className="admin-metric-grid">
         <article className="admin-metric is-featured">
@@ -85,7 +106,7 @@ export const StrategyDashboard = ({ onOpenModule, onOpenAIAssistant }) => {
             <div className="admin-metric-icon"><BarChart3 strokeWidth={1.75} /></div>
           </div>
           <strong>{formatCount(surveyResponses)}</strong>
-          <small>Voter sentiment inputs</small>
+          <small>Across active instruments</small>
         </article>
       </section>
 
