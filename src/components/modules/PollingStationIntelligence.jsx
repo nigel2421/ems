@@ -8,7 +8,7 @@ import {
   MapPin,
   Upload,
   Sliders,
-  Map,
+  Map as MapIcon,
   BarChart3,
   Pencil,
   X,
@@ -294,7 +294,7 @@ const PollingStationIntelligenceInner = () => {
               className={activeTab === 'gis' ? 'is-active' : ''}
               onClick={() => setActiveTab('gis')}
             >
-              <Map strokeWidth={1.75} />
+              <MapIcon strokeWidth={1.75} />
               Map
             </button>
             <button
