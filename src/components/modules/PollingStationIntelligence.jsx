@@ -18,6 +18,11 @@ import {
   Users,
   MoreHorizontal
 } from 'lucide-react';
+import {
+  resolveJurisdiction,
+  hasNationalGeographyAccess,
+  filterStationsByJurisdiction
+} from '../../utils/jurisdictionAnalytics';
 import '../dashboards/DashboardShared.css';
 import './PollingStationIntelligence.css';
 
@@ -78,7 +83,14 @@ const PollingStationIntelligenceInner = () => {
   const { geography, stationIntelligence, updateStationIntelligence, bulkImportPollingStations } = useData();
 
   const counties = geography?.counties || [];
-  const defaultCountyId = counties[0]?.id || '';
+  const isNational = hasNationalGeographyAccess(currentUser);
+  const assignment = useMemo(
+    () => resolveJurisdiction(currentUser, geography),
+    [currentUser, geography]
+  );
+  const defaultCountyId = isNational
+    ? counties[0]?.id || ''
+    : assignment.county?.id || counties[0]?.id || '';
 
   const [activeTab, setActiveTab] = useState('list');
   const [searchTerm, setSearchTerm] = useState('');
@@ -112,10 +124,14 @@ const PollingStationIntelligenceInner = () => {
     currentUser?.role === 'Strategy Team';
 
   useEffect(() => {
-    if (!selectedCounty && defaultCountyId) {
+    if (!isNational && assignment.county?.id) {
+      setSelectedCounty(assignment.county.id);
+      return;
+    }
+    if (isNational && !selectedCounty && defaultCountyId) {
       setSelectedCounty(defaultCountyId);
     }
-  }, [defaultCountyId, selectedCounty]);
+  }, [isNational, assignment.county?.id, defaultCountyId, selectedCounty]);
 
   const geoLookups = useMemo(() => {
     const countyMap = new Map();
@@ -135,23 +151,26 @@ const PollingStationIntelligenceInner = () => {
     return { counties: countyMap, constituencies: constituencyMap, wards: wardMap };
   }, [counties, geography?.constituencies, geography?.wards]);
 
-  // Keep list work county-scoped so we never scan the full national register for render.
-  const countyStations = useMemo(() => {
-    if (!selectedCounty) return [];
+  // Candidates only see stations inside their assignment; admins browse by county.
+  const scopedStations = useMemo(() => {
     const list = geography?.pollingStations || [];
+    if (!isNational) {
+      return filterStationsByJurisdiction(list, assignment);
+    }
+    if (!selectedCounty) return [];
     const out = [];
     for (let i = 0; i < list.length; i += 1) {
       const ps = list[i];
       if (ps && ps.countyId === selectedCounty) out.push(ps);
     }
     return out;
-  }, [geography?.pollingStations, selectedCounty]);
+  }, [geography?.pollingStations, isNational, assignment, selectedCounty]);
 
   const filteredStations = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     const intelMap = stationIntelligence || {};
 
-    return countyStations.filter((ps) => {
+    return scopedStations.filter((ps) => {
       const intel = intelMap[ps.id] || {};
       if (selectedRisk && intel.riskLevel !== selectedRisk) return false;
       if (selectedImportance && intel.strategicImportance !== selectedImportance) return false;
@@ -169,13 +188,40 @@ const PollingStationIntelligenceInner = () => {
         location.village.toLowerCase().includes(term)
       );
     });
-  }, [countyStations, stationIntelligence, searchTerm, selectedRisk, selectedImportance, geoLookups]);
+  }, [scopedStations, stationIntelligence, searchTerm, selectedRisk, selectedImportance, geoLookups]);
+
+  const analyticsSummary = useMemo(() => {
+    const intelMap = stationIntelligence || {};
+    let stronghold = 0;
+    let swing = 0;
+    let opponent = 0;
+    const risks = { Low: 0, Medium: 0, High: 0, Severe: 0 };
+
+    filteredStations.forEach((ps) => {
+      const intel = intelMap[ps.id] || {};
+      const score = Number(intel.partyAdvantageScore ?? 50);
+      if (score >= 60) stronghold += 1;
+      else if (score >= 40) swing += 1;
+      else opponent += 1;
+      const risk = intel.riskLevel || 'Low';
+      if (risks[risk] != null) risks[risk] += 1;
+      else risks.Low += 1;
+    });
+
+    const total = filteredStations.length || 1;
+    return {
+      strongholdPct: Math.round((stronghold / total) * 100),
+      swingPct: Math.round((swing / total) * 100),
+      opponentPct: Math.round((opponent / total) * 100),
+      risks
+    };
+  }, [filteredStations, stationIntelligence]);
 
   const totalPages = Math.max(1, Math.ceil(filteredStations.length / PAGE_SIZE));
 
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, selectedCounty, selectedRisk, selectedImportance, activeTab]);
+  }, [searchTerm, selectedCounty, selectedRisk, selectedImportance, activeTab, assignment.level, assignment.title]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -189,6 +235,17 @@ const PollingStationIntelligenceInner = () => {
   const rangeStart = filteredStations.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const rangeEnd = Math.min(page * PAGE_SIZE, filteredStations.length);
   const selectedCountyName = geoLookups.counties.get(selectedCounty) || 'Selected county';
+  const scopeLabel = isNational
+    ? selectedCountyName
+    : assignment.title || selectedCountyName;
+  const scopeSubtitle = isNational
+    ? `${formatCount(filteredStations.length)} matching · ${formatCount(geography.pollingStations.length)} national`
+    : `${formatCount(filteredStations.length)} stations in your ${String(assignment.label || 'area').toLowerCase()} · ${assignment.county?.name || ''}${
+        assignment.constituency ? ` · ${assignment.constituency.name}` : ''
+      }${assignment.ward ? ` · ${assignment.ward.name}` : ''}`;
+  const countyOptions = isNational
+    ? counties
+    : counties.filter((c) => c.id === assignment.county?.id);
 
   const handleEditClick = (ps) => {
     const existing = stationIntelligence?.[ps.id] || {
@@ -271,7 +328,7 @@ const PollingStationIntelligenceInner = () => {
         <div>
           <h1>Polling intelligence</h1>
           <p>
-            {selectedCountyName}: {formatCount(filteredStations.length)} matching · {formatCount(geography.pollingStations.length)} national
+            {scopeLabel}: {scopeSubtitle}
           </p>
         </div>
 
@@ -362,12 +419,17 @@ const PollingStationIntelligenceInner = () => {
         <select
           className="form-select"
           value={selectedCounty}
-          onChange={(e) => setSelectedCounty(e.target.value)}
+          onChange={(e) => {
+            if (!isNational) return;
+            setSelectedCounty(e.target.value);
+          }}
+          disabled={!isNational}
+          title={isNational ? 'Select county' : `Locked to your ${String(assignment.label || 'assignment').toLowerCase()}`}
           required
         >
-          {counties.map((c) => (
+          {countyOptions.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.name}
+              {isNational ? c.name : scopeLabel}
             </option>
           ))}
         </select>
@@ -538,26 +600,29 @@ const PollingStationIntelligenceInner = () => {
         <section className="psi-analytics">
           <article className="psi-panel">
             <h2>Advantage mix</h2>
+            <p className="psi-error-copy" style={{ marginTop: 0 }}>
+              Based on {formatCount(filteredStations.length)} stations in {scopeLabel}
+            </p>
             <div className="psi-stat-row">
               <div>
                 <ShieldAlert strokeWidth={1.75} />
                 <span>Stronghold</span>
               </div>
-              <strong>65%</strong>
+              <strong>{analyticsSummary.strongholdPct}%</strong>
             </div>
             <div className="psi-stat-row">
               <div>
                 <BarChart3 strokeWidth={1.75} />
                 <span>Swing</span>
               </div>
-              <strong>25%</strong>
+              <strong>{analyticsSummary.swingPct}%</strong>
             </div>
             <div className="psi-stat-row">
               <div>
                 <Users strokeWidth={1.75} />
                 <span>Opponent</span>
               </div>
-              <strong>10%</strong>
+              <strong>{analyticsSummary.opponentPct}%</strong>
             </div>
           </article>
 
@@ -565,15 +630,19 @@ const PollingStationIntelligenceInner = () => {
             <h2>Risk bands</h2>
             <div className="psi-stat-row">
               <span className="psi-risk psi-risk-low">Low</span>
-              <strong>1,840</strong>
+              <strong>{formatCount(analyticsSummary.risks.Low)}</strong>
             </div>
             <div className="psi-stat-row">
               <span className="psi-risk psi-risk-medium">Medium</span>
-              <strong>420</strong>
+              <strong>{formatCount(analyticsSummary.risks.Medium)}</strong>
+            </div>
+            <div className="psi-stat-row">
+              <span className="psi-risk psi-risk-high">High</span>
+              <strong>{formatCount(analyticsSummary.risks.High)}</strong>
             </div>
             <div className="psi-stat-row">
               <span className="psi-risk psi-risk-severe">Severe</span>
-              <strong>18 wards</strong>
+              <strong>{formatCount(analyticsSummary.risks.Severe)}</strong>
             </div>
           </article>
         </section>
@@ -700,7 +769,7 @@ const PollingStationIntelligenceInner = () => {
               <div>
                 <h3>Bulk update</h3>
                 <p>
-                  Applies to up to 250 of {formatCount(filteredStations.length)} matching stations in {selectedCountyName}
+                  Applies to up to 250 of {formatCount(filteredStations.length)} matching stations in {scopeLabel}
                 </p>
               </div>
               <button type="button" className="psi-icon-action" onClick={() => setShowBulkUpdate(false)} aria-label="Close">

@@ -92,6 +92,28 @@ export const resolveJurisdiction = (user, geography) => {
     };
   }
 
+  // Field agents → ward of their assigned station when known
+  if (role === 'Field Agent' || role === 'Agent') {
+    const station =
+      (geography?.pollingStations || []).find((ps) => matchByCodeOrId(ps, user?.assignedEntity)) ||
+      null;
+    const agentWard =
+      ward ||
+      wards.find((w) => w.id === station?.wardId) ||
+      null;
+    if (agentWard) {
+      return {
+        level: 'ward',
+        label: 'Ward',
+        title: agentWard.name || 'Ward operations',
+        county: counties.find((c) => c.id === agentWard.countyId) || county,
+        constituency:
+          constituencies.find((c) => c.id === agentWard.constituencyId) || constituency,
+        ward: agentWard
+      };
+    }
+  }
+
   // Governor / Senator / Strategy Team → county
   return {
     level: 'county',
@@ -101,6 +123,33 @@ export const resolveJurisdiction = (user, geography) => {
     constituency: null,
     ward: null
   };
+};
+
+/** National admins may browse the full IEBC register; candidates stay in assignment. */
+export const hasNationalGeographyAccess = (user) => {
+  const role = user?.role || '';
+  return (
+    role === 'Super Admin' ||
+    role === 'Admin' ||
+    user?.assignedEntity === 'GLOBAL'
+  );
+};
+
+/** Restrict polling stations to the resolved jurisdiction (county / constituency / ward). */
+export const filterStationsByJurisdiction = (stations, scope) => {
+  const list = Array.isArray(stations) ? stations : [];
+  if (!scope) return [];
+
+  if (scope.level === 'ward' && scope.ward?.id) {
+    return list.filter((ps) => ps && ps.wardId === scope.ward.id);
+  }
+  if (scope.level === 'constituency' && scope.constituency?.id) {
+    return list.filter((ps) => ps && ps.constituencyId === scope.constituency.id);
+  }
+  if (scope.level === 'county' && scope.county?.id) {
+    return list.filter((ps) => ps && ps.countyId === scope.county.id);
+  }
+  return [];
 };
 
 const sumVoters = (rows) =>
