@@ -1,0 +1,120 @@
+.jva-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.jva-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.jva-kicker {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #006B3F;
+  margin-bottom: 0.25rem;
+}
+
+.jva-head h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #1A1F1C;
+}
+
+.jva-head p {
+  margin: 0.3rem 0 0;
+  font-size: 0.84rem;
+  color: #6B756F;
+  max-width: 62ch;
+  line-height: 1.45;
+}
+
+.jva-metrics {
+  margin: 0;
+}
+
+.jva-charts {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 0.85rem;
+}
+
+.jva-chart-canvas {
+  height: 280px;
+  margin-top: 0.35rem;
+}
+
+.jva-bar {
+  height: 300px;
+}
+
+.jva-highlights {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.jva-highlight {
+  padding: 0.85rem 0.9rem;
+  border-radius: 14px;
+  background: #F3F6F4;
+  border: 1px solid #E6EBE8;
+}
+
+.jva-highlight span {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6B756F;
+}
+
+.jva-highlight strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1A1F1C;
+}
+
+.jva-highlight small {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
+  color: #006B3F;
+  font-weight: 600;
+}
+
+.jva-table {
+  margin: 0;
+}
+
+.jva-code {
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  color: #6B756F;
+  font-weight: 500;
+}
+
+.jva-empty {
+  padding: 1.25rem;
+  color: #6B756F;
+}
+
+@media (max-width: 960px) {
+  .jva-charts,
+  .jva-highlights {
+    grid-template-columns: 1fr;
+  }
+}

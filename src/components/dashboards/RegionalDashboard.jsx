@@ -10,16 +10,21 @@ import {
   ShieldCheck,
   ArrowUpRight
 } from 'lucide-react';
+import { JurisdictionVoterAnalytics } from './JurisdictionVoterAnalytics';
+import { resolveJurisdiction } from '../../utils/jurisdictionAnalytics';
 import './DashboardShared.css';
 
 const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
 
 export const RegionalDashboard = ({ onOpenModule }) => {
   const { currentUser } = useAuth();
-  const { agents, fieldReports, tallyResults, getScopedAgents } = useData();
+  const { agents, fieldReports, tallyResults, getScopedAgents, geography } = useData();
 
   const scopedAgents = getScopedAgents ? getScopedAgents(currentUser, agents) : agents;
-  const regionName = currentUser?.entityName || currentUser?.assignedEntity || 'Regional Operations';
+  const scope = resolveJurisdiction(currentUser, geography);
+  const regionName =
+    scope.title || currentUser?.entityName || currentUser?.assignedEntity || 'Regional Operations';
+
   const regionalIncidents = fieldReports.filter(
     (r) =>
       (r.locationName && regionName && r.locationName.toLowerCase().includes(regionName.toLowerCase())) ||
@@ -29,12 +34,27 @@ export const RegionalDashboard = ({ onOpenModule }) => {
   const pendingTallyVerifications = tallyResults.filter((t) => t.status === 'Submitted' || t.status === 'Mismatch');
   const activeAgents = scopedAgents.filter((a) => a.status === 'Active' || a.status === 'On Duty').length;
 
+  const personaKey = `${currentUser?.role || ''} ${currentUser?.name || ''} ${currentUser?.email || ''}`.toLowerCase();
+  const roleTitle =
+    currentUser?.role === 'MCA' || personaKey.includes('mca')
+      ? 'MCA ward command'
+      : currentUser?.role === 'MP' ||
+          currentUser?.role === 'Regional Coordinator' ||
+          personaKey.includes('mp ')
+        ? 'MP constituency command'
+        : 'Regional operations';
+
   return (
     <div className="role-dash">
       <header className="admin-page-head">
         <div>
-          <h1>{regionName}</h1>
-          <p>Regional operations — field agents, station coverage, and tally verification queue.</p>
+          <h1>{roleTitle}</h1>
+          <p>
+            Real voter analytics for {regionName}
+            {scope.level === 'ward'
+              ? ' — polling stream concentrations and GOTV priorities.'
+              : ' — ward voter blocks, station coverage, and tally verification.'}
+          </p>
         </div>
         <div className="admin-head-actions">
           <button type="button" className="admin-btn admin-btn-primary" onClick={() => onOpenModule('agents')}>
@@ -48,6 +68,8 @@ export const RegionalDashboard = ({ onOpenModule }) => {
         </div>
       </header>
 
+      <JurisdictionVoterAnalytics user={currentUser} geography={geography} onOpenModule={onOpenModule} />
+
       <section className="admin-metric-grid">
         <article className="admin-metric is-featured">
           <div className="admin-metric-top">
@@ -59,11 +81,11 @@ export const RegionalDashboard = ({ onOpenModule }) => {
         </article>
         <article className="admin-metric">
           <div className="admin-metric-top">
-            <span>Station coverage</span>
+            <span>Jurisdiction</span>
             <div className="admin-metric-icon"><Building2 strokeWidth={1.75} /></div>
           </div>
-          <strong>94.2%</strong>
-          <small>Agents on gazetted streams</small>
+          <strong style={{ fontSize: '1.15rem' }}>{regionName}</strong>
+          <small>{scope.label} operations desk</small>
         </article>
         <article className="admin-metric">
           <div className="admin-metric-top">

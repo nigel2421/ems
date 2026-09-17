@@ -66,7 +66,7 @@ export const initialUsers = [
     county: 'Nairobi',
     constituency: 'Westlands',
     ward: 'Parklands/Highridge',
-    assignedEntity: '1366',
+    assignedEntity: '1367',
     entityName: 'Parklands/Highridge Ward',
     twoFactorEnabled: false,
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80'
