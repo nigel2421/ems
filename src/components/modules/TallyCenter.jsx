@@ -13,12 +13,32 @@ import {
   FileImage,
   X,
   Clock3,
-  Scale
+  Scale,
+  BarChart3
 } from 'lucide-react';
+import {
+  Chart as ChartJS,
+  ArcElement,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import { Pie, Bar } from 'react-chartjs-2';
 import '../dashboards/DashboardShared.css';
 import './TallyCenter.css';
 
+ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+
 const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
+
+const CANDIDATE_COLORS = {
+  A: '#006B3F',
+  B: '#C9A227',
+  C: '#0E7A45',
+  Rejected: '#BB0A21'
+};
 
 const statusClass = (status) => {
   switch (status) {
@@ -97,6 +117,161 @@ export const TallyCenter = () => {
       mismatch: list.filter((t) => t.status === 'Mismatch').length
     };
   }, [tallyResults]);
+
+  const voteAnalytics = useMemo(() => {
+    const list = tallyResults || [];
+    const totals = list.reduce(
+      (acc, tally) => {
+        acc.candA += Number(tally.candAVotes || 0);
+        acc.candB += Number(tally.candBVotes || 0);
+        acc.candC += Number(tally.candCVotes || 0);
+        acc.rejected += Number(tally.rejectedVotes || 0);
+        return acc;
+      },
+      { candA: 0, candB: 0, candC: 0, rejected: 0 }
+    );
+
+    const candidateTotal = totals.candA + totals.candB + totals.candC;
+    const allBallots = candidateTotal + totals.rejected;
+    const share = (value) => (candidateTotal > 0 ? Math.round((value / candidateTotal) * 1000) / 10 : 0);
+
+    return {
+      ...totals,
+      candidateTotal,
+      allBallots,
+      shares: {
+        candA: share(totals.candA),
+        candB: share(totals.candB),
+        candC: share(totals.candC)
+      },
+      leader:
+        totals.candA >= totals.candB && totals.candA >= totals.candC
+          ? 'Candidate A'
+          : totals.candB >= totals.candC
+            ? 'Candidate B'
+            : 'Candidate C',
+      margin: Math.abs(totals.candA - totals.candB)
+    };
+  }, [tallyResults]);
+
+  const candidatePieData = useMemo(
+    () => ({
+      labels: ['Candidate A', 'Candidate B', 'Candidate C'],
+      datasets: [
+        {
+          label: 'Total votes',
+          data: [voteAnalytics.candA, voteAnalytics.candB, voteAnalytics.candC],
+          backgroundColor: [CANDIDATE_COLORS.A, CANDIDATE_COLORS.B, CANDIDATE_COLORS.C],
+          borderColor: '#FFFFFF',
+          borderWidth: 2,
+          hoverOffset: 6
+        }
+      ]
+    }),
+    [voteAnalytics]
+  );
+
+  const ballotPieData = useMemo(
+    () => ({
+      labels: ['Candidate A', 'Candidate B', 'Candidate C', 'Rejected'],
+      datasets: [
+        {
+          label: 'Ballots',
+          data: [voteAnalytics.candA, voteAnalytics.candB, voteAnalytics.candC, voteAnalytics.rejected],
+          backgroundColor: [
+            CANDIDATE_COLORS.A,
+            CANDIDATE_COLORS.B,
+            CANDIDATE_COLORS.C,
+            CANDIDATE_COLORS.Rejected
+          ],
+          borderColor: '#FFFFFF',
+          borderWidth: 2,
+          hoverOffset: 6
+        }
+      ]
+    }),
+    [voteAnalytics]
+  );
+
+  const comparisonBarData = useMemo(
+    () => ({
+      labels: ['Candidate A', 'Candidate B', 'Candidate C'],
+      datasets: [
+        {
+          label: 'Total votes',
+          data: [voteAnalytics.candA, voteAnalytics.candB, voteAnalytics.candC],
+          backgroundColor: [CANDIDATE_COLORS.A, CANDIDATE_COLORS.B, CANDIDATE_COLORS.C],
+          borderRadius: 10,
+          maxBarThickness: 48
+        }
+      ]
+    }),
+    [voteAnalytics]
+  );
+
+  const pieOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            boxWidth: 10,
+            boxHeight: 10,
+            usePointStyle: true,
+            pointStyle: 'circle',
+            color: '#6B756F',
+            font: { size: 11, family: 'Inter, Segoe UI, sans-serif' },
+            padding: 12
+          }
+        },
+        tooltip: {
+          backgroundColor: '#073322',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          callbacks: {
+            label: (ctx) => `${ctx.label}: ${formatCount(ctx.raw || 0)} votes`
+          }
+        }
+      }
+    }),
+    []
+  );
+
+  const barOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#073322',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          callbacks: {
+            label: (ctx) => `${formatCount(ctx.raw || 0)} votes`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#6B756F', font: { size: 11 } }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: '#E6EBE8' },
+          ticks: {
+            color: '#6B756F',
+            font: { size: 11 },
+            callback: (value) => formatCount(value)
+          }
+        }
+      }
+    }),
+    []
+  );
 
   const filteredTallies = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -191,6 +366,16 @@ export const TallyCenter = () => {
           >
             <Plus strokeWidth={1.75} />
             Submit Form 34A
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'analytics'}
+            className={activeTab === 'analytics' ? 'is-active' : ''}
+            onClick={() => setActiveTab('analytics')}
+          >
+            <BarChart3 strokeWidth={1.75} />
+            Analytics
           </button>
         </div>
       </header>
@@ -330,6 +515,68 @@ export const TallyCenter = () => {
             </table>
           </div>
         </article>
+      )}
+
+      {activeTab === 'analytics' && (
+        <section className="tc-analytics">
+          <div className="tc-analytics-summary">
+            <article className="tc-share-card">
+              <span>Candidate A</span>
+              <strong>{formatCount(voteAnalytics.candA)}</strong>
+              <small>{voteAnalytics.shares.candA}% share</small>
+            </article>
+            <article className="tc-share-card">
+              <span>Candidate B</span>
+              <strong>{formatCount(voteAnalytics.candB)}</strong>
+              <small>{voteAnalytics.shares.candB}% share</small>
+            </article>
+            <article className="tc-share-card">
+              <span>Candidate C</span>
+              <strong>{formatCount(voteAnalytics.candC)}</strong>
+              <small>{voteAnalytics.shares.candC}% share</small>
+            </article>
+            <article className="tc-share-card tc-share-lead">
+              <span>Current lead</span>
+              <strong>{voteAnalytics.leader}</strong>
+              <small>Margin {formatCount(voteAnalytics.margin)} votes</small>
+            </article>
+          </div>
+
+          <div className="tc-chart-grid">
+            <article className="tc-panel tc-chart-card">
+              <div className="tc-chart-head">
+                <h2>Candidate vote share</h2>
+                <p>Total votes across all submitted Form 34A tallies</p>
+              </div>
+              <div className="tc-chart-canvas">
+                <Pie data={candidatePieData} options={pieOptions} />
+              </div>
+            </article>
+
+            <article className="tc-panel tc-chart-card">
+              <div className="tc-chart-head">
+                <h2>Ballot composition</h2>
+                <p>Valid candidate votes versus rejected ballots</p>
+              </div>
+              <div className="tc-chart-canvas">
+                <Pie data={ballotPieData} options={pieOptions} />
+              </div>
+            </article>
+
+            <article className="tc-panel tc-chart-card tc-chart-wide">
+              <div className="tc-chart-head">
+                <h2>Candidate comparison</h2>
+                <p>
+                  Aggregate totals · {formatCount(voteAnalytics.candidateTotal)} valid votes ·{' '}
+                  {formatCount(voteAnalytics.rejected)} rejected
+                </p>
+              </div>
+              <div className="tc-chart-canvas tc-chart-bar">
+                <Bar data={comparisonBarData} options={barOptions} />
+              </div>
+            </article>
+          </div>
+        </section>
       )}
 
       {activeTab === 'entry' && (

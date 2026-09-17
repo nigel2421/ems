@@ -203,6 +203,99 @@
   font-size: 0.78rem;
 }
 
+.tc-analytics {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.tc-analytics-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.tc-share-card {
+  background: #fff;
+  border: 1px solid #E6EBE8;
+  border-radius: 14px;
+  padding: 0.85rem 0.95rem;
+}
+
+.tc-share-card span {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6B756F;
+}
+
+.tc-share-card strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1A1F1C;
+  letter-spacing: -0.02em;
+}
+
+.tc-share-card small {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
+  color: #006B3F;
+  font-weight: 600;
+}
+
+.tc-share-lead {
+  background: #E8F5EE;
+  border-color: rgba(0, 107, 63, 0.22);
+}
+
+.tc-chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.tc-chart-wide {
+  grid-column: 1 / -1;
+}
+
+.tc-chart-head h2 {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #1A1F1C;
+}
+
+.tc-chart-head p {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  color: #6B756F;
+}
+
+.tc-chart-canvas {
+  height: 260px;
+  margin-top: 0.85rem;
+}
+
+.tc-chart-bar {
+  height: 280px;
+}
+
+@media (max-width: 900px) {
+  .tc-analytics-summary,
+  .tc-chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tc-chart-wide {
+    grid-column: auto;
+  }
+}
+
 .tc-entry-panel {
   max-width: 760px;
 }
