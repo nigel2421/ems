@@ -484,10 +484,10 @@ export const initialCampaignPhases = [
 export const initialTallyCenterData = [
   {
     id: 'TALLY-001',
-    pollingStationId: 'PS-01-001',
-    pollingStationCode: '001',
-    pollingStationName: 'Westlands Primary School Stream 01',
-    registeredVoters: 750,
+    pollingStationId: 'PS-42409',
+    pollingStationCode: '047/274/1367/00901',
+    pollingStationName: 'WESTLANDS PRIMARY SCHOOL',
+    registeredVoters: 700,
     candAVotes: 412,
     candBVotes: 198,
     candCVotes: 45,
@@ -514,17 +514,17 @@ export const initialTallyCenterData = [
   },
   {
     id: 'TALLY-002',
-    pollingStationId: 'PS-01-002',
-    pollingStationCode: '002',
-    pollingStationName: 'Westlands Primary School Stream 02',
-    registeredVoters: 720,
+    pollingStationId: 'PS-42410',
+    pollingStationCode: '047/274/1367/00902',
+    pollingStationName: 'WESTLANDS PRIMARY SCHOOL',
+    registeredVoters: 700,
     candAVotes: 350,
-    candBVotes: 380, // Note sum is 730 > 720 (Mismatch!)
+    candBVotes: 380, // Note sum is 745 > 700 (Mismatch!)
     candCVotes: 10,
     rejectedVotes: 5,
     totalVotesCast: 745,
     status: 'Mismatch',
-    approvalComment: 'FLAGGED: Total votes cast (745) exceeds total registered voters (720)!',
+    approvalComment: 'FLAGGED: Total votes cast (745) exceeds total registered voters (700)!',
     verifiedBy: null,
     submittedAt: '2026-09-04T12:05:00Z',
     evidence: {

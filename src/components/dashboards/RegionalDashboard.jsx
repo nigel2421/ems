@@ -11,7 +11,11 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 import { JurisdictionVoterAnalytics } from './JurisdictionVoterAnalytics';
-import { resolveJurisdiction } from '../../utils/jurisdictionAnalytics';
+import {
+  resolveJurisdiction,
+  hasNationalGeographyAccess,
+  filterTalliesByJurisdiction
+} from '../../utils/jurisdictionAnalytics';
 import './DashboardShared.css';
 
 const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
@@ -25,13 +29,20 @@ export const RegionalDashboard = ({ onOpenModule }) => {
   const regionName =
     scope.title || currentUser?.entityName || currentUser?.assignedEntity || 'Regional Operations';
 
+  const scopedTallies = filterTalliesByJurisdiction(
+    tallyResults,
+    geography?.pollingStations || [],
+    scope,
+    { national: hasNationalGeographyAccess(currentUser) }
+  );
+
   const regionalIncidents = fieldReports.filter(
     (r) =>
       (r.locationName && regionName && r.locationName.toLowerCase().includes(regionName.toLowerCase())) ||
       r.severityLevel === 'High' ||
       r.severityLevel === 'Critical'
   );
-  const pendingTallyVerifications = tallyResults.filter((t) => t.status === 'Submitted' || t.status === 'Mismatch');
+  const pendingTallyVerifications = scopedTallies.filter((t) => t.status === 'Submitted' || t.status === 'Mismatch');
   const activeAgents = scopedAgents.filter((a) => a.status === 'Active' || a.status === 'On Duty').length;
 
   const personaKey = `${currentUser?.role || ''} ${currentUser?.name || ''} ${currentUser?.email || ''}`.toLowerCase();
@@ -93,7 +104,7 @@ export const RegionalDashboard = ({ onOpenModule }) => {
             <div className="admin-metric-icon"><AlertTriangle strokeWidth={1.75} /></div>
           </div>
           <strong>{formatCount(pendingTallyVerifications.length)}</strong>
-          <small>{tallyResults.filter((t) => t.status === 'Mismatch').length} mismatch flags</small>
+          <small>{scopedTallies.filter((t) => t.status === 'Mismatch').length} mismatch flags</small>
         </article>
         <article className="admin-metric">
           <div className="admin-metric-top">
@@ -164,7 +175,7 @@ export const RegionalDashboard = ({ onOpenModule }) => {
             </button>
           </div>
           <div className="admin-list">
-            {tallyResults.map((tally) => (
+            {scopedTallies.map((tally) => (
               <div key={tally.id} className="admin-list-item">
                 <div className="admin-metric-icon"><ShieldCheck strokeWidth={1.75} /></div>
                 <div>

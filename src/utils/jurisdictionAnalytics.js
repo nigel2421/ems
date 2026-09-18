@@ -152,6 +152,47 @@ export const filterStationsByJurisdiction = (stations, scope) => {
   return [];
 };
 
+const stationNameKey = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .replace(/\s+stream\s*\d+$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+/**
+ * Restrict Form 34A tallies to stations inside the user's assignment.
+ * Matches by station id/code first, then by station name within the scoped register.
+ */
+export const filterTalliesByJurisdiction = (tallies, stations, scope, { national = false } = {}) => {
+  const list = Array.isArray(tallies) ? tallies : [];
+  if (national) return list;
+
+  const scopedStations = filterStationsByJurisdiction(stations, scope);
+  if (!scopedStations.length) return [];
+
+  const idSet = new Set(scopedStations.map((ps) => ps.id).filter(Boolean));
+  const codeSet = new Set(
+    scopedStations.map((ps) => String(ps.code || '').trim().toLowerCase()).filter(Boolean)
+  );
+  const nameSet = new Set(scopedStations.map((ps) => stationNameKey(ps.name)).filter(Boolean));
+
+  return list.filter((tally) => {
+    if (!tally) return false;
+    if (tally.pollingStationId && idSet.has(tally.pollingStationId)) return true;
+
+    const code = String(tally.pollingStationCode || '').trim().toLowerCase();
+    if (code && codeSet.has(code)) return true;
+
+    const nameKey = stationNameKey(tally.pollingStationName);
+    if (!nameKey) return false;
+    if (nameSet.has(nameKey)) return true;
+    for (const scopedName of nameSet) {
+      if (scopedName.includes(nameKey) || nameKey.includes(scopedName)) return true;
+    }
+    return false;
+  });
+};
+
 const sumVoters = (rows) =>
   rows.reduce((sum, row) => sum + (Number(row.registeredVoters) || 0), 0);
 

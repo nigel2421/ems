@@ -26,6 +26,12 @@ import {
   Legend
 } from 'chart.js';
 import { Pie, Bar } from 'react-chartjs-2';
+import {
+  resolveJurisdiction,
+  hasNationalGeographyAccess,
+  filterStationsByJurisdiction,
+  filterTalliesByJurisdiction
+} from '../../utils/jurisdictionAnalytics';
 import '../dashboards/DashboardShared.css';
 import './TallyCenter.css';
 
@@ -56,7 +62,14 @@ export const TallyCenter = () => {
   const { tallyResults, geography, submitTallyCenterForm, verifyTallyResult } = useData();
 
   const counties = geography?.counties || [];
-  const defaultCountyId = counties[0]?.id || '';
+  const isNational = hasNationalGeographyAccess(currentUser);
+  const assignment = useMemo(
+    () => resolveJurisdiction(currentUser, geography),
+    [currentUser, geography]
+  );
+  const defaultCountyId = isNational
+    ? counties[0]?.id || ''
+    : assignment.county?.id || counties[0]?.id || '';
 
   const [activeTab, setActiveTab] = useState('summary');
   const [statusFilter, setStatusFilter] = useState('');
@@ -77,49 +90,63 @@ export const TallyCenter = () => {
   const [verifyComment, setVerifyComment] = useState('');
 
   useEffect(() => {
-    if (!selectedCountyId && defaultCountyId) setSelectedCountyId(defaultCountyId);
-  }, [defaultCountyId, selectedCountyId]);
-
-  const countyStations = useMemo(() => {
-    if (!selectedCountyId) return [];
-    const list = geography?.pollingStations || [];
-    const out = [];
-    for (let i = 0; i < list.length; i += 1) {
-      const ps = list[i];
-      if (ps && ps.countyId === selectedCountyId) out.push(ps);
+    if (!isNational && assignment.county?.id) {
+      setSelectedCountyId(assignment.county.id);
+      return;
     }
-    return out.slice(0, 200);
-  }, [geography?.pollingStations, selectedCountyId]);
+    if (isNational && !selectedCountyId && defaultCountyId) {
+      setSelectedCountyId(defaultCountyId);
+    }
+  }, [isNational, assignment.county?.id, defaultCountyId, selectedCountyId]);
+
+  const scopedStations = useMemo(() => {
+    const list = geography?.pollingStations || [];
+    if (!isNational) {
+      return filterStationsByJurisdiction(list, assignment);
+    }
+    if (!selectedCountyId) return [];
+    return list.filter((ps) => ps && ps.countyId === selectedCountyId);
+  }, [geography?.pollingStations, isNational, assignment, selectedCountyId]);
+
+  const entryStations = useMemo(() => scopedStations.slice(0, 200), [scopedStations]);
 
   useEffect(() => {
-    if (!countyStations.length) {
+    if (!entryStations.length) {
       setSelectedStationId('');
       return;
     }
-    if (!countyStations.some((ps) => ps.id === selectedStationId)) {
-      setSelectedStationId(countyStations[0].id);
+    if (!entryStations.some((ps) => ps.id === selectedStationId)) {
+      setSelectedStationId(entryStations[0].id);
     }
-  }, [countyStations, selectedStationId]);
+  }, [entryStations, selectedStationId]);
 
-  const selectedPs = countyStations.find((ps) => ps.id === selectedStationId) || countyStations[0];
+  const selectedPs = entryStations.find((ps) => ps.id === selectedStationId) || entryStations[0];
   const registeredVoters = selectedPs?.registeredVoters || 750;
 
   const calculatedTotal =
     Number(candAVotes || 0) + Number(candBVotes || 0) + Number(candCVotes || 0) + Number(rejectedVotes || 0);
   const isExceedingReg = calculatedTotal > registeredVoters;
 
+  const scopedTallies = useMemo(
+    () =>
+      filterTalliesByJurisdiction(tallyResults, geography?.pollingStations || [], assignment, {
+        national: isNational
+      }),
+    [tallyResults, geography?.pollingStations, assignment, isNational]
+  );
+
   const metrics = useMemo(() => {
-    const list = tallyResults || [];
+    const list = scopedTallies;
     return {
       total: list.length,
       submitted: list.filter((t) => t.status === 'Submitted').length,
       approved: list.filter((t) => t.status === 'Approved').length,
       mismatch: list.filter((t) => t.status === 'Mismatch').length
     };
-  }, [tallyResults]);
+  }, [scopedTallies]);
 
   const voteAnalytics = useMemo(() => {
-    const list = tallyResults || [];
+    const list = scopedTallies;
     const totals = list.reduce(
       (acc, tally) => {
         acc.candA += Number(tally.candAVotes || 0);
@@ -152,7 +179,19 @@ export const TallyCenter = () => {
             : 'Candidate C',
       margin: Math.abs(totals.candA - totals.candB)
     };
-  }, [tallyResults]);
+  }, [scopedTallies]);
+
+  const scopeLabel = isNational
+    ? 'National tally desk'
+    : assignment.title || 'Assigned jurisdiction';
+  const scopeSubtitle = isNational
+    ? 'Form 34A capture, OCR assist, and supervisor verification'
+    : `Form 34A for your ${String(assignment.label || 'area').toLowerCase()} only · ${assignment.county?.name || ''}${
+        assignment.constituency ? ` · ${assignment.constituency.name}` : ''
+      }${assignment.ward ? ` · ${assignment.ward.name}` : ''}`;
+  const countyOptions = isNational
+    ? counties
+    : counties.filter((c) => c.id === assignment.county?.id);
 
   const candidatePieData = useMemo(
     () => ({
@@ -275,7 +314,7 @@ export const TallyCenter = () => {
 
   const filteredTallies = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    return (tallyResults || []).filter((tally) => {
+    return scopedTallies.filter((tally) => {
       if (statusFilter && tally.status !== statusFilter) return false;
       if (!term) return true;
       return (
@@ -283,7 +322,7 @@ export const TallyCenter = () => {
         tally.pollingStationCode?.toLowerCase().includes(term)
       );
     });
-  }, [tallyResults, statusFilter, searchTerm]);
+  }, [scopedTallies, statusFilter, searchTerm]);
 
   const handleSimulateOCR = async (e) => {
     const file = e.target.files?.[0];
@@ -343,7 +382,9 @@ export const TallyCenter = () => {
       <header className="tc-top">
         <div>
           <h1>Tally center</h1>
-          <p>Form 34A capture, OCR assist, and supervisor verification</p>
+          <p>
+            {scopeLabel}: {scopeSubtitle}
+          </p>
         </div>
 
         <div className="tc-tabs" role="tablist">
@@ -546,7 +587,7 @@ export const TallyCenter = () => {
             <article className="tc-panel tc-chart-card">
               <div className="tc-chart-head">
                 <h2>Candidate vote share</h2>
-                <p>Total votes across all submitted Form 34A tallies</p>
+                <p>Total votes across Form 34A tallies in {scopeLabel}</p>
               </div>
               <div className="tc-chart-canvas">
                 <Pie data={candidatePieData} options={pieOptions} />
@@ -595,11 +636,16 @@ export const TallyCenter = () => {
                 <select
                   className="form-select"
                   value={selectedCountyId}
-                  onChange={(e) => setSelectedCountyId(e.target.value)}
+                  onChange={(e) => {
+                    if (!isNational) return;
+                    setSelectedCountyId(e.target.value);
+                  }}
+                  disabled={!isNational}
+                  title={isNational ? 'Select county' : `Locked to your ${String(assignment.label || 'assignment').toLowerCase()}`}
                 >
-                  {counties.map((c) => (
+                  {countyOptions.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name}
+                      {isNational ? c.name : scopeLabel}
                     </option>
                   ))}
                 </select>
@@ -612,7 +658,7 @@ export const TallyCenter = () => {
                   onChange={(e) => setSelectedStationId(e.target.value)}
                   required
                 >
-                  {countyStations.map((ps) => (
+                  {entryStations.map((ps) => (
                     <option key={ps.id} value={ps.id}>
                       {ps.code} — {ps.name}
                     </option>
