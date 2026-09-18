@@ -26,6 +26,11 @@ import {
   IdCard
 } from 'lucide-react';
 import './AdminDashboard.css';
+import {
+  resolveJurisdiction,
+  hasNationalGeographyAccess,
+  filterTalliesByJurisdiction
+} from '../../utils/jurisdictionAnalytics';
 
 const PRIMARY_MODULES = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -88,7 +93,7 @@ export const AdminLayout = ({
   onCloseProfilePanel
 }) => {
   const { currentUser, users, switchUser, logout, canAccessModule } = useAuth();
-  const { tallyResults } = useData();
+  const { tallyResults, geography } = useData();
   const [showMore, setShowMore] = useState(false);
   const [showAgentMenu, setShowAgentMenu] = useState(false);
   const [showAddAgent, setShowAddAgent] = useState(false);
@@ -116,8 +121,16 @@ export const AdminLayout = ({
 
   const closeAside = () => setAsideOpen(false);
 
-  const pendingTallyCount = tallyResults?.filter((s) => s.status === 'Submitted').length || 0;
-  const mismatchCount = tallyResults?.filter((s) => s.status === 'Mismatch').length || 0;
+  const scopedNavTallies = useMemo(() => {
+    const national = hasNationalGeographyAccess(currentUser);
+    const scope = resolveJurisdiction(currentUser, geography);
+    return filterTalliesByJurisdiction(tallyResults, geography?.pollingStations || [], scope, {
+      national
+    });
+  }, [tallyResults, geography, currentUser]);
+
+  const pendingTallyCount = scopedNavTallies.filter((s) => s.status === 'Submitted').length || 0;
+  const mismatchCount = scopedNavTallies.filter((s) => s.status === 'Mismatch').length || 0;
   const totalAlerts = pendingTallyCount + mismatchCount;
   const isDashboard = currentModule === 'dashboard';
   const isBindAgent = isAdmin && isDashboard && adminPanel === 'assign_agent';
