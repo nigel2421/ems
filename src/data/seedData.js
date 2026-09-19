@@ -82,43 +82,63 @@ export const initialUsersList = [
   }
 ];
 
-// Initial Intelligence Metrics for Polling Stations
+// Initial Intelligence Metrics for Polling Stations (Westlands / Parklands streams)
 export const initialStationIntelligence = {
-  'PS-01-001': {
+  'PS-42409': {
     partyAdvantageScore: 78,
     incumbencyScore: 65,
     oppositionStrength: 32,
     publicPerceptionRating: 4.3,
     competitorActivityLevel: 'High',
     strategicImportance: 'High',
-    riskLevel: 'Low'
+    riskLevel: 'Low',
+    leadingFormation: 'UDA',
+    rivalFormation: 'ODM',
+    coalitionLean: 'Kenya Kwanza',
+    streamTerrain: 'Stronghold',
+    mobilisationChannel: 'Markets & boda stages'
   },
-  'PS-01-002': {
+  'PS-42410': {
     partyAdvantageScore: 42,
     incumbencyScore: 50,
     oppositionStrength: 68,
     publicPerceptionRating: 3.1,
     competitorActivityLevel: 'Critical',
     strategicImportance: 'High',
-    riskLevel: 'Severe'
+    riskLevel: 'Severe',
+    leadingFormation: 'ODM',
+    rivalFormation: 'UDA',
+    coalitionLean: 'Azimio la Umoja',
+    streamTerrain: 'Contested',
+    mobilisationChannel: 'Youth / campus blocs'
   },
-  'PS-01-003': {
+  'PS-42411': {
     partyAdvantageScore: 55,
     incumbencyScore: 58,
     oppositionStrength: 45,
     publicPerceptionRating: 3.8,
     competitorActivityLevel: 'Medium',
     strategicImportance: 'Medium',
-    riskLevel: 'Medium'
+    riskLevel: 'Medium',
+    leadingFormation: 'Wiper',
+    rivalFormation: 'UDA',
+    coalitionLean: 'Contested / fluid',
+    streamTerrain: 'Swing',
+    mobilisationChannel: 'Churches & mosques'
   },
-  'PS-01-004': {
+  'PS-42398': {
     partyAdvantageScore: 89,
     incumbencyScore: 80,
     oppositionStrength: 15,
     publicPerceptionRating: 4.8,
     competitorActivityLevel: 'Low',
     strategicImportance: 'High',
-    riskLevel: 'Low'
+    riskLevel: 'Low',
+    leadingFormation: 'UDA',
+    rivalFormation: 'Independent',
+    coalitionLean: 'Kenya Kwanza',
+    streamTerrain: 'Stronghold',
+    mobilisationChannel: 'Nyumba Kumi / village elders'
   }
 };
 
