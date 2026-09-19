@@ -17,6 +17,23 @@ import { TallyCenter } from './components/modules/TallyCenter';
 import { AIAssistantModal } from './components/modules/AIAssistantModal';
 import { AuditLogViewer } from './components/modules/AuditLogViewer';
 import { ElectionCountdown } from './components/modules/ElectionCountdown';
+import { FieldAgentPWA } from './components/field/FieldAgentPWA';
+import { ExceptionCommandCenter } from './components/dashboards/ExceptionCommandCenter';
+import { ElectionWarRoom } from './components/dashboards/ElectionWarRoom';
+import { HierarchicalWarRoom } from './components/dashboards/HierarchicalWarRoom';
+import { OperationsQueue } from './components/modules/OperationsQueue';
+import { EvidenceReviewDesk } from './components/modules/EvidenceReviewDesk';
+import { ReconciliationDeskWorkspace } from './components/modules/ReconciliationDeskWorkspace';
+import { CommunicationsCommand } from './components/modules/CommunicationsCommand';
+import { LogisticsReadinessPanel } from './components/modules/LogisticsReadinessPanel';
+import { SystemHealthPanel } from './components/modules/SystemHealthPanel';
+import TallyOperationsRoom from './components/modules/TallyOperationsRoom';
+import SecurityOperations from './components/modules/SecurityOperations';
+import PrivacyOperations from './components/modules/PrivacyOperations';
+import ExecutiveBriefing from './components/modules/ExecutiveBriefing';
+import UnifiedOperationsQueue from './components/modules/UnifiedOperationsQueue';
+import ElectionSimulationControl from './components/modules/ElectionSimulationControl';
+import ProductionReadinessBoard from './components/modules/ProductionReadinessBoard';
 import { LoginModal } from './components/auth/LoginModal';
 import { Bell, X } from 'lucide-react';
 
@@ -76,7 +93,7 @@ const MainAppContent = () => {
         return <RegionalDashboard onOpenModule={openModule} />;
       case 'Field Agent':
       case 'Agent':
-        return <AgentDashboard onOpenModule={openModule} />;
+        return <FieldAgentPWA user={currentUser} onBackToDashboard={() => openModule('dashboard')} />;
       case 'Observer':
         return <ObserverDashboard />;
       default:
@@ -91,6 +108,46 @@ const MainAppContent = () => {
 
   const renderActiveModuleContent = () => {
     switch (currentModule) {
+      case 'production_readiness':
+        return <ProductionReadinessBoard userRole={currentUser?.role} />;
+      case 'ops_queue':
+        return <UnifiedOperationsQueue user={currentUser} />;
+      case 'simulation_ctrl':
+        return <ElectionSimulationControl userRole={currentUser?.role} />;
+
+      case 'tally_ops_room':
+        return <TallyOperationsRoom userScope={currentUser?.jurisdictionScope} />;
+      case 'security_ops':
+        return <SecurityOperations userRole={currentUser?.role} />;
+      case 'privacy_ops':
+        return <PrivacyOperations />;
+      case 'executive_briefing':
+        return <ExecutiveBriefing userRole={currentUser?.role} />;
+      case 'hierarchical_warroom':
+        return <HierarchicalWarRoom user={currentUser} onSelectModule={(mod) => setCurrentModule(mod)} />;
+
+
+      case 'ops_queue':
+        return <OperationsQueue user={currentUser} />;
+      case 'war_room':
+        return <ElectionWarRoom user={currentUser} onSelectModule={(mod) => setCurrentModule(mod)} />;
+      case 'field_pwa':
+        return <FieldAgentPWA user={currentUser} onBackToDashboard={() => setCurrentModule('dashboard')} />;
+      case 'exception_cmd':
+        return <ExceptionCommandCenter user={currentUser} onSelectModule={(mod) => setCurrentModule(mod)} />;
+      case 'evidence_review':
+        return <EvidenceReviewDesk />;
+      case 'reconciliation_desk':
+        return <ReconciliationDeskWorkspace />;
+      case 'communications_cmd':
+      case 'communication':
+        return <CommunicationsCommand user={currentUser} />;
+      case 'logistics_panel':
+      case 'logistics':
+        return <LogisticsReadinessPanel />;
+      case 'system_health':
+      case 'health':
+        return <SystemHealthPanel />;
       case 'polling_stations':
         return <PollingStationIntelligence onClose={() => setCurrentModule('dashboard')} />;
       case 'agents':

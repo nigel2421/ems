@@ -1,0 +1,102 @@
+/* CI-EMS 2.5 Hierarchical Command War Room Stylesheet */
+
+.hierarchical-warroom-container {
+  padding: 24px;
+  background-color: #0b0f19;
+  color: #f8fafc;
+  min-height: 100vh;
+}
+
+.hierarchical-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #1e293b;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.hierarchical-title {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #f8fafc;
+}
+
+.drilldown-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  padding: 8px 16px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.breadcrumb-crumb {
+  color: #38bdf8;
+  cursor: pointer;
+}
+
+.breadcrumb-crumb:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb-separator {
+  color: #64748b;
+}
+
+.hierarchical-tree-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.tree-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 18px;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.tree-card:hover {
+  transform: translateY(-2px);
+  border-color: #0284c7;
+}
+
+.tree-card-name {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #f8fafc;
+  margin-bottom: 8px;
+}
+
+.tree-card-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+.tree-stat-item {
+  background: #0f172a;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.simulation-watermark-banner {
+  background: #7e22ce;
+  color: #ffffff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+  text-align: center;
+}
