@@ -122,7 +122,12 @@ export const DataProvider = ({ children }) => {
           publicPerceptionRating: 3.5,
           competitorActivityLevel: 'Medium',
           strategicImportance: 'Medium',
-          riskLevel: 'Low'
+          riskLevel: 'Low',
+          leadingFormation: 'UDA',
+          rivalFormation: 'ODM',
+          coalitionLean: 'Contested / fluid',
+          streamTerrain: 'Swing',
+          mobilisationChannel: 'Markets & boda stages'
         }),
         ...updatedFields
       }
