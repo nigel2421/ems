@@ -105,6 +105,7 @@ const PollingStationIntelligenceInner = () => {
     : assignment.county?.id || counties[0]?.id || '';
 
   const [activeTab, setActiveTab] = useState('list');
+  const [showNewsDrawer, setShowNewsDrawer] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCounty, setSelectedCounty] = useState(defaultCountyId);
   const [selectedRisk, setSelectedRisk] = useState('');
@@ -373,16 +374,6 @@ const PollingStationIntelligenceInner = () => {
             >
               <BarChart3 strokeWidth={1.75} />
               Analytics
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'news'}
-              className={activeTab === 'news' ? 'is-active' : ''}
-              onClick={() => setActiveTab('news')}
-            >
-              <Newspaper strokeWidth={1.75} />
-              News
             </button>
           </div>
 
@@ -688,7 +679,46 @@ const PollingStationIntelligenceInner = () => {
         </section>
       )}
 
-      {activeTab === 'news' && <KenyaPoliticalNewsPanel />}
+      <button
+        type="button"
+        className={`psi-news-fab${showNewsDrawer ? ' is-open' : ''}`}
+        onClick={() => setShowNewsDrawer(true)}
+        aria-label="Open Kenya political news"
+      >
+        <Newspaper strokeWidth={1.75} />
+        <span>News</span>
+        <em>24h</em>
+      </button>
+
+      {showNewsDrawer && (
+        <div className="psi-news-drawer-overlay" onClick={() => setShowNewsDrawer(false)}>
+          <aside
+            className="psi-news-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Kenya political news last 24 hours"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="psi-news-drawer-bar">
+              <div>
+                <strong>Political news</strong>
+                <span>Mainstream Kenya · last 24 hours</span>
+              </div>
+              <button
+                type="button"
+                className="psi-icon-action"
+                onClick={() => setShowNewsDrawer(false)}
+                aria-label="Close news"
+              >
+                <X strokeWidth={1.75} />
+              </button>
+            </div>
+            <div className="psi-news-drawer-body">
+              <KenyaPoliticalNewsPanel />
+            </div>
+          </aside>
+        </div>
+      )}
 
       {editingStation && (
         <div className="admin-modal-overlay psi-modal-overlay" onClick={() => setEditingStation(null)}>

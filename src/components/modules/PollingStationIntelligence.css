@@ -642,6 +642,120 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  background: transparent;
+}
+
+.psi-news-fab {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 5.5rem;
+  z-index: 1200;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 52px;
+  padding: 0 1rem 0 0.9rem;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #006B3F 0%, #073322 100%);
+  color: #fff;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 10px 28px rgba(7, 51, 34, 0.35);
+}
+
+.psi-news-fab svg {
+  width: 18px;
+  height: 18px;
+}
+
+.psi-news-fab em {
+  font-style: normal;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(201, 162, 39, 0.95);
+  color: #073322;
+}
+
+.psi-news-fab.is-open,
+.psi-news-fab:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 32px rgba(7, 51, 34, 0.42);
+}
+
+.psi-news-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  background: rgba(17, 17, 17, 0.42);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.psi-news-drawer {
+  width: min(440px, 100%);
+  height: 100%;
+  background: #F7FAF8;
+  border-left: 1px solid #E6EBE8;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -12px 0 40px rgba(7, 51, 34, 0.12);
+  animation: psi-news-slide 0.22s ease-out;
+}
+
+@keyframes psi-news-slide {
+  from {
+    transform: translateX(24px);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.psi-news-drawer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  background: #fff;
+  border-bottom: 1px solid #E6EBE8;
+}
+
+.psi-news-drawer-bar strong {
+  display: block;
+  font-size: 1rem;
+  color: #1A1F1C;
+}
+
+.psi-news-drawer-bar span {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  color: #6B756F;
+}
+
+.psi-news-drawer-body {
+  flex: 1;
+  overflow: auto;
+  padding: 0.9rem 1rem 1.25rem;
+}
+
+.psi-news-drawer-body .psi-news-head {
+  display: none;
 }
 
 .psi-news-head {
@@ -790,6 +904,11 @@
 
   .psi-news-list {
     grid-template-columns: 1fr;
+  }
+
+  .psi-news-fab {
+    right: 1rem;
+    bottom: 4.75rem;
   }
 }
 
