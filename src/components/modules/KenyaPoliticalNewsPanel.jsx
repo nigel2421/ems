@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Newspaper, RefreshCw, ExternalLink, AlertTriangle, X } from 'lucide-react';
 import {
   fetchKenyaPoliticalNewsLast24h,
+  readNewsCache,
   formatNewsTime,
   hoursAgoLabel,
   KENYA_POLITICAL_FEEDS
@@ -87,35 +88,48 @@ export const KenyaPoliticalNewsPanel = ({
 
 /** Global floating News control — middle-right on every authenticated page. */
 export const KenyaPoliticalNewsFab = () => {
+  const cached = typeof window !== 'undefined' ? readNewsCache() : null;
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [items, setItems] = useState([]);
-  const [fetchedAt, setFetchedAt] = useState(null);
-  const [errors, setErrors] = useState([]);
+  const [loading, setLoading] = useState(!(cached?.items?.length > 0));
+  const [items, setItems] = useState(cached?.items || []);
+  const [fetchedAt, setFetchedAt] = useState(cached?.fetchedAt || null);
+  const [errors, setErrors] = useState(cached?.errors || []);
   const [loadError, setLoadError] = useState('');
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setLoadError('');
-    try {
-      const result = await fetchKenyaPoliticalNewsLast24h();
+  const applyResult = useCallback((result) => {
+    if (result.items?.length) {
       setItems(result.items);
-      setFetchedAt(result.fetchedAt);
-      setErrors(result.errors || []);
-      if (!result.items.length && result.errors?.length === result.sourcesTried) {
-        setLoadError('Could not reach mainstream news feeds. Check your connection and try again.');
-      }
-    } catch (err) {
-      setLoadError(err?.message || 'Failed to load political news');
-      setItems([]);
-    } finally {
-      setLoading(false);
+      setLoadError('');
     }
+    if (result.fetchedAt) setFetchedAt(result.fetchedAt);
+    if (Array.isArray(result.errors)) setErrors(result.errors);
   }, []);
 
+  const load = useCallback(
+    async ({ force = false } = {}) => {
+      setLoading(true);
+      setLoadError('');
+      try {
+        const result = await fetchKenyaPoliticalNewsLast24h({
+          force,
+          onPartial: applyResult
+        });
+        applyResult(result);
+        if (!result.items.length && result.errors?.length === result.sourcesTried) {
+          setLoadError('Could not reach mainstream news feeds. Check your connection and try again.');
+        }
+      } catch (err) {
+        setLoadError(err?.message || 'Failed to load political news');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [applyResult]
+  );
+
   useEffect(() => {
-    load();
-    const timer = setInterval(load, 10 * 60 * 1000);
+    load({ force: false });
+    const timer = setInterval(() => load({ force: true }), 5 * 60 * 1000);
     return () => clearInterval(timer);
   }, [load]);
 
@@ -181,7 +195,7 @@ export const KenyaPoliticalNewsFab = () => {
                 fetchedAt={fetchedAt}
                 errors={errors}
                 loadError={loadError}
-                onRefresh={load}
+                onRefresh={() => load({ force: true })}
               />
             </div>
           </aside>

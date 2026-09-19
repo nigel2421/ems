@@ -1,10 +1,14 @@
 /**
- * Fetch Kenyan mainstream political headlines (last 24 hours).
- * Uses public RSS endpoints via rss2json, with an allorigins XML fallback.
+ * Fast Kenyan political headlines (last 24 hours).
+ * Short timeouts, parallel proxy race, and local cache for instant UI.
  */
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const FETCH_MS = 4000;
+const CACHE_KEY = 'ems_kenya_political_news_v2';
+const CACHE_TTL_MS = 3 * 60 * 1000;
 
+/** Fast, reliable mainstream feeds only (slow/flaky sources dropped). */
 export const KENYA_POLITICAL_FEEDS = [
   {
     source: 'The Standard',
@@ -12,23 +16,8 @@ export const KENYA_POLITICAL_FEEDS = [
     politicalOnly: false
   },
   {
-    source: 'Nation Africa',
-    url: 'https://nation.africa/kenya/rss',
-    politicalOnly: true
-  },
-  {
     source: 'Capital FM',
     url: 'https://www.capitalfm.co.ke/news/feed/',
-    politicalOnly: true
-  },
-  {
-    source: 'Citizen Digital',
-    url: 'https://www.citizen.digital/feed',
-    politicalOnly: true
-  },
-  {
-    source: 'The Star',
-    url: 'https://www.the-star.co.ke/rss.xml',
     politicalOnly: true
   }
 ];
@@ -68,7 +57,10 @@ const decodeXml = (value = '') =>
     .replace(/&#39;/g, "'");
 
 const extractTag = (block, tag) => {
-  const re = new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i');
+  const re = new RegExp(
+    `<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`,
+    'i'
+  );
   const match = block.match(re);
   return decodeXml((match?.[1] || match?.[2] || '').trim());
 };
@@ -88,10 +80,12 @@ const parseRssXml = (xml = '') => {
   return items;
 };
 
-async function fetchRssViaRss2Json(feedUrl) {
+const withTimeout = (ms) => AbortSignal.timeout(ms);
+
+async function fetchRssViaRss2Json(feedUrl, ms = FETCH_MS) {
   const endpoint = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`;
-  const res = await fetch(endpoint, { signal: AbortSignal.timeout(12000) });
-  if (!res.ok) throw new Error(`Feed HTTP ${res.status}`);
+  const res = await fetch(endpoint, { signal: withTimeout(ms) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
   if (data.status !== 'ok' || !Array.isArray(data.items)) {
     throw new Error(data.message || 'Feed unavailable');
@@ -99,28 +93,113 @@ async function fetchRssViaRss2Json(feedUrl) {
   return data.items;
 }
 
-async function fetchRssViaAllOrigins(feedUrl) {
+async function fetchRssViaAllOrigins(feedUrl, ms = FETCH_MS) {
   const endpoint = `https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`;
-  const res = await fetch(endpoint, { signal: AbortSignal.timeout(14000) });
-  if (!res.ok) throw new Error(`Proxy HTTP ${res.status}`);
+  const res = await fetch(endpoint, { signal: withTimeout(ms) });
+  if (!res.ok) throw new Error(`Proxy ${res.status}`);
   const xml = await res.text();
   const items = parseRssXml(xml);
-  if (!items.length) throw new Error('No RSS items in feed');
+  if (!items.length) throw new Error('Empty feed');
   return items;
 }
 
+/** Race both proxies — first success wins (cap ~4s). */
 async function fetchFeedItems(feedUrl) {
-  try {
-    return await fetchRssViaRss2Json(feedUrl);
-  } catch {
-    return fetchRssViaAllOrigins(feedUrl);
-  }
+  return Promise.any([fetchRssViaRss2Json(feedUrl), fetchRssViaAllOrigins(feedUrl)]);
 }
 
+const normaliseItems = (rawItems, feed, cutoff) => {
+  const out = [];
+  rawItems.forEach((item) => {
+    const published = parseDate(item.pubDate);
+    if (!published || published.getTime() < cutoff) return;
+
+    const title = stripHtml(item.title || '');
+    const description = stripHtml(item.description || item.content || '');
+    if (!title) return;
+    if (feed.politicalOnly && !isPoliticalStory(title, description)) return;
+    if (!isKenyaRelevant(title, description, feed.source)) return;
+
+    out.push({
+      id: `${feed.source}-${item.guid || item.link || title}`,
+      title,
+      summary: description.slice(0, 220) + (description.length > 220 ? '…' : ''),
+      link: item.link || item.url || '#',
+      source: feed.source,
+      publishedAt: published.toISOString(),
+      publishedMs: published.getTime()
+    });
+  });
+  return out;
+};
+
+const dedupeSort = (collected) => {
+  const seen = new Set();
+  return collected
+    .filter((story) => {
+      const key = story.title.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => b.publishedMs - a.publishedMs);
+};
+
+export const readNewsCache = () => {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.items || !parsed?.cachedAt) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const writeNewsCache = (payload) => {
+  try {
+    localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({
+        ...payload,
+        cachedAt: Date.now()
+      })
+    );
+  } catch {
+    /* ignore quota */
+  }
+};
+
 /**
- * @returns {Promise<{ items: Array, fetchedAt: string, sourcesTried: number, errors: string[] }>}
+ * @param {{ force?: boolean, onPartial?: (payload: object) => void }} [options]
+ * @returns {Promise<{ items: Array, fetchedAt: string, sourcesTried: number, errors: string[], fromCache?: boolean }>}
  */
-export async function fetchKenyaPoliticalNewsLast24h() {
+export async function fetchKenyaPoliticalNewsLast24h(options = {}) {
+  const { force = false, onPartial } = options;
+  const cached = readNewsCache();
+
+  if (!force && cached?.items?.length && Date.now() - cached.cachedAt < CACHE_TTL_MS) {
+    return {
+      items: cached.items,
+      fetchedAt: cached.fetchedAt || new Date(cached.cachedAt).toISOString(),
+      sourcesTried: cached.sourcesTried || KENYA_POLITICAL_FEEDS.length,
+      errors: cached.errors || [],
+      fromCache: true
+    };
+  }
+
+  // Serve stale cache immediately while a fresh fetch is requested by the UI.
+  if (!force && cached?.items?.length && typeof onPartial === 'function') {
+    onPartial({
+      items: cached.items,
+      fetchedAt: cached.fetchedAt || new Date(cached.cachedAt).toISOString(),
+      sourcesTried: cached.sourcesTried || KENYA_POLITICAL_FEEDS.length,
+      errors: cached.errors || [],
+      fromCache: true
+    });
+  }
+
   const cutoff = Date.now() - DAY_MS;
   const errors = [];
   const collected = [];
@@ -128,49 +207,36 @@ export async function fetchKenyaPoliticalNewsLast24h() {
   await Promise.all(
     KENYA_POLITICAL_FEEDS.map(async (feed) => {
       try {
-        const items = await fetchFeedItems(feed.url);
-        items.forEach((item) => {
-          const published = parseDate(item.pubDate);
-          if (!published || published.getTime() < cutoff) return;
-
-          const title = stripHtml(item.title || '');
-          const description = stripHtml(item.description || item.content || '');
-          if (!title) return;
-          if (feed.politicalOnly && !isPoliticalStory(title, description)) return;
-          if (!isKenyaRelevant(title, description, feed.source)) return;
-
-          collected.push({
-            id: `${feed.source}-${item.guid || item.link || title}`,
-            title,
-            summary: description.slice(0, 220) + (description.length > 220 ? '…' : ''),
-            link: item.link || item.url || '#',
-            source: feed.source,
-            publishedAt: published.toISOString(),
-            publishedMs: published.getTime()
+        const raw = await fetchFeedItems(feed.url);
+        const mapped = normaliseItems(raw, feed, cutoff);
+        collected.push(...mapped);
+        if (typeof onPartial === 'function' && mapped.length) {
+          onPartial({
+            items: dedupeSort([...collected]),
+            fetchedAt: new Date().toISOString(),
+            sourcesTried: KENYA_POLITICAL_FEEDS.length,
+            errors: [...errors],
+            partial: true
           });
-        });
+        }
       } catch (err) {
-        errors.push(`${feed.source}: ${err?.message || 'failed'}`);
+        const reason = err?.errors?.[0]?.message || err?.message || 'failed';
+        errors.push(`${feed.source}: ${reason}`);
       }
     })
   );
 
-  const seen = new Set();
-  const unique = collected.filter((story) => {
-    const key = story.title.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-
-  unique.sort((a, b) => b.publishedMs - a.publishedMs);
-
-  return {
-    items: unique,
+  const items = dedupeSort(collected);
+  const payload = {
+    items,
     fetchedAt: new Date().toISOString(),
     sourcesTried: KENYA_POLITICAL_FEEDS.length,
-    errors
+    errors,
+    fromCache: false
   };
+
+  if (items.length) writeNewsCache(payload);
+  return payload;
 }
 
 export const formatNewsTime = (iso) => {
