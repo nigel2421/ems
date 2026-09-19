@@ -16,8 +16,7 @@ import {
   ChevronRight,
   ShieldAlert,
   Users,
-  MoreHorizontal,
-  Newspaper
+  MoreHorizontal
 } from 'lucide-react';
 import {
   resolveJurisdiction,
@@ -34,7 +33,6 @@ import {
   terrainFromScore,
   formationBadgeClass
 } from '../../data/kenyaPoliticalFormations';
-import { KenyaPoliticalNewsPanel } from './KenyaPoliticalNewsPanel';
 import '../dashboards/DashboardShared.css';
 import './PollingStationIntelligence.css';
 
@@ -105,7 +103,6 @@ const PollingStationIntelligenceInner = () => {
     : assignment.county?.id || counties[0]?.id || '';
 
   const [activeTab, setActiveTab] = useState('list');
-  const [showNewsDrawer, setShowNewsDrawer] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCounty, setSelectedCounty] = useState(defaultCountyId);
   const [selectedRisk, setSelectedRisk] = useState('');
@@ -677,47 +674,6 @@ const PollingStationIntelligenceInner = () => {
             </div>
           </article>
         </section>
-      )}
-
-      <button
-        type="button"
-        className={`psi-news-fab${showNewsDrawer ? ' is-open' : ''}`}
-        onClick={() => setShowNewsDrawer(true)}
-        aria-label="Open Kenya political news"
-      >
-        <Newspaper strokeWidth={1.75} />
-        <span>News</span>
-        <em>24h</em>
-      </button>
-
-      {showNewsDrawer && (
-        <div className="psi-news-drawer-overlay" onClick={() => setShowNewsDrawer(false)}>
-          <aside
-            className="psi-news-drawer"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Kenya political news last 24 hours"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="psi-news-drawer-bar">
-              <div>
-                <strong>Political news</strong>
-                <span>Mainstream Kenya · last 24 hours</span>
-              </div>
-              <button
-                type="button"
-                className="psi-icon-action"
-                onClick={() => setShowNewsDrawer(false)}
-                aria-label="Close news"
-              >
-                <X strokeWidth={1.75} />
-              </button>
-            </div>
-            <div className="psi-news-drawer-body">
-              <KenyaPoliticalNewsPanel />
-            </div>
-          </aside>
-        </div>
       )}
 
       {editingStation && (
