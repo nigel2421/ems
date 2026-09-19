@@ -58,8 +58,9 @@ const statusClass = (status) => {
 };
 
 export const TallyCenter = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, canPerformAction } = useAuth();
   const { tallyResults, geography, submitTallyCenterForm, verifyTallyResult } = useData();
+
 
   const counties = geography?.counties || [];
   const isNational = hasNationalGeographyAccess(currentUser);
@@ -540,14 +541,18 @@ export const TallyCenter = () => {
                         <span className={statusClass(tally.status)}>{tally.status}</span>
                       </td>
                       <td>
-                        <button
-                          type="button"
-                          className="admin-btn admin-btn-ghost tc-verify-btn"
-                          onClick={() => setVerifyingTally(tally)}
-                        >
-                          <ShieldCheck strokeWidth={1.75} />
-                          Verify
-                        </button>
+                        {canPerformAction?.('VERIFY_TALLY') ? (
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn-ghost tc-verify-btn"
+                            onClick={() => setVerifyingTally(tally)}
+                          >
+                            <ShieldCheck strokeWidth={1.75} />
+                            Verify
+                          </button>
+                        ) : (
+                          <span className="tc-meta" title="Verification restricted to Coordinators and Admins">Read-only</span>
+                        )}
                       </td>
                     </tr>
                   ))

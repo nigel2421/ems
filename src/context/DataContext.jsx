@@ -12,8 +12,10 @@ import {
   initialAIChatHistory
 } from '../data/seedData';
 import { apiService, compressImageSimulation } from '../services/api';
+import { filterByScope, canAccessLocation, getUserScope, SCOPE_LEVELS } from '../utils/rbac';
 
 const DataContext = createContext(null);
+
 
 // Helper to safely write to localStorage without crashing on QuotaExceededError
 const safeSetLocalStorage = (key, value) => {
@@ -55,28 +57,46 @@ export const DataProvider = ({ children }) => {
   // 2. Polling Station Intelligence Scores
   const [stationIntelligence, setStationIntelligence] = useState(() => safeGetLocalStorage('ems_station_intelligence', initialStationIntelligence));
 
-  // 3. Agent Directory
-  const [agents, setAgents] = useState(() => safeGetLocalStorage('ems_agent_directory', initialAgentDirectory));
+  // 3. Agent Directory (Filter legacy dummy agents out of localStorage)
+  const [agents, setAgents] = useState(() => {
+    const loaded = safeGetLocalStorage('ems_agent_directory', initialAgentDirectory);
+    return (loaded || []).filter(a => !['Samuel Kiprop', 'Grace Muthoni', 'Kevin Omwamba', 'Ali Hassan Swaleh', 'Fatuma Bakari'].includes(a?.fullName || a?.name));
+  });
 
   // 4. Surveys
-  const [surveys, setSurveys] = useState(() => safeGetLocalStorage('ems_surveys', initialSurveys));
+  const [surveys, setSurveys] = useState(() => {
+    const loaded = safeGetLocalStorage('ems_surveys', initialSurveys);
+    return (loaded || []).filter(s => !['SURV-101', 'SURV-102'].includes(s?.id));
+  });
 
   // 5. Field Reports
-  const [fieldReports, setFieldReports] = useState(() => safeGetLocalStorage('ems_field_reports', initialFieldReports));
+  const [fieldReports, setFieldReports] = useState(() => {
+    const loaded = safeGetLocalStorage('ems_field_reports', initialFieldReports);
+    return (loaded || []).filter(r => !['REP-2026-001', 'REP-2026-002', 'REP-2026-003'].includes(r?.id));
+  });
 
   // 6. Stakeholders / Influence Network
-  const [stakeholders, setStakeholders] = useState(() => safeGetLocalStorage('ems_stakeholders', initialStakeholders));
+  const [stakeholders, setStakeholders] = useState(() => {
+    const loaded = safeGetLocalStorage('ems_stakeholders', initialStakeholders);
+    return (loaded || []).filter(s => !['STK-001', 'STK-002', 'STK-003', 'STK-004'].includes(s?.id));
+  });
 
   // 7. Campaign Strategy & Phases
   const [campaignPhases, setCampaignPhases] = useState(() => safeGetLocalStorage('ems_campaign_phases', initialCampaignPhases));
 
   // 8. Tally Center Results & Submissions
-  const [tallyResults, setTallyResults] = useState(() => safeGetLocalStorage('ems_tally_results', initialTallyCenterData));
+  const [tallyResults, setTallyResults] = useState(() => {
+    const loaded = safeGetLocalStorage('ems_tally_results', initialTallyCenterData);
+    return (loaded || []).filter(t => !['TALLY-001', 'TALLY-002'].includes(t?.id));
+  });
   const [submissions, setSubmissions] = useState(() => safeGetLocalStorage('ems_submissions', initialSubmissions));
   const [broadcasts, setBroadcasts] = useState(() => safeGetLocalStorage('ems_broadcasts', iebcOfficialBroadcasts));
 
   // 9. AI Chat History
-  const [aiChatHistory, setAiChatHistory] = useState(() => safeGetLocalStorage('ems_ai_chat', initialAIChatHistory));
+  const [aiChatHistory, setAiChatHistory] = useState(() => {
+    const loaded = safeGetLocalStorage('ems_ai_chat', initialAIChatHistory);
+    return (loaded || []).filter(c => !['CHAT-1', 'CHAT-2'].includes(c?.id));
+  });
 
   // 10. Audit Logs
   const [auditLogs, setAuditLogs] = useState(() => safeGetLocalStorage('ems_audit_logs', initialAuditLogs));
@@ -382,10 +402,42 @@ export const DataProvider = ({ children }) => {
     });
   };
 
+  const getScopedFieldReports = (user) => {
+    return filterByScope(user, fieldReports, 'reports');
+  };
+
+  const getScopedTallyResults = (user) => {
+    return filterByScope(user, tallyResults, 'tally');
+  };
+
+  const getScopedSurveys = (user) => {
+    return filterByScope(user, surveys, 'surveys');
+  };
+
+  const getScopedStakeholders = (user) => {
+    return filterByScope(user, stakeholders, 'stakeholders');
+  };
+
+  const getScopedGeography = (user) => {
+    if (!user) return geography;
+    const scope = getUserScope(user);
+    if (scope.level === SCOPE_LEVELS.NATIONAL) return geography;
+
+    const userCounty = (scope.county || user.county || '').toLowerCase();
+    const userConst = (scope.constituency || user.constituency || '').toLowerCase();
+    const userWard = (scope.ward || user.ward || '').toLowerCase();
+
+    return {
+      ...geography,
+      counties: (geography.counties || []).filter(c => !userCounty || c.name.toLowerCase().includes(userCounty) || userCounty.includes(c.name.toLowerCase())),
+      constituencies: (geography.constituencies || []).filter(c => !userConst || c.name.toLowerCase().includes(userConst) || userConst.includes(c.name.toLowerCase())),
+      wards: (geography.wards || []).filter(w => !userWard || w.name.toLowerCase().includes(userWard) || userWard.includes(w.name.toLowerCase())),
+      pollingStations: (geography.pollingStations || []).filter(ps => canAccessLocation(user, ps))
+    };
+  };
+
   const getScopedSubmissions = (user) => {
-    if (!user) return [];
-    if (user.role === 'Super Admin' || user.role === 'Admin') return submissions;
-    return submissions;
+    return filterByScope(user, submissions, 'submissions');
   };
 
   return (
@@ -421,12 +473,18 @@ export const DataProvider = ({ children }) => {
         logAuditAction,
         analyzeMismatch,
         getScopedAgents,
-        getScopedSubmissions
+        getScopedSubmissions,
+        getScopedFieldReports,
+        getScopedTallyResults,
+        getScopedSurveys,
+        getScopedStakeholders,
+        getScopedGeography
       }}
     >
       {children}
     </DataContext.Provider>
   );
+
 };
 
 export const useData = () => {
