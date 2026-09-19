@@ -31,6 +31,7 @@ import {
   hasNationalGeographyAccess,
   filterTalliesByJurisdiction
 } from '../../utils/jurisdictionAnalytics';
+import { KenyaPoliticalNewsFab } from '../modules/KenyaPoliticalNewsPanel';
 
 const PRIMARY_MODULES = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -502,6 +503,8 @@ export const AdminLayout = ({
           onClose={() => setShowAddAgent(false)}
         />
       )}
+
+      <KenyaPoliticalNewsFab />
     </div>
   );
 };
