@@ -55,27 +55,43 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
 
   const navCategories = [
     {
-      name: 'Strategy & Overview',
+      name: 'Strategy & Command',
       icon: BrainCircuit,
       modules: [
+        { id: 'executive_briefing', label: 'Executive Briefing', icon: Sparkles, desc: 'AI strategic briefing synthesis' },
+        { id: 'tally_ops_room', label: 'Tally Operations Room', icon: Vote, desc: '8-stage parallel tally pipeline' },
+        { id: 'hierarchical_warroom', label: 'Hierarchical War Room', icon: Shield, desc: 'Multi-tier jurisdiction drilldown' },
+        { id: 'ops_queue', label: 'Operations Inbox', icon: ClipboardList, desc: 'Scope-inherited Action Required queue' },
+        { id: 'war_room', label: 'Election War Room', icon: Shield, desc: 'Flagship command & operational control' },
         { id: 'dashboard', label: 'Dashboard', icon: Compass, desc: 'Real-time campaign status & KPIs' },
+        { id: 'field_pwa', label: 'Field Agent PWA', icon: Zap, desc: 'Mobile-first agent mission & offline UX' },
+        { id: 'exception_cmd', label: 'Exception Command', icon: Compass, desc: 'Actionable 0-dead-KPI command center' },
         { id: 'strategy', label: 'Strategy', icon: Target, desc: 'Electoral targets & sentiment matrix' },
         { id: 'ai_assistant', label: 'AI Assistant', icon: Sparkles, desc: 'Predictive analytics & legal RAG' }
       ]
     },
     {
-      name: 'Intelligence & Research',
+      name: 'Intelligence & Verification',
       icon: BarChart3,
       modules: [
+        { id: 'privacy_ops', label: 'Privacy Operations', icon: Shield, desc: 'ODPC Kenya data protection registry' },
+        { id: 'evidence_review', label: 'Evidence Review', icon: FileText, desc: 'Dual-pane image & automated checks review' },
+        { id: 'reconciliation_desk', label: 'Reconciliation Desk', icon: Layers, desc: 'Field-level 3-way discrepancy desk' },
         { id: 'polling_stations', label: 'Polling Intel', icon: Building2, desc: 'Boundary mapping & voter statistics' },
         { id: 'field_reports', label: 'Field Reports', icon: FileText, desc: 'Ground verification & dispatch logs' },
         { id: 'surveys', label: 'Surveys & Sampling', icon: ClipboardList, desc: 'Voter polling & demographic trends' }
       ]
     },
     {
-      name: 'Operations & Monitoring',
+      name: 'Operations & Readiness',
       icon: Zap,
       modules: [
+        { id: 'production_readiness', label: 'Production Readiness', icon: Shield, desc: 'Go/No-Go decision gate & OWASP matrix' },
+        { id: 'simulation_ctrl', label: 'Election Simulation', icon: Zap, desc: 'Full election rehearsal & chaos control' },
+        { id: 'security_ops', label: 'Security Operations', icon: Activity, desc: 'SOC telemetry & audit verification' },
+        { id: 'communications_cmd', label: 'Communications', icon: Bell, desc: 'Targeted dispatch & Emergency Broadcast' },
+        { id: 'logistics_panel', label: 'Logistics Readiness', icon: Target, desc: 'D-Day deadlines & equipment kits' },
+        { id: 'system_health', label: 'System Health', icon: Activity, desc: 'Telemetry & infrastructure observability' },
         { id: 'agents', label: 'Agent Management', icon: Users, desc: 'Agent deployment & accreditation' },
         { id: 'mobilization', label: 'Mobilization', icon: Layers, desc: 'Grassroots hierarchy & team sync' },
         { id: 'tally_center', label: 'Tally Center', icon: Vote, desc: 'Form verification & mismatch engine' }

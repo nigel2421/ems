@@ -157,7 +157,8 @@ const executeFallbackEngine = (promptText, contextData) => {
     return `### 🗣️ Top Voter Concerns This Week (From Survey & Field Data)\n\n1. **Youth Employment & Skills Training** (44% of responses)\n2. **Clean Water Supply & Distribution** (28% of responses)\n3. **Road Maintenance & Street Lighting** (18% of responses)\n4. **Healthcare Clinic Equipment** (10% of responses)\n\n*Strategic Action*: Focus upcoming townhalls on youth empowerment funds and water infrastructure commitments.`;
   }
   if (text.includes('agent') || text.includes('underperforming') || text.includes('performance')) {
-    return `### 📱 Agent Performance & Activity Audit\n\n- **Total Active Agents**: 3 registered agents\n- **Top Performer**: Kevin Omwamba (Kibra) - Rating 4.9 (22 reports, 45 surveys)\n- **Underperforming / Attention Needed**: Grace Muthoni (Dagoretti) - 9 reports submitted, last active 3 hours ago. Recommended regional coordinator follow-up.`;
+    const totalAgents = (contextData.agents || []).length;
+    return `### 📱 Agent Performance & Activity Audit\n\n- **Total Registered Agents**: ${totalAgents} active agents\n- **Audit Status**: All registered agents operating within normal SLA thresholds.\n- **Recommendation**: Continue routine monitoring via Agent Management desk.`;
   }
   if (text.includes('weekly') || text.includes('summary') || text.includes('briefing')) {
     return `### 📋 Executive Weekly Campaign Briefing\n\n- **Overall Campaign Progress**: Phase 3 (Voter Mobilization) is at **35% completion**.\n- **Stakeholder Reach**: 4 key leaders engaged with estimated **6,450 voters** reached.\n- **Field Reports**: 3 new field reports submitted (1 High Severity incident flagged in Dagoretti).\n- **Election Day Readiness**: 2 Polling Stations mapped; 1 station flagged with Math Mismatch on test tally.`;
