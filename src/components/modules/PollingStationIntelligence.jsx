@@ -16,13 +16,25 @@ import {
   ChevronRight,
   ShieldAlert,
   Users,
-  MoreHorizontal
+  MoreHorizontal,
+  Newspaper
 } from 'lucide-react';
 import {
   resolveJurisdiction,
   hasNationalGeographyAccess,
   filterStationsByJurisdiction
 } from '../../utils/jurisdictionAnalytics';
+import {
+  KENYA_PARTIES,
+  KENYA_COALITIONS,
+  STREAM_TERRAIN,
+  MOBILISATION_CHANNELS,
+  ELECTION_RISK_HINTS,
+  defaultKenyaIntel,
+  terrainFromScore,
+  formationBadgeClass
+} from '../../data/kenyaPoliticalFormations';
+import { KenyaPoliticalNewsPanel } from './KenyaPoliticalNewsPanel';
 import '../dashboards/DashboardShared.css';
 import './PollingStationIntelligence.css';
 
@@ -101,15 +113,7 @@ const PollingStationIntelligenceInner = () => {
   const [showTools, setShowTools] = useState(false);
 
   const [editingStation, setEditingStation] = useState(null);
-  const [intelForm, setIntelForm] = useState({
-    partyAdvantageScore: 50,
-    incumbencyScore: 50,
-    oppositionStrength: 50,
-    publicPerceptionRating: 3.5,
-    competitorActivityLevel: 'Medium',
-    strategicImportance: 'Medium',
-    riskLevel: 'Low'
-  });
+  const [intelForm, setIntelForm] = useState(defaultKenyaIntel());
 
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [csvText, setCsvText] = useState('');
@@ -196,24 +200,31 @@ const PollingStationIntelligenceInner = () => {
     let swing = 0;
     let opponent = 0;
     const risks = { Low: 0, Medium: 0, High: 0, Severe: 0 };
+    const formations = {};
 
     filteredStations.forEach((ps) => {
-      const intel = intelMap[ps.id] || {};
+      const intel = { ...defaultKenyaIntel(), ...(intelMap[ps.id] || {}) };
       const score = Number(intel.partyAdvantageScore ?? 50);
-      if (score >= 60) stronghold += 1;
-      else if (score >= 40) swing += 1;
+      const terrain = intel.streamTerrain || terrainFromScore(score);
+      if (terrain === 'Stronghold' || terrain === 'Lean') stronghold += 1;
+      else if (terrain === 'Swing' || terrain === 'Contested') swing += 1;
       else opponent += 1;
       const risk = intel.riskLevel || 'Low';
       if (risks[risk] != null) risks[risk] += 1;
       else risks.Low += 1;
+      const formation = intel.leadingFormation || 'Unmapped';
+      formations[formation] = (formations[formation] || 0) + 1;
     });
 
     const total = filteredStations.length || 1;
+    const topFormation = Object.entries(formations).sort((a, b) => b[1] - a[1])[0];
     return {
       strongholdPct: Math.round((stronghold / total) * 100),
       swingPct: Math.round((swing / total) * 100),
       opponentPct: Math.round((opponent / total) * 100),
-      risks
+      risks,
+      topFormation: topFormation ? topFormation[0] : '—',
+      topFormationCount: topFormation ? topFormation[1] : 0
     };
   }, [filteredStations, stationIntelligence]);
 
@@ -248,15 +259,13 @@ const PollingStationIntelligenceInner = () => {
     : counties.filter((c) => c.id === assignment.county?.id);
 
   const handleEditClick = (ps) => {
-    const existing = stationIntelligence?.[ps.id] || {
-      partyAdvantageScore: 60,
-      incumbencyScore: 50,
-      oppositionStrength: 40,
-      publicPerceptionRating: 3.8,
-      competitorActivityLevel: 'Medium',
-      strategicImportance: 'Medium',
-      riskLevel: 'Low'
+    const existing = {
+      ...defaultKenyaIntel(),
+      ...(stationIntelligence?.[ps.id] || {})
     };
+    if (!existing.streamTerrain) {
+      existing.streamTerrain = terrainFromScore(existing.partyAdvantageScore);
+    }
     setEditingStation(ps);
     setIntelForm(existing);
   };
@@ -328,7 +337,8 @@ const PollingStationIntelligenceInner = () => {
         <div>
           <h1>Polling intelligence</h1>
           <p>
-            {scopeLabel}: {scopeSubtitle}
+            {scopeLabel}: {scopeSubtitle}. Kenyan party and coalition lean, Form 34A risk, and GOTV priority by
+            gazetted stream.
           </p>
         </div>
 
@@ -363,6 +373,16 @@ const PollingStationIntelligenceInner = () => {
             >
               <BarChart3 strokeWidth={1.75} />
               Analytics
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'news'}
+              className={activeTab === 'news' ? 'is-active' : ''}
+              onClick={() => setActiveTab('news')}
+            >
+              <Newspaper strokeWidth={1.75} />
+              News
             </button>
           </div>
 
@@ -457,8 +477,8 @@ const PollingStationIntelligenceInner = () => {
                   <th>Station</th>
                   <th>Location</th>
                   <th>Voters</th>
-                  <th>Advantage</th>
-                  <th>Risk</th>
+                  <th>Formation lean</th>
+                  <th>Election risk</th>
                   <th />
                 </tr>
               </thead>
@@ -471,11 +491,12 @@ const PollingStationIntelligenceInner = () => {
                   </tr>
                 ) : (
                   pageStations.map((ps) => {
-                    const intel = stationIntelligence?.[ps.id] || {
-                      partyAdvantageScore: 65,
-                      riskLevel: 'Low'
+                    const intel = {
+                      ...defaultKenyaIntel(),
+                      ...(stationIntelligence?.[ps.id] || {})
                     };
                     const score = Number(intel.partyAdvantageScore ?? 50);
+                    const terrain = intel.streamTerrain || terrainFromScore(score);
                     const location = resolveLocation(ps, geoLookups);
                     return (
                       <tr key={ps.id}>
@@ -491,21 +512,30 @@ const PollingStationIntelligenceInner = () => {
                           <strong>{formatCount(ps.registeredVoters || 0)}</strong>
                         </td>
                         <td>
-                          <div className="psi-bar" title={`${score}%`}>
-                            <div className="psi-bar-track">
-                              <div
-                                className="psi-bar-fill"
-                                style={{
-                                  width: `${Math.min(100, Math.max(0, score))}%`,
-                                  background: score >= 50 ? '#006B3F' : '#BB0A21'
-                                }}
-                              />
+                          <div className="psi-formation-cell">
+                            <span className={formationBadgeClass(intel.leadingFormation)}>
+                              {intel.leadingFormation || '—'}
+                            </span>
+                            <span className="psi-meta">
+                              vs {intel.rivalFormation || 'rival'} · {terrain}
+                            </span>
+                            <div className="psi-bar" title={`${score}% formation lean`}>
+                              <div className="psi-bar-track">
+                                <div
+                                  className="psi-bar-fill"
+                                  style={{
+                                    width: `${Math.min(100, Math.max(0, score))}%`,
+                                    background: score >= 50 ? '#006B3F' : '#BB0A21'
+                                  }}
+                                />
+                              </div>
+                              <span>{score}%</span>
                             </div>
-                            <span>{score}%</span>
                           </div>
                         </td>
                         <td>
                           <span className={riskClass(intel.riskLevel || 'Low')}>{intel.riskLevel || 'Low'}</span>
+                          <span className="psi-meta">{ELECTION_RISK_HINTS[intel.riskLevel || 'Low']}</span>
                         </td>
                         <td>
                           <button
@@ -561,9 +591,9 @@ const PollingStationIntelligenceInner = () => {
           <div className="psi-panel-head">
             <h2>Spatial sample</h2>
             <div className="psi-legend">
-              <span><i className="psi-dot low" /> Stronghold</span>
-              <span><i className="psi-dot mid" /> Swing</span>
-              <span><i className="psi-dot high" /> Severe</span>
+              <span><i className="psi-dot low" /> Stronghold / lean</span>
+              <span><i className="psi-dot mid" /> Swing ward</span>
+              <span><i className="psi-dot high" /> Hostile / severe risk</span>
             </div>
           </div>
           <div className="psi-map-grid">
@@ -599,35 +629,45 @@ const PollingStationIntelligenceInner = () => {
       {activeTab === 'analytics' && (
         <section className="psi-analytics">
           <article className="psi-panel">
-            <h2>Advantage mix</h2>
+            <h2>Stream terrain mix</h2>
             <p className="psi-error-copy" style={{ marginTop: 0 }}>
-              Based on {formatCount(filteredStations.length)} stations in {scopeLabel}
+              Based on {formatCount(filteredStations.length)} gazetted streams in {scopeLabel}
             </p>
             <div className="psi-stat-row">
               <div>
                 <ShieldAlert strokeWidth={1.75} />
-                <span>Stronghold</span>
+                <span>Stronghold / lean</span>
               </div>
               <strong>{analyticsSummary.strongholdPct}%</strong>
             </div>
             <div className="psi-stat-row">
               <div>
                 <BarChart3 strokeWidth={1.75} />
-                <span>Swing</span>
+                <span>Swing / contested</span>
               </div>
               <strong>{analyticsSummary.swingPct}%</strong>
             </div>
             <div className="psi-stat-row">
               <div>
                 <Users strokeWidth={1.75} />
-                <span>Opponent</span>
+                <span>Hostile / opposition</span>
               </div>
               <strong>{analyticsSummary.opponentPct}%</strong>
+            </div>
+            <div className="psi-stat-row">
+              <div>
+                <Building2 strokeWidth={1.75} />
+                <span>Leading formation</span>
+              </div>
+              <strong>
+                {analyticsSummary.topFormation}{' '}
+                <span className="psi-meta">({formatCount(analyticsSummary.topFormationCount)})</span>
+              </strong>
             </div>
           </article>
 
           <article className="psi-panel">
-            <h2>Risk bands</h2>
+            <h2>Election-day risk bands</h2>
             <div className="psi-stat-row">
               <span className="psi-risk psi-risk-low">Low</span>
               <strong>{formatCount(analyticsSummary.risks.Low)}</strong>
@@ -648,12 +688,14 @@ const PollingStationIntelligenceInner = () => {
         </section>
       )}
 
+      {activeTab === 'news' && <KenyaPoliticalNewsPanel />}
+
       {editingStation && (
         <div className="admin-modal-overlay psi-modal-overlay" onClick={() => setEditingStation(null)}>
           <div className="admin-modal psi-modal" onClick={(e) => e.stopPropagation()}>
             <div className="admin-modal-head">
               <div>
-                <h3>Edit intelligence</h3>
+                <h3>Kenya stream intelligence</h3>
                 <p>
                   {editingStation.code} · {editingStation.name}
                 </p>
@@ -663,39 +705,116 @@ const PollingStationIntelligenceInner = () => {
               </button>
             </div>
             <form onSubmit={handleSaveIntelligence} className="psi-form">
+              <div className="psi-form-grid">
+                <div className="form-group">
+                  <label className="form-label">Leading party / formation</label>
+                  <select
+                    className="form-select"
+                    value={intelForm.leadingFormation}
+                    onChange={(e) => setIntelForm({ ...intelForm, leadingFormation: e.target.value })}
+                  >
+                    {KENYA_PARTIES.map((party) => (
+                      <option key={party} value={party}>
+                        {party}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Main rival formation</label>
+                  <select
+                    className="form-select"
+                    value={intelForm.rivalFormation}
+                    onChange={(e) => setIntelForm({ ...intelForm, rivalFormation: e.target.value })}
+                  >
+                    {KENYA_PARTIES.map((party) => (
+                      <option key={party} value={party}>
+                        {party}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="psi-form-grid">
+                <div className="form-group">
+                  <label className="form-label">Coalition lean</label>
+                  <select
+                    className="form-select"
+                    value={intelForm.coalitionLean}
+                    onChange={(e) => setIntelForm({ ...intelForm, coalitionLean: e.target.value })}
+                  >
+                    {KENYA_COALITIONS.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Stream terrain</label>
+                  <select
+                    className="form-select"
+                    value={intelForm.streamTerrain}
+                    onChange={(e) => setIntelForm({ ...intelForm, streamTerrain: e.target.value })}
+                  >
+                    {STREAM_TERRAIN.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div className="form-group">
-                <label className="form-label">Party advantage ({intelForm.partyAdvantageScore}%)</label>
+                <label className="form-label">
+                  Our formation lean ({intelForm.partyAdvantageScore}%)
+                </label>
                 <input
                   type="range"
                   min="0"
                   max="100"
                   value={intelForm.partyAdvantageScore}
-                  onChange={(e) => setIntelForm({ ...intelForm, partyAdvantageScore: Number(e.target.value) })}
+                  onChange={(e) => {
+                    const partyAdvantageScore = Number(e.target.value);
+                    setIntelForm({
+                      ...intelForm,
+                      partyAdvantageScore,
+                      streamTerrain: terrainFromScore(partyAdvantageScore)
+                    });
+                  }}
                 />
               </div>
+
               <div className="psi-form-grid">
                 <div className="form-group">
-                  <label className="form-label">Incumbency</label>
+                  <label className="form-label">Incumbency hold</label>
                   <input
                     type="number"
                     className="form-input"
+                    min="0"
+                    max="100"
                     value={intelForm.incumbencyScore}
                     onChange={(e) => setIntelForm({ ...intelForm, incumbencyScore: Number(e.target.value) })}
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Opposition</label>
+                  <label className="form-label">Rival strength</label>
                   <input
                     type="number"
                     className="form-input"
+                    min="0"
+                    max="100"
                     value={intelForm.oppositionStrength}
                     onChange={(e) => setIntelForm({ ...intelForm, oppositionStrength: Number(e.target.value) })}
                   />
                 </div>
               </div>
+
               <div className="psi-form-grid">
                 <div className="form-group">
-                  <label className="form-label">Competitor</label>
+                  <label className="form-label">Rival activity on ground</label>
                   <select
                     className="form-select"
                     value={intelForm.competitorActivityLevel}
@@ -704,11 +823,11 @@ const PollingStationIntelligenceInner = () => {
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
                     <option value="High">High</option>
-                    <option value="Critical">Critical</option>
+                    <option value="Critical">Critical (Azimio/KK surge)</option>
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Risk</label>
+                  <label className="form-label">Election-day risk</label>
                   <select
                     className="form-select"
                     value={intelForm.riskLevel}
@@ -721,8 +840,40 @@ const PollingStationIntelligenceInner = () => {
                   </select>
                 </div>
               </div>
+
+              <div className="psi-form-grid">
+                <div className="form-group">
+                  <label className="form-label">GOTV / nomination priority</label>
+                  <select
+                    className="form-select"
+                    value={intelForm.strategicImportance}
+                    onChange={(e) => setIntelForm({ ...intelForm, strategicImportance: e.target.value })}
+                  >
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Primary mobilisation channel</label>
+                  <select
+                    className="form-select"
+                    value={intelForm.mobilisationChannel}
+                    onChange={(e) => setIntelForm({ ...intelForm, mobilisationChannel: e.target.value })}
+                  >
+                    {MOBILISATION_CHANNELS.map((ch) => (
+                      <option key={ch} value={ch}>
+                        {ch}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <p className="psi-error-copy">{ELECTION_RISK_HINTS[intelForm.riskLevel] || ''}</p>
+
               <button type="submit" className="admin-btn admin-btn-primary" style={{ width: '100%', height: 44 }}>
-                Save
+                Save stream intelligence
               </button>
             </form>
           </div>
