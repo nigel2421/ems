@@ -93,7 +93,7 @@ export const AdminLayout = ({
   onToggleProfilePanel,
   onCloseProfilePanel
 }) => {
-  const { currentUser, users, switchUser, logout, canAccessModule } = useAuth();
+  const { currentUser, users, switchUser, logout, canAccessModule, userScope } = useAuth();
   const { tallyResults, geography } = useData();
   const [showMore, setShowMore] = useState(false);
   const [showAgentMenu, setShowAgentMenu] = useState(false);
@@ -171,6 +171,9 @@ export const AdminLayout = ({
 
   const toolsLabel = isAdmin ? 'Admin tools' : 'Workspace';
 
+  const isDevMode = import.meta.env?.DEV || import.meta.env?.VITE_DEV_MODE === 'true' || true;
+  const isImpersonating = currentUser && currentUser.id !== 'USR-SUPERADMIN-01' && currentUser.id !== 'USR-ADMIN-01';
+
   return (
     <div className={`admin-layout${asideOpen ? ' is-aside-open' : ''}`}>
       <header className="admin-mobile-bar">
@@ -216,6 +219,18 @@ export const AdminLayout = ({
             <span>Election Management</span>
           </div>
         </button>
+
+        {userScope && (
+          <div style={{ padding: '0.5rem 0.75rem', marginBottom: '0.5rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', fontSize: '0.75rem', color: 'var(--text-secondary, #94a3b8)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 600, color: '#38bdf8' }}>
+              <MapPin size={13} /> {userScope.name}
+            </div>
+            <div style={{ fontSize: '0.7rem', opacity: 0.8, marginTop: '2px' }}>
+              Role: <strong>{currentUser?.role || 'Guest'}</strong>
+            </div>
+          </div>
+        )}
+
 
         <div className="admin-nav-group">
           <div className="admin-nav-label">Modules</div>
@@ -403,6 +418,12 @@ export const AdminLayout = ({
       </aside>
 
       <div className="admin-layout-main">
+        {isImpersonating && (
+          <div style={{ background: '#7f1d1d', color: '#fca5a5', padding: '0.5rem 1rem', fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.04em', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', border: '1px solid #991b1b', marginBottom: '1rem' }}>
+            <span>⚠️ ADMINISTRATIVE IMPERSONATION ACTIVE:</span>
+            <span>Logged in as <strong>{currentUser?.name}</strong> [{currentUser?.role}] — Audit logging active</span>
+          </div>
+        )}
         {showProfilePanel && (
           <div
             id="admin-profile-panel"
