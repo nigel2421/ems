@@ -1,23 +1,19 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { initialUsers } from '../data/mockData';
 import { getDeviceTelemetry } from '../utils/deviceParser';
+import {
+  ROLES,
+  ROLE_HIERARCHY,
+  getUserScope,
+  canAccessLocation,
+  filterByScope,
+  canPerformAction
+} from '../utils/rbac';
 
 const AuthContext = createContext(null);
 
-export const ROLE_HIERARCHY = {
-  'Super Admin': 10,
-  'Admin': 10,
-  'Strategy Team': 8,
-  'Regional Coordinator': 6,
-  'Governor': 7,
-  'Senator': 7,
-  'MP': 5,
-  'MCA': 4,
-  'Aspirant': 3,
-  'Field Agent': 4,
-  'Agent': 4,
-  'Observer': 2
-};
+export { ROLE_HIERARCHY, ROLES };
+
 
 // Seed initial login logs for testing if empty
 const initialLoginLogs = [
@@ -189,6 +185,8 @@ export const AuthProvider = ({ children }) => {
     setIs2FAVerified(prev => !prev);
   };
 
+  const userScope = useMemo(() => getUserScope(currentUser), [currentUser]);
+
   const hasPermission = (minRole) => {
     if (!currentUser) return false;
     const userRank = ROLE_HIERARCHY[currentUser.role] || 0;
@@ -201,6 +199,9 @@ export const AuthProvider = ({ children }) => {
     if (currentUser.role === 'Super Admin' || currentUser.role === 'Admin') return true;
     return roles.includes(currentUser.role);
   };
+
+  const checkCanPerformAction = (action) => canPerformAction(currentUser, action);
+  const checkCanAccessLocation = (location) => canAccessLocation(currentUser, location);
 
   const canAccessModule = (moduleName) => {
     if (!currentUser) return false;
@@ -217,10 +218,10 @@ export const AuthProvider = ({ children }) => {
       case 'tally_center':
         return true;
       case 'ai_assistant':
-        return ['Super Admin', 'Admin', 'Strategy Team', 'Governor'].includes(role);
+        return checkCanPerformAction('VIEW_AI_ASSISTANT');
       case 'system_settings':
       case 'user_management':
-        return ['Super Admin', 'Admin'].includes(role);
+        return checkCanPerformAction('MANAGE_USERS');
       default:
         return true;
     }
@@ -232,6 +233,7 @@ export const AuthProvider = ({ children }) => {
         currentUser,
         users,
         isAuthenticated,
+        userScope,
         login,
         logout,
         switchUser,
@@ -244,6 +246,9 @@ export const AuthProvider = ({ children }) => {
         hasPermission,
         hasRole,
         canAccessModule,
+        canPerformAction: checkCanPerformAction,
+        canAccessLocation: checkCanAccessLocation,
+        filterByScope: (items, type) => filterByScope(currentUser, items, type),
         loginActivityLogs,
         ROLE_HIERARCHY
       }}
@@ -251,6 +256,7 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
+
 };
 
 export const useAuth = () => {

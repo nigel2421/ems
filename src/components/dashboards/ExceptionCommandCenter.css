@@ -1,0 +1,163 @@
+/* CI-EMS 2.3 Exception Command Center Stylesheet */
+
+.exception-cmd-container {
+  padding: 24px;
+  background-color: #0b0f19;
+  color: #f8fafc;
+  min-height: 100vh;
+}
+
+.exception-cmd-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #1e293b;
+  padding-bottom: 16px;
+}
+
+.exception-cmd-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: -0.5px;
+}
+
+.scope-badge {
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.exception-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.exception-kpi-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.exception-kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: #0284c7;
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.4);
+}
+
+.exception-kpi-card.critical { border-left: 4px solid #ef4444; }
+.exception-kpi-card.warning { border-left: 4px solid #f59e0b; }
+.exception-kpi-card.review { border-left: 4px solid #eab308; }
+.exception-kpi-card.good { border-left: 4px solid #10b981; }
+
+.kpi-count {
+  font-size: 1.8rem;
+  font-weight: 900;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kpi-label {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.kpi-drilldown-hint {
+  font-size: 0.7rem;
+  color: #38bdf8;
+  margin-top: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.exception-workspace-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .exception-workspace-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.exception-panel {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.panel-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin-bottom: 16px;
+  color: #f8fafc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.exception-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.exception-item {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.15s ease;
+}
+
+.exception-item:hover {
+  background: #1e293b;
+}
+
+.exception-info-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 4px;
+}
+
+.exception-info-meta {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.btn-action-sm {
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.btn-action-sm:hover {
+  background: #0369a1;
+}
