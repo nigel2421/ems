@@ -68,7 +68,11 @@ export const RegionalDashboard = ({ onOpenModule }) => {
           </p>
         </div>
         <div className="admin-head-actions">
-          <button type="button" className="admin-btn admin-btn-primary" onClick={() => onOpenModule('agents')}>
+          <button type="button" className="admin-btn admin-btn-primary" onClick={() => onOpenModule('strategy_team')}>
+            <Users strokeWidth={1.75} />
+            Strategy Team
+          </button>
+          <button type="button" className="admin-btn admin-btn-ghost" onClick={() => onOpenModule('agents')}>
             <UserCheck strokeWidth={1.75} />
             Assign agents
           </button>

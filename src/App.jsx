@@ -34,6 +34,7 @@ import ExecutiveBriefing from './components/modules/ExecutiveBriefing';
 import UnifiedOperationsQueue from './components/modules/UnifiedOperationsQueue';
 import ElectionSimulationControl from './components/modules/ElectionSimulationControl';
 import ProductionReadinessBoard from './components/modules/ProductionReadinessBoard';
+import StrategyTeamModule from './components/modules/StrategyTeamModule';
 import { LoginModal } from './components/auth/LoginModal';
 import { Bell, X } from 'lucide-react';
 
@@ -158,6 +159,8 @@ const MainAppContent = () => {
         return <FieldReporting onClose={() => setCurrentModule('dashboard')} />;
       case 'mobilization':
         return <TeamMobilization onClose={() => setCurrentModule('dashboard')} />;
+      case 'strategy_team':
+        return <StrategyTeamModule user={currentUser} onClose={() => setCurrentModule('dashboard')} />;
       case 'strategy':
         return <CampaignStrategy onClose={() => setCurrentModule('dashboard')} />;
       case 'tally_center':

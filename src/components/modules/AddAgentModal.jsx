@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { UserPlus, X, Camera, MapPin, Filter } from 'lucide-react';
+import { ScopedLocationSieve } from './ScopedLocationSieve';
+
 
 export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
   const { addUser, currentUser } = useAuth();
@@ -197,69 +199,17 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
             </div>
           </div>
 
-          {/* Cascading Location Filter (Sieve) */}
-          <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            <div style={{ fontSize: '0.8rem', fontWeight: '800', textTransform: 'uppercase', color: '#818cf8', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Filter style={{ width: '14px', height: '14px' }} />
-              <span>Location Sieve: Select County → Constituency → Ward</span>
-            </div>
-
-            <div className="responsive-three-col">
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" style={{ fontSize: '0.72rem' }}>1. County</label>
-                <select className="form-select" style={{ fontSize: '0.8rem', padding: '0.4rem' }} value={countyId} onChange={e => handleCountyChange(e.target.value)}>
-                  {geography.counties.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.code} - {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" style={{ fontSize: '0.72rem' }}>2. Constituency</label>
-                <select className="form-select" style={{ fontSize: '0.8rem', padding: '0.4rem' }} value={constituencyId} onChange={e => handleConstituencyChange(e.target.value)}>
-                  {availableConstituencies.map(cs => (
-                    <option key={cs.id} value={cs.id}>
-                      {cs.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" style={{ fontSize: '0.72rem' }}>3. Ward</label>
-                <select className="form-select" style={{ fontSize: '0.8rem', padding: '0.4rem' }} value={wardId} onChange={e => handleWardChange(e.target.value)}>
-                  {availableWards.map(w => (
-                    <option key={w.id} value={w.id}>
-                      {w.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span>4. Polling Station Stream</span>
-                <span style={{ fontSize: '0.72rem', color: '#34d399', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
-                  <MapPin style={{ width: '12px', height: '12px' }} />
-                  {availablePollingStations.length} Streams in Ward
-                </span>
-              </label>
-              <select className="form-select" value={pollingStationId} onChange={e => setPollingStationId(e.target.value)} required>
-                {availablePollingStations.length > 0 ? (
-                  availablePollingStations.map(ps => (
-                    <option key={ps.id} value={ps.id}>
-                      {ps.code} - {ps.name} ({ps.registeredVoters} voters)
-                    </option>
-                  ))
-                ) : (
-                  <option value="">No polling stations found for selected ward</option>
-                )}
-              </select>
-            </div>
-          </div>
+          {/* Contest-Aware Scoped Location Sieve */}
+          <ScopedLocationSieve
+            user={currentUser}
+            geography={geography}
+            purpose="Agent Registration"
+            onSelectionChange={(sel) => {
+              if (sel.pollingStationId) {
+                setPollingStationId(sel.pollingStationId);
+              }
+            }}
+          />
 
           <div className="form-group">
             <label className="form-label">Default Account Password</label>
