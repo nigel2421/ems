@@ -31,6 +31,14 @@ export const SCOPE_LEVELS = {
   STATION: 'STATION'          // Agent / Field Agent
 };
 
+export {
+  CONTEST_JURISDICTION_POLICY,
+  getContestPolicy,
+  resolveEffectiveGeographicScope,
+  validateGeographicSubmission
+} from './scopeResolver.js';
+
+
 export const ROLE_HIERARCHY = {
   [ROLES.SUPER_ADMIN]: 10,
   [ROLES.ADMIN]: 10,

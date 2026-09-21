@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { AddAgentModal } from './AddAgentModal';
+import { ScopedLocationSieve } from './ScopedLocationSieve';
+
 import {
   Users,
   Search,
@@ -350,52 +352,16 @@ export const AgentManagement = ({ onClose }) => {
             {assignSuccess && <div className="agm-notice">{assignSuccess}</div>}
 
             <form onSubmit={handleAssignSubmit} className="agm-form">
-              <div className="agm-geo-box">
-                <div className="responsive-form-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">County</label>
-                    <select className="form-select" value={bindCountyId} onChange={(e) => handleBindCountyChange(e.target.value)}>
-                      {geography.counties.map((c) => (
-                        <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">Constituency</label>
-                    <select className="form-select" value={bindConstituencyId} onChange={(e) => handleBindConstituencyChange(e.target.value)}>
-                      {availableBindConstituencies.map((cs) => (
-                        <option key={cs.id} value={cs.id}>{cs.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">Ward</label>
-                    <select className="form-select" value={bindWardId} onChange={(e) => handleBindWardChange(e.target.value)}>
-                      {availableBindWards.map((w) => (
-                        <option key={w.id} value={w.id}>{w.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="form-group" style={{ marginBottom: 0, marginTop: '0.85rem' }}>
-                  <label className="form-label">
-                    Polling station stream
-                    <span className="agm-stream-count">{availableBindPollingStations.length} available</span>
-                  </label>
-                  <select className="form-select" value={targetPsId} onChange={(e) => setTargetPsId(e.target.value)} required>
-                    {availableBindPollingStations.length > 0 ? (
-                      availableBindPollingStations.map((ps) => (
-                        <option key={ps.id} value={ps.id}>
-                          {ps.code} - {ps.name} ({ps.registeredVoters} voters)
-                        </option>
-                      ))
-                    ) : (
-                      <option value="">No stations in selected ward</option>
-                    )}
-                  </select>
-                </div>
-              </div>
+              <ScopedLocationSieve
+                user={currentUser}
+                geography={geography}
+                purpose="Agent Polling Station Assignment"
+                onSelectionChange={(sel) => {
+                  if (sel.pollingStationId) {
+                    setTargetPsId(sel.pollingStationId);
+                  }
+                }}
+              />
 
               <button type="submit" className="admin-btn admin-btn-primary" style={{ width: '100%', height: 46 }}>
                 <UserCheck strokeWidth={1.75} />

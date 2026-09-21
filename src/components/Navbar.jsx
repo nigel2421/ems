@@ -51,13 +51,14 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
     }
   };
 
-  const primaryNavIds = ['dashboard', 'polling_stations', 'agents', 'tally_center', 'strategy'];
+  const primaryNavIds = ['dashboard', 'strategy_team', 'polling_stations', 'agents', 'tally_center', 'strategy'];
 
   const navCategories = [
     {
       name: 'Strategy & Command',
       icon: BrainCircuit,
       modules: [
+        { id: 'strategy_team', label: 'Strategy Team', icon: Users, desc: 'Aspirant strategy team org, roles & roadmap' },
         { id: 'executive_briefing', label: 'Executive Briefing', icon: Sparkles, desc: 'AI strategic briefing synthesis' },
         { id: 'tally_ops_room', label: 'Tally Operations Room', icon: Vote, desc: '8-stage parallel tally pipeline' },
         { id: 'hierarchical_warroom', label: 'Hierarchical War Room', icon: Shield, desc: 'Multi-tier jurisdiction drilldown' },
