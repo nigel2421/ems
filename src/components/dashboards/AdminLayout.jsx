@@ -488,26 +488,6 @@ export const AdminLayout = ({
                 </div>
               </div>
 
-              <div className="admin-profile-panel-personas">
-                <div className="admin-nav-label">Switch persona</div>
-                <div className="admin-profile-panel-persona-list">
-                  {users.map((u) => (
-                    <button
-                      key={u.id}
-                      type="button"
-                      className={`admin-nav-btn admin-nav-btn-sub${currentUser?.id === u.id ? ' is-active' : ''}`}
-                      onClick={() => handleSwitchPersona(u.id)}
-                    >
-                      <UserCheck strokeWidth={1.75} />
-                      <span>
-                        {u.name}
-                        <small>{u.role}</small>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <button type="button" className="admin-logout-btn" onClick={logout}>
                 <LogOut strokeWidth={1.75} />
                 Sign out

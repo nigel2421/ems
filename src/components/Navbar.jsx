@@ -500,56 +500,6 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
                 <ChevronDown style={{ width: '16px', height: '16px', color: 'var(--text-muted)', transform: 'rotate(-90deg)' }} />
               </button>
 
-              {/* Role Persona Switcher Accordion */}
-              <div style={{ background: 'var(--bg-canvas)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '0.6rem 0.75rem' }}>
-                <div 
-                  onClick={() => setShowRoleMenu(!showRoleMenu)} 
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', minHeight: '36px' }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                    <UserCheck style={{ width: '18px', height: '18px', color: 'var(--accent-primary)' }} />
-                    <span style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-primary)' }}>Switch Role Persona (Demo)</span>
-                  </div>
-                  <ChevronDown style={{ width: '16px', height: '16px', color: 'var(--text-muted)', transform: showRoleMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                </div>
-
-                {showRoleMenu && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.6rem', pt: '0.5rem', borderTop: '1px solid var(--border-color)' }}>
-                    {users.map(u => (
-                      <button
-                        key={u.id}
-                        onClick={() => {
-                          switchUser(u.id);
-                          setShowRoleMenu(false);
-                          setShowAccountSheet(false);
-                          onOpenModule && onOpenModule('dashboard');
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.6rem',
-                          padding: '0.5rem 0.65rem',
-                          borderRadius: '8px',
-                          border: 'none',
-                          background: currentUser?.id === u.id ? 'rgba(59, 130, 246, 0.18)' : 'transparent',
-                          color: currentUser?.id === u.id ? 'var(--accent-primary)' : 'var(--text-primary)',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                          fontSize: '0.82rem',
-                          minHeight: '40px'
-                        }}
-                      >
-                        <UserCheck style={{ width: '14px', height: '14px', color: 'var(--accent-primary)' }} />
-                        <div style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          <div style={{ fontWeight: '700' }}>{u.name}</div>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{u.role}</div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
               {/* Logout Button */}
               <button
                 className="btn btn-danger"

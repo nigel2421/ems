@@ -109,12 +109,21 @@ export const DataProvider = ({ children }) => {
   const [auditLogs, setAuditLogs] = useState(() => safeGetLocalStorage('ems_audit_logs', initialAuditLogs));
 
   // 11. Strategy Team & Campaign Organization
-  const [strategyMembers, setStrategyMembers] = useState(() => safeGetLocalStorage('ems_strategy_members', initialStrategyMembers));
-  const [strategyTasks, setStrategyTasks] = useState(() => safeGetLocalStorage('ems_strategy_tasks', initialStrategyTasks));
+  const [strategyMembers, setStrategyMembers] = useState(() => {
+    const loaded = safeGetLocalStorage('ems_strategy_members', []);
+    return (loaded || []).filter(m => !['STM-001', 'STM-002', 'STM-003', 'STM-004', 'STM-005', 'STM-006', 'STM-007', 'STM-008'].includes(m?.id));
+  });
+  const [strategyTasks, setStrategyTasks] = useState(() => {
+    const loaded = safeGetLocalStorage('ems_strategy_tasks', []);
+    return (loaded || []).filter(t => !['ST-101', 'ST-102', 'ST-103', 'ST-104'].includes(t?.id));
+  });
   const [campaignRoadmap, setCampaignRoadmap] = useState(() => safeGetLocalStorage('ems_campaign_roadmap', initialCampaignRoadmap));
-  const [strategyMeetings, setStrategyMeetings] = useState(() => safeGetLocalStorage('ems_strategy_meetings', initialStrategyMeetings));
+  const [strategyMeetings, setStrategyMeetings] = useState(() => {
+    const loaded = safeGetLocalStorage('ems_strategy_meetings', []);
+    return (loaded || []).filter(m => !['MTG-301'].includes(m?.id));
+  });
 
-  // Persist State to LocalStorage (Safely caught)
+  // Persist State to LocalStorage (Safely caught) & Central Server DB
   useEffect(() => { safeSetLocalStorage('ems_station_intelligence', stationIntelligence); }, [stationIntelligence]);
   useEffect(() => { safeSetLocalStorage('ems_agent_directory', agents); }, [agents]);
   useEffect(() => { safeSetLocalStorage('ems_surveys', surveys); }, [surveys]);
@@ -125,10 +134,60 @@ export const DataProvider = ({ children }) => {
   useEffect(() => { safeSetLocalStorage('ems_submissions', submissions); }, [submissions]);
   useEffect(() => { safeSetLocalStorage('ems_ai_chat', aiChatHistory); }, [aiChatHistory]);
   useEffect(() => { safeSetLocalStorage('ems_audit_logs', auditLogs); }, [auditLogs]);
-  useEffect(() => { safeSetLocalStorage('ems_strategy_members', strategyMembers); }, [strategyMembers]);
-  useEffect(() => { safeSetLocalStorage('ems_strategy_tasks', strategyTasks); }, [strategyTasks]);
+  useEffect(() => {
+    safeSetLocalStorage('ems_strategy_members', strategyMembers);
+    syncStateToServer({ strategyMembers });
+  }, [strategyMembers]);
+  useEffect(() => {
+    safeSetLocalStorage('ems_strategy_tasks', strategyTasks);
+    syncStateToServer({ strategyTasks });
+  }, [strategyTasks]);
   useEffect(() => { safeSetLocalStorage('ems_campaign_roadmap', campaignRoadmap); }, [campaignRoadmap]);
-  useEffect(() => { safeSetLocalStorage('ems_strategy_meetings', strategyMeetings); }, [strategyMeetings]);
+  useEffect(() => {
+    safeSetLocalStorage('ems_strategy_meetings', strategyMeetings);
+    syncStateToServer({ strategyMeetings });
+  }, [strategyMeetings]);
+
+  // Sync state with Central Server Database (/ems/api/db) on load
+  useEffect(() => {
+    const fetchCentralDatabase = async () => {
+      try {
+        const apiUrl = `${window.location.origin}/ems/api/db`;
+        const res = await fetch(apiUrl);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.strategyMembers) && data.strategyMembers.length > 0) {
+            setStrategyMembers(data.strategyMembers);
+          }
+          if (Array.isArray(data.agents) && data.agents.length > 0) {
+            setAgents(data.agents);
+          }
+          if (Array.isArray(data.tallyResults) && data.tallyResults.length > 0) {
+            setTallyResults(data.tallyResults);
+          }
+          if (Array.isArray(data.fieldReports) && data.fieldReports.length > 0) {
+            setFieldReports(data.fieldReports);
+          }
+        }
+      } catch (err) {
+        // Fallback to localStorage silently
+      }
+    };
+    fetchCentralDatabase();
+  }, []);
+
+  const syncStateToServer = async (payload) => {
+    try {
+      const apiUrl = `${window.location.origin}/ems/api/db`;
+      await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (err) {
+      // Ignore network errors in local dev
+    }
+  };
 
 
   // Audit Logger Helper
