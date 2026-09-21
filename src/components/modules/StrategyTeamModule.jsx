@@ -164,16 +164,16 @@ export const StrategyTeamModule = () => {
         <div
           className="org-tree-node"
           onClick={() => setSelectedMember(node)}
-          style={{ borderTop: `4px solid ${dept?.color || '#6366f1'}` }}
+          style={{ borderTop: `4px solid ${dept?.color || '#3b82f6'}` }}
         >
           <div className="d-flex align-items-center justify-content-center gap-2 mb-1">
             <span style={{ fontSize: '1.1rem' }}>{dept?.icon || '👤'}</span>
-            <span className="badge bg-slate-800 text-slate-300 text-[10px]">{node.position}</span>
+            <span className="node-title">{node.position}</span>
           </div>
-          <strong className="text-sm block font-bold text-white">{node.name}</strong>
-          <span className="text-xs text-muted block">{node.jurisdiction}</span>
+          <strong className="node-name">{node.name}</strong>
+          <span className="node-jurisdiction">{node.jurisdiction}</span>
           {node.systemAccess && (
-            <span className="badge bg-emerald-950 text-emerald-300 border border-emerald-800 text-[9px] mt-1">
+            <span className="node-badge">
               🔒 {node.securityRole}
             </span>
           )}
@@ -489,9 +489,22 @@ export const StrategyTeamModule = () => {
             </div>
           </div>
 
-          <div className="org-chart-container">
-            {orgHierarchy.map(rootNode => renderOrgNode(rootNode))}
-          </div>
+          {orgHierarchy.length > 0 ? (
+            <div className="org-chart-container">
+              {orgHierarchy.map(rootNode => renderOrgNode(rootNode))}
+            </div>
+          ) : (
+            <div className="text-center p-5 rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 my-3">
+              <Target size={44} className="mx-auto text-slate-500 mb-2" />
+              <h3 className="h6 font-bold text-slate-200">No Organization Tree Available</h3>
+              <p className="text-xs text-slate-400 mb-3">
+                Your campaign organization directory is currently unpopulated. Click below to add your campaign manager, strategists, and field coordinators.
+              </p>
+              <button className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1.5 mx-auto" onClick={() => setShowAddMemberModal(true)}>
+                <UserPlus size={15} /> Add Campaign Team Member
+              </button>
+            </div>
+          )}
         </div>
       )}
 
