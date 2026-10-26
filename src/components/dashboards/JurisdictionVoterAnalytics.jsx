@@ -9,7 +9,6 @@ import {
   Legend
 } from 'chart.js';
 import { Pie, Bar } from 'react-chartjs-2';
-import { Users, Building2, Layers, Trophy, MapPin } from 'lucide-react';
 import { buildJurisdictionAnalytics, CHART_COLORS } from '../../utils/jurisdictionAnalytics';
 import './JurisdictionVoterAnalytics.css';
 
@@ -159,7 +158,6 @@ export const JurisdictionVoterAnalytics = ({ user, geography, onOpenModule }) =>
         </div>
         {onOpenModule && (
           <button type="button" className="admin-btn admin-btn-ghost" onClick={() => onOpenModule('polling_stations')}>
-            <MapPin strokeWidth={1.75} />
             Open polling intel
           </button>
         )}
@@ -169,9 +167,6 @@ export const JurisdictionVoterAnalytics = ({ user, geography, onOpenModule }) =>
         <article className="admin-metric is-featured">
           <div className="admin-metric-top">
             <span>Total registered voters</span>
-            <div className="admin-metric-icon">
-              <Users strokeWidth={1.75} />
-            </div>
           </div>
           <strong>{formatCount(totalVoters)}</strong>
           <small>
@@ -183,9 +178,6 @@ export const JurisdictionVoterAnalytics = ({ user, geography, onOpenModule }) =>
         <article className="admin-metric">
           <div className="admin-metric-top">
             <span>{breakdownLabel}</span>
-            <div className="admin-metric-icon">
-              <Layers strokeWidth={1.75} />
-            </div>
           </div>
           <strong>{formatCount(unitCount)}</strong>
           <small>Reporting units in scope</small>
@@ -193,9 +185,6 @@ export const JurisdictionVoterAnalytics = ({ user, geography, onOpenModule }) =>
         <article className="admin-metric">
           <div className="admin-metric-top">
             <span>Polling stations</span>
-            <div className="admin-metric-icon">
-              <Building2 strokeWidth={1.75} />
-            </div>
           </div>
           <strong>{formatCount(stationCount)}</strong>
           <small>Gazetted streams</small>
@@ -203,9 +192,6 @@ export const JurisdictionVoterAnalytics = ({ user, geography, onOpenModule }) =>
         <article className="admin-metric">
           <div className="admin-metric-top">
             <span>Top voter blocks</span>
-            <div className="admin-metric-icon">
-              <Trophy strokeWidth={1.75} />
-            </div>
           </div>
           <strong>{topShare}%</strong>
           <small>Share held by top {Math.min(5, topBlocks.length)} units</small>

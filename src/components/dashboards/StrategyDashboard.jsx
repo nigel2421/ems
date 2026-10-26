@@ -1,17 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import {
-  AlertTriangle,
-  Users,
-  Target,
-  BarChart3,
-  CheckCircle2,
-  Clock,
-  Sparkles,
-  ArrowUpRight,
-  FileText
-} from 'lucide-react';
 import { JurisdictionVoterAnalytics } from './JurisdictionVoterAnalytics';
 import './DashboardShared.css';
 
@@ -55,15 +44,12 @@ export const StrategyDashboard = ({ onOpenModule, onOpenAIAssistant }) => {
         </div>
         <div className="admin-head-actions">
           <button type="button" className="admin-btn admin-btn-primary" onClick={() => onOpenModule('strategy_team')}>
-            <Users strokeWidth={1.75} />
             Strategy Team Org
           </button>
           <button type="button" className="admin-btn admin-btn-ghost" onClick={onOpenAIAssistant}>
-            <Sparkles strokeWidth={1.75} />
             AI assistant
           </button>
           <button type="button" className="admin-btn admin-btn-ghost" onClick={() => onOpenModule('strategy')}>
-            <Target strokeWidth={1.75} />
             Campaign plan
           </button>
         </div>
@@ -77,7 +63,6 @@ export const StrategyDashboard = ({ onOpenModule, onOpenAIAssistant }) => {
         <article className="admin-metric is-featured">
           <div className="admin-metric-top">
             <span>Active phase</span>
-            <div className="admin-metric-icon"><Target strokeWidth={1.75} /></div>
           </div>
           <strong>Phase {activePhase?.phaseNumber}</strong>
           <small>{activePhase?.name}</small>
@@ -91,7 +76,6 @@ export const StrategyDashboard = ({ onOpenModule, onOpenAIAssistant }) => {
         <article className="admin-metric">
           <div className="admin-metric-top">
             <span>High risk hotspots</span>
-            <div className="admin-metric-icon"><AlertTriangle strokeWidth={1.75} /></div>
           </div>
           <strong>{formatCount(highRiskStations.length)}</strong>
           <small>Severe / high risk wards</small>
@@ -99,7 +83,6 @@ export const StrategyDashboard = ({ onOpenModule, onOpenAIAssistant }) => {
         <article className="admin-metric">
           <div className="admin-metric-top">
             <span>Network reach</span>
-            <div className="admin-metric-icon"><Users strokeWidth={1.75} /></div>
           </div>
           <strong>{formatCount(totalReachEstimate)}</strong>
           <small>Stakeholder influence estimate</small>
@@ -107,7 +90,6 @@ export const StrategyDashboard = ({ onOpenModule, onOpenAIAssistant }) => {
         <article className="admin-metric">
           <div className="admin-metric-top">
             <span>Survey responses</span>
-            <div className="admin-metric-icon"><BarChart3 strokeWidth={1.75} /></div>
           </div>
           <strong>{formatCount(surveyResponses)}</strong>
           <small>Across active instruments</small>
@@ -123,15 +105,11 @@ export const StrategyDashboard = ({ onOpenModule, onOpenAIAssistant }) => {
             </div>
             <button type="button" className="admin-btn admin-btn-ghost" onClick={() => onOpenModule('strategy')}>
               Manage tasks
-              <ArrowUpRight strokeWidth={1.75} />
             </button>
           </div>
           <div className="admin-list">
             {(activePhase?.tasks || []).map((task) => (
               <div key={task.id} className="admin-list-item">
-                <div className="admin-metric-icon">
-                  {task.status === 'Completed' ? <CheckCircle2 strokeWidth={1.75} /> : <Clock strokeWidth={1.75} />}
-                </div>
                 <div>
                   <strong>{task.title}</strong>
                   <span>
@@ -152,7 +130,6 @@ export const StrategyDashboard = ({ onOpenModule, onOpenAIAssistant }) => {
                 <p>Automated strategy note</p>
               </div>
               <button type="button" className="admin-btn admin-btn-ghost" onClick={onOpenAIAssistant}>
-                <Sparkles strokeWidth={1.75} />
                 Ask AI
               </button>
             </div>
@@ -169,14 +146,12 @@ export const StrategyDashboard = ({ onOpenModule, onOpenAIAssistant }) => {
                 <p>Latest incident reports</p>
               </div>
               <button type="button" className="admin-btn admin-btn-ghost" onClick={() => onOpenModule('field_reports')}>
-                <FileText strokeWidth={1.75} />
                 View all
               </button>
             </div>
             <div className="admin-list">
               {fieldReports.slice(0, 3).map((rep) => (
                 <div key={rep.id} className="admin-list-item">
-                  <div className="admin-metric-icon"><AlertTriangle strokeWidth={1.75} /></div>
                   <div>
                     <strong>{rep.title}</strong>
                     <span>
