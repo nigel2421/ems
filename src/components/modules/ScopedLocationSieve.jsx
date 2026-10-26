@@ -4,6 +4,7 @@
 // ====================================================================
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { AlertTriangle, Lock, MapPin } from 'lucide-react';
 import { resolveEffectiveGeographicScope } from '../../utils/scopeResolver.js';
 
 export const ScopedLocationSieve = ({
@@ -215,8 +216,8 @@ export const ScopedLocationSieve = ({
     return (
       <div className={`scoped-sieve-failclosed alert alert-danger p-3 rounded-lg border border-red-500/30 bg-red-950/20 text-red-200 ${className}`}>
         <div className="d-flex align-items-center gap-2 font-bold mb-1">
-          <span className="material-symbols-outlined text-red-400">warning</span>
-          <span>⚠️ Electoral Scope Not Configured</span>
+          <AlertTriangle size={16} aria-hidden="true" />
+          <span>Electoral Scope Not Configured</span>
         </div>
         <p className="text-xs mb-0 text-red-300">
           {effectiveScope.error || 'This campaign does not have a valid electoral jurisdiction. Contact an administrator before continuing.'}
@@ -233,29 +234,36 @@ export const ScopedLocationSieve = ({
       <div className="locked-scope-header p-2.5 rounded-lg bg-surface-elevated border border-border-subtle mb-3">
         <div className="d-flex align-items-center justify-content-between mb-1">
           <div className="d-flex align-items-center gap-2">
-            <span className="text-xs font-semibold text-primary">📍 Electoral Scope</span>
+          <span className="text-xs font-semibold text-primary d-flex align-items-center gap-1">
+            <MapPin size={13} aria-hidden="true" />
+            Electoral Scope
+          </span>
             <span className="badge bg-primary/20 text-primary border border-primary/30 text-[11px] font-mono">
               {effectiveScope.contestType}
             </span>
           </div>
           <span className="text-[11px] text-muted d-flex align-items-center gap-1">
-            🔒 Scope Locked
+            <Lock size={12} aria-hidden="true" />
+            Scope Locked
           </span>
         </div>
         <div className="d-flex flex-wrap gap-1.5 mt-1.5">
           {locked.county && (
             <span className="badge bg-slate-800 text-slate-200 border border-slate-700 px-2 py-1 text-xs">
-              County: <strong className="text-cyan-400">{locked.county}</strong> 🔒
+              County: <strong className="text-cyan-400">{locked.county}</strong>
+              <Lock size={11} aria-hidden="true" />
             </span>
           )}
           {locked.constituency && (
             <span className="badge bg-slate-800 text-slate-200 border border-slate-700 px-2 py-1 text-xs">
-              Constituency: <strong className="text-cyan-400">{locked.constituency}</strong> 🔒
+              Constituency: <strong className="text-cyan-400">{locked.constituency}</strong>
+              <Lock size={11} aria-hidden="true" />
             </span>
           )}
           {locked.ward && (
             <span className="badge bg-slate-800 text-slate-200 border border-slate-700 px-2 py-1 text-xs">
-              Ward: <strong className="text-cyan-400">{locked.ward}</strong> 🔒
+              Ward: <strong className="text-cyan-400">{locked.ward}</strong>
+              <Lock size={11} aria-hidden="true" />
             </span>
           )}
         </div>
@@ -364,17 +372,26 @@ export const ScopedLocationSieve = ({
       {/* Active Breadcrumb Navigation */}
       <div className="breadcrumb-nav mt-2 pt-2 border-t border-border-subtle d-flex flex-wrap align-items-center gap-1.5 text-xs text-text-muted">
         <span className="font-semibold text-primary">Location Path:</span>
-        <span className="badge bg-slate-800 text-slate-300">{locked.county || (selectedCountyId && geography.counties.find(c=>c.id===selectedCountyId)?.name) || 'Kenya'} {locked.county ? '🔒' : ''}</span>
+        <span className="badge bg-slate-800 text-slate-300">
+          {locked.county || (selectedCountyId && geography.counties.find(c=>c.id===selectedCountyId)?.name) || 'Kenya'}
+          {locked.county && <Lock size={11} aria-hidden="true" />}
+        </span>
         {(locked.constituency || selectedConstituencyId) && (
           <>
             <span>→</span>
-            <span className="badge bg-slate-800 text-slate-300">{locked.constituency || geography.constituencies.find(c=>c.id===selectedConstituencyId)?.name} {locked.constituency ? '🔒' : ''}</span>
+            <span className="badge bg-slate-800 text-slate-300">
+              {locked.constituency || geography.constituencies.find(c=>c.id===selectedConstituencyId)?.name}
+              {locked.constituency && <Lock size={11} aria-hidden="true" />}
+            </span>
           </>
         )}
         {(locked.ward || selectedWardId) && (
           <>
             <span>→</span>
-            <span className="badge bg-slate-800 text-slate-300">{locked.ward || geography.wards.find(w=>w.id===selectedWardId)?.name} {locked.ward ? '🔒' : ''}</span>
+            <span className="badge bg-slate-800 text-slate-300">
+              {locked.ward || geography.wards.find(w=>w.id===selectedWardId)?.name}
+              {locked.ward && <Lock size={11} aria-hidden="true" />}
+            </span>
           </>
         )}
         {selectedCentreName && (
