@@ -167,14 +167,15 @@ export const StrategyTeamModule = () => {
           style={{ borderTop: `4px solid ${dept?.color || '#3b82f6'}` }}
         >
           <div className="d-flex align-items-center justify-content-center gap-2 mb-1">
-            <span style={{ fontSize: '1.1rem' }}>{dept?.icon || '👤'}</span>
+            <span className="strategy-dept-marker" style={{ backgroundColor: dept?.color || '#006B3F' }} />
             <span className="node-title">{node.position}</span>
           </div>
           <strong className="node-name">{node.name}</strong>
           <span className="node-jurisdiction">{node.jurisdiction}</span>
           {node.systemAccess && (
             <span className="node-badge">
-              🔒 {node.securityRole}
+              <Lock size={12} />
+              {node.securityRole}
             </span>
           )}
         </div>
@@ -191,29 +192,29 @@ export const StrategyTeamModule = () => {
   return (
     <div className="strategy-module-shell">
       {/* Header & Contest Scope Bar */}
-      <header className="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-3">
+      <header className="admin-page-head strategy-module-head">
         <div>
-          <h1 className="h3 font-extrabold text-white d-flex align-items-center gap-2 mb-1">
-            <span>🧠 Strategy Command & Campaign Organization</span>
-          </h1>
-          <p className="text-sm text-slate-400 mb-0">
+          <h1>Strategy Command & Campaign Organization</h1>
+          <p>
             Hierarchical strategy team operations, campaign roadmap execution, and Zero Dead-KPI performance tracking.
           </p>
         </div>
-        <div className="d-flex gap-2">
+        <div className="admin-head-actions">
           <button
-            className="btn btn-primary btn-sm d-flex align-items-center gap-1.5"
+            type="button"
+            className="admin-btn admin-btn-primary"
             onClick={() => setShowAddMemberModal(true)}
           >
             <UserPlus size={16} />
-            <span>Add Team Member</span>
+            Add Team Member
           </button>
           <button
-            className="btn btn-secondary btn-sm d-flex align-items-center gap-1.5"
+            type="button"
+            className="admin-btn admin-btn-ghost"
             onClick={() => setShowAddTaskModal(true)}
           >
             <Plus size={16} />
-            <span>New Strategy Task</span>
+            New Strategy Task
           </button>
         </div>
       </header>
@@ -223,7 +224,7 @@ export const StrategyTeamModule = () => {
         user={currentUser}
         geography={geography}
         purpose="Strategy Team Jurisdiction Scope"
-        className="mb-4"
+        className="strategy-scope-sieve"
       />
 
       {/* Sub-Tab Navigation Bar */}
@@ -233,42 +234,42 @@ export const StrategyTeamModule = () => {
           onClick={() => setActiveTab('dashboard')}
         >
           <Layers size={16} />
-          <span>🧠 Command Overview</span>
+          <span>Command Overview</span>
         </button>
         <button
           className={`strategy-tab-btn ${activeTab === 'directory' ? 'active' : ''}`}
           onClick={() => setActiveTab('directory')}
         >
           <Users size={16} />
-          <span>👥 Team Directory ({strategyMembers.length})</span>
+          <span>Team Directory ({strategyMembers.length})</span>
         </button>
         <button
           className={`strategy-tab-btn ${activeTab === 'orgchart' ? 'active' : ''}`}
           onClick={() => setActiveTab('orgchart')}
         >
           <Target size={16} />
-          <span>🌳 Visual Org Chart</span>
+          <span>Visual Org Chart</span>
         </button>
         <button
           className={`strategy-tab-btn ${activeTab === 'tasks' ? 'active' : ''}`}
           onClick={() => setActiveTab('tasks')}
         >
           <CheckSquare size={16} />
-          <span>✅ Tasks ({strategyTasks.length})</span>
+          <span>Tasks ({strategyTasks.length})</span>
         </button>
         <button
           className={`strategy-tab-btn ${activeTab === 'roadmap' ? 'active' : ''}`}
           onClick={() => setActiveTab('roadmap')}
         >
           <TrendingUp size={16} />
-          <span>🗺️ Campaign Roadmap</span>
+          <span>Campaign Roadmap</span>
         </button>
         <button
           className={`strategy-tab-btn ${activeTab === 'meetings' ? 'active' : ''}`}
           onClick={() => setActiveTab('meetings')}
         >
           <Calendar size={16} />
-          <span>📅 Meetings & Decisions</span>
+          <span>Meetings & Decisions</span>
         </button>
       </nav>
 
@@ -342,7 +343,7 @@ export const StrategyTeamModule = () => {
                     <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/60 h-100">
                       <div className="d-flex align-items-center justify-content-between mb-2">
                         <div className="d-flex align-items-center gap-2">
-                          <span style={{ fontSize: '1.25rem' }}>{dept.icon}</span>
+                          <span className="strategy-dept-marker" style={{ backgroundColor: dept.color }} />
                           <span className="font-bold text-slate-200 text-sm">{dept.name}</span>
                         </div>
                         <span className="badge bg-slate-800 text-slate-300 text-xs">
@@ -394,7 +395,7 @@ export const StrategyTeamModule = () => {
             >
               <option value="ALL">All Departments (9)</option>
               {STRATEGY_DEPARTMENTS.map(d => (
-                <option key={d.id} value={d.id}>{d.icon} {d.name}</option>
+                <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
           </div>
@@ -431,7 +432,7 @@ export const StrategyTeamModule = () => {
                         </td>
                         <td>
                           <span className="badge bg-slate-800 text-slate-300 text-xs mb-1 block w-max">
-                            {dept?.icon} {dept?.name}
+                            {dept?.name}
                           </span>
                           <span className="text-xs font-semibold text-slate-200 block">{m.position}</span>
                         </td>
@@ -448,7 +449,7 @@ export const StrategyTeamModule = () => {
                         <td>
                           {m.systemAccess ? (
                             <span className="badge bg-emerald-950 text-emerald-300 border border-emerald-800 text-xs d-inline-flex align-items-center gap-1">
-                              🔒 {m.securityRole}
+                              <Lock size={12} /> {m.securityRole}
                             </span>
                           ) : (
                             <span className="badge bg-slate-800 text-slate-400 text-xs">
@@ -534,7 +535,7 @@ export const StrategyTeamModule = () => {
                       <h4 className="text-xs font-bold text-slate-100 mb-1">{t.title}</h4>
                       <p className="text-[11px] text-slate-400 mb-2">{t.description}</p>
                       <div className="d-flex align-items-center justify-content-between pt-2 border-t border-slate-800 text-[11px] text-slate-300">
-                        <span>👤 {t.assignedToName}</span>
+                        <span>{t.assignedToName}</span>
                         <select
                           className="form-select text-[10px] py-0 px-1 bg-slate-900 text-slate-200 border-slate-700"
                           value={t.status}
@@ -627,7 +628,7 @@ export const StrategyTeamModule = () => {
               <h4 className="text-xs font-bold text-cyan-400 mb-2">Decisions & Binding Action Items:</h4>
               {mtg.decisions.map(dec => (
                 <div key={dec.id} className="p-2 rounded bg-slate-900 border border-slate-800 text-xs mb-2">
-                  <div className="font-semibold text-slate-100 mb-1">📌 {dec.summary}</div>
+                  <div className="font-semibold text-slate-100 mb-1">{dec.summary}</div>
                   {dec.actionItems.map(act => (
                     <div key={act.id} className="d-flex align-items-center justify-content-between text-[11px] text-slate-400 pt-1 border-t border-slate-800">
                       <span>Action: {act.title} (Assigned: <strong>{act.assignedToName}</strong>)</span>
