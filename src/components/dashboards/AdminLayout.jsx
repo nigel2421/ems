@@ -35,6 +35,7 @@ import { KenyaPoliticalNewsFab } from '../modules/KenyaPoliticalNewsPanel';
 
 const PRIMARY_MODULES = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'strategy_team', label: 'Strategy Team', icon: Users },
   { id: 'strategy', label: 'Strategy', icon: Target },
   { id: 'polling_stations', label: 'Polling Intel', icon: Building2 },
   { id: 'agents', label: 'Agent Management', icon: Users },
@@ -484,26 +485,6 @@ export const AdminLayout = ({
                         .join(' · ') || 'Nationwide'}
                     </strong>
                   </div>
-                </div>
-              </div>
-
-              <div className="admin-profile-panel-personas">
-                <div className="admin-nav-label">Switch persona</div>
-                <div className="admin-profile-panel-persona-list">
-                  {users.map((u) => (
-                    <button
-                      key={u.id}
-                      type="button"
-                      className={`admin-nav-btn admin-nav-btn-sub${currentUser?.id === u.id ? ' is-active' : ''}`}
-                      onClick={() => handleSwitchPersona(u.id)}
-                    >
-                      <UserCheck strokeWidth={1.75} />
-                      <span>
-                        {u.name}
-                        <small>{u.role}</small>
-                      </span>
-                    </button>
-                  ))}
                 </div>
               </div>
 

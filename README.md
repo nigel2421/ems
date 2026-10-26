@@ -242,7 +242,7 @@ npm install
 # Run Vite local development server
 npm run dev
 
-# Execute complete test suite (180 passing tests)
+# Execute complete test suite (258 passing tests)
 npm test
 
 # Build production bundle
@@ -257,10 +257,18 @@ npm run build
 EMS/
 ├── src/
 │   ├── __tests__/
-│   │   └── ci-ems.test.js              # 180 Comprehensive Unit & Integration Tests
+│   │   └── ci-ems.test.js              # 258 Comprehensive Unit & Integration Tests
 │   ├── components/
+│   │   ├── dashboards/
+│   │   │   ├── AdminDashboard.jsx       # Super Admin Control Center & System Settings
+│   │   │   ├── GovernorDashboard.jsx    # Gubernatorial Command & Tally Insights
+│   │   │   ├── MPDashboard.jsx          # Parliamentary Constituency War Room
+│   │   │   ├── MCADashboard.jsx         # Civic Ward Operational Dashboard
+│   │   │   └── StrategyDashboard.jsx    # Campaign Strategy & Department Performance
 │   │   ├── modules/
 │   │   │   ├── ExecutiveBriefing.jsx    # AI Executive Briefings & Provenance Panel
+│   │   │   ├── ScopedLocationSieve.jsx  # Hierarchical Geographic Scope Selector & Sieve
+│   │   │   ├── StrategyTeamModule.jsx   # Campaign Department & Org Hierarchy Manager
 │   │   │   ├── ParallelTally.jsx        # Configurable Form Results & Discrepancy Engine
 │   │   │   ├── ProductionReadinessBoard.jsx # 10 Workstreams & Go/No-Go Decision Gate
 │   │   │   ├── SecurityOperations.jsx  # SOC Alerts, Incident Correlation & Audit Ledger
@@ -272,13 +280,28 @@ EMS/
 │   │   ├── objectStorageEngine.js       # S3 Storage Adaptor & SHA-256 Immutability
 │   │   └── postgresRlsEngine.js         # PostgreSQL Row-Level Security & DDL Generator
 │   └── utils/
+│       ├── agentCertification.js        # Agent Training & Station Accreditation Status
+│       ├── agentMissions.js             # Field Agent Mission Definitions & Task Vectors
 │       ├── asvsVerificationMatrix.js    # OWASP ASVS v5.0 Requirement-Level Matrix
+│       ├── campaignOrganization.js      # Campaign Hierarchy, Department Maps & Org Trees
 │       ├── correlationContext.js        # Transaction Header & Correlation Tracing
 │       ├── productionReadinessGate.js   # Readiness Score & Stakeholder Sign-Offs
 │       ├── rbac.js                      # RBAC/ABAC Permission Evaluator
+│       ├── scopeResolver.js             # Jurisdiction Scope Resolver & Fail-Closed Guard
 │       ├── simulationEngine.js          # Load Surge, DR Drill & Dress Rehearsal Engine
 │       └── tamperEvidentLedger.js       # SHA-256 Audit Trail Ledger
-├── docs/                               # Operational Manuals & Governance Guides
+├── docs/                               # 12 Operational Manuals, Specs & QA Test Guide
+│   ├── AGENT_WORKFLOW.md                # Field Agent Operational Protocol
+│   ├── APPROVAL_WORKFLOW.md             # Aspirant & Candidate Verification Queue
+│   ├── ARCHITECTURE.md                  # System Architecture Specification
+│   ├── CAMPAIGN_SYSTEM_MANUAL.md        # Comprehensive System Operations Manual
+│   ├── GEOGRAPHIC_MAPPING.md            # Electoral Geography & Scope Sieve Guide
+│   ├── MISMATCH_RECONCILIATION.md       # Discrepancy Engine & Legal Affidavits
+│   ├── POSTGRES_RLS.md                  # Database Multi-Tenant Isolation (RLS)
+│   ├── PRODUCTION_READINESS.md          # 10-Workstream Go/No-Go Decision Gate
+│   ├── QA_TESTING_GUIDE.md              # Comprehensive Manual & Automated QA Guide
+│   ├── RELEASE_PROVENANCE.md            # Forensic Build Manifest & Release Traceability
+│   └── SECURITY_AND_AUDIT.md            # RBAC, 2FA & Tamper-Evident Audit Ledger
 ├── README.md                           # Technical Architecture & Operations Guide
 └── package.json                        # Scripts & Project Dependencies
 ```

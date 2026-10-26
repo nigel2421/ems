@@ -11,10 +11,17 @@ import {
   initialTallyCenterData,
   initialAIChatHistory
 } from '../data/seedData';
+import {
+  initialStrategyMembers,
+  initialStrategyTasks,
+  initialCampaignRoadmap,
+  initialStrategyMeetings
+} from '../utils/strategyEngine';
 import { apiService, compressImageSimulation } from '../services/api';
 import { filterByScope, canAccessLocation, getUserScope, SCOPE_LEVELS } from '../utils/rbac';
 
 const DataContext = createContext(null);
+
 
 
 // Helper to safely write to localStorage without crashing on QuotaExceededError
@@ -101,7 +108,22 @@ export const DataProvider = ({ children }) => {
   // 10. Audit Logs
   const [auditLogs, setAuditLogs] = useState(() => safeGetLocalStorage('ems_audit_logs', initialAuditLogs));
 
-  // Persist State to LocalStorage (Safely caught)
+  // 11. Strategy Team & Campaign Organization
+  const [strategyMembers, setStrategyMembers] = useState(() => {
+    const loaded = safeGetLocalStorage('ems_strategy_members', []);
+    return (loaded || []).filter(m => !['STM-001', 'STM-002', 'STM-003', 'STM-004', 'STM-005', 'STM-006', 'STM-007', 'STM-008'].includes(m?.id));
+  });
+  const [strategyTasks, setStrategyTasks] = useState(() => {
+    const loaded = safeGetLocalStorage('ems_strategy_tasks', []);
+    return (loaded || []).filter(t => !['ST-101', 'ST-102', 'ST-103', 'ST-104'].includes(t?.id));
+  });
+  const [campaignRoadmap, setCampaignRoadmap] = useState(() => safeGetLocalStorage('ems_campaign_roadmap', initialCampaignRoadmap));
+  const [strategyMeetings, setStrategyMeetings] = useState(() => {
+    const loaded = safeGetLocalStorage('ems_strategy_meetings', []);
+    return (loaded || []).filter(m => !['MTG-301'].includes(m?.id));
+  });
+
+  // Persist State to LocalStorage (Safely caught) & Central Server DB
   useEffect(() => { safeSetLocalStorage('ems_station_intelligence', stationIntelligence); }, [stationIntelligence]);
   useEffect(() => { safeSetLocalStorage('ems_agent_directory', agents); }, [agents]);
   useEffect(() => { safeSetLocalStorage('ems_surveys', surveys); }, [surveys]);
@@ -112,6 +134,61 @@ export const DataProvider = ({ children }) => {
   useEffect(() => { safeSetLocalStorage('ems_submissions', submissions); }, [submissions]);
   useEffect(() => { safeSetLocalStorage('ems_ai_chat', aiChatHistory); }, [aiChatHistory]);
   useEffect(() => { safeSetLocalStorage('ems_audit_logs', auditLogs); }, [auditLogs]);
+  useEffect(() => {
+    safeSetLocalStorage('ems_strategy_members', strategyMembers);
+    syncStateToServer({ strategyMembers });
+  }, [strategyMembers]);
+  useEffect(() => {
+    safeSetLocalStorage('ems_strategy_tasks', strategyTasks);
+    syncStateToServer({ strategyTasks });
+  }, [strategyTasks]);
+  useEffect(() => { safeSetLocalStorage('ems_campaign_roadmap', campaignRoadmap); }, [campaignRoadmap]);
+  useEffect(() => {
+    safeSetLocalStorage('ems_strategy_meetings', strategyMeetings);
+    syncStateToServer({ strategyMeetings });
+  }, [strategyMeetings]);
+
+  // Sync state with Central Server Database (/ems/api/db) on load
+  useEffect(() => {
+    const fetchCentralDatabase = async () => {
+      try {
+        const apiUrl = `${window.location.origin}/ems/api/db`;
+        const res = await fetch(apiUrl);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.strategyMembers) && data.strategyMembers.length > 0) {
+            setStrategyMembers(data.strategyMembers);
+          }
+          if (Array.isArray(data.agents) && data.agents.length > 0) {
+            setAgents(data.agents);
+          }
+          if (Array.isArray(data.tallyResults) && data.tallyResults.length > 0) {
+            setTallyResults(data.tallyResults);
+          }
+          if (Array.isArray(data.fieldReports) && data.fieldReports.length > 0) {
+            setFieldReports(data.fieldReports);
+          }
+        }
+      } catch (err) {
+        // Fallback to localStorage silently
+      }
+    };
+    fetchCentralDatabase();
+  }, []);
+
+  const syncStateToServer = async (payload) => {
+    try {
+      const apiUrl = `${window.location.origin}/ems/api/db`;
+      await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (err) {
+      // Ignore network errors in local dev
+    }
+  };
+
 
   // Audit Logger Helper
   const logAuditAction = (user, action, details) => {
@@ -402,6 +479,10 @@ export const DataProvider = ({ children }) => {
     });
   };
 
+  const getScopedSubmissions = (user) => {
+    return filterByScope(user, submissions, 'submissions');
+  };
+
   const getScopedFieldReports = (user) => {
     return filterByScope(user, fieldReports, 'reports');
   };
@@ -436,8 +517,46 @@ export const DataProvider = ({ children }) => {
     };
   };
 
-  const getScopedSubmissions = (user) => {
-    return filterByScope(user, submissions, 'submissions');
+  // Strategy Team & Campaign Organization Actions
+  const addStrategyMember = (memberData, user) => {
+    const newMember = {
+      ...memberData,
+      id: `STM-${Date.now().toString().slice(-4)}`,
+      dateJoined: new Date().toISOString().split('T')[0]
+    };
+    setStrategyMembers(prev => [newMember, ...prev]);
+    logAuditAction(user, 'STRATEGY_MEMBER_ADDED', `Added team member ${newMember.name} as ${newMember.position} (${newMember.departmentId})`);
+    return newMember;
+  };
+
+  const updateStrategyMember = (memberId, updatedFields, user) => {
+    setStrategyMembers(prev => prev.map(m => m.id === memberId ? { ...m, ...updatedFields } : m));
+    logAuditAction(user, 'STRATEGY_MEMBER_UPDATED', `Updated strategy team member ${memberId}`);
+  };
+
+  const addStrategyTask = (taskData, user) => {
+    const newTask = {
+      ...taskData,
+      id: `ST-${Date.now().toString().slice(-4)}`
+    };
+    setStrategyTasks(prev => [newTask, ...prev]);
+    logAuditAction(user, 'STRATEGY_TASK_CREATED', `Created strategy task: "${newTask.title}"`);
+    return newTask;
+  };
+
+  const updateStrategyTask = (taskId, updatedFields, user) => {
+    setStrategyTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updatedFields } : t));
+    logAuditAction(user, 'STRATEGY_TASK_UPDATED', `Updated strategy task ${taskId}`);
+  };
+
+  const addStrategyMeeting = (meetingData, user) => {
+    const newMeeting = {
+      ...meetingData,
+      id: `MTG-${Date.now().toString().slice(-4)}`
+    };
+    setStrategyMeetings(prev => [newMeeting, ...prev]);
+    logAuditAction(user, 'STRATEGY_MEETING_CREATED', `Created strategy meeting: "${newMeeting.title}"`);
+    return newMeeting;
   };
 
   return (
@@ -478,7 +597,20 @@ export const DataProvider = ({ children }) => {
         getScopedTallyResults,
         getScopedSurveys,
         getScopedStakeholders,
-        getScopedGeography
+        getScopedGeography,
+        strategyMembers,
+        setStrategyMembers,
+        addStrategyMember,
+        updateStrategyMember,
+        strategyTasks,
+        setStrategyTasks,
+        addStrategyTask,
+        updateStrategyTask,
+        campaignRoadmap,
+        setCampaignRoadmap,
+        strategyMeetings,
+        setStrategyMeetings,
+        addStrategyMeeting
       }}
     >
       {children}
