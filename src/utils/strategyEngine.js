@@ -7,15 +7,15 @@ import { ROLES } from './rbac.js';
 import { resolveEffectiveGeographicScope } from './scopeResolver.js';
 
 export const STRATEGY_DEPARTMENTS = [
-  { id: 'DEP-LEAD', name: 'Campaign Leadership', icon: '🧭', color: '#6366f1' },
-  { id: 'DEP-STRAT', name: 'Strategy & Planning', icon: '🎯', color: '#ec4899' },
-  { id: 'DEP-FOPS', name: 'Field Operations', icon: '👥', color: '#10b981' },
-  { id: 'DEP-COMM', name: 'Communications & Media', icon: '📢', color: '#f59e0b' },
-  { id: 'DEP-RES', name: 'Research & Intelligence', icon: '📊', color: '#8b5cf6' },
-  { id: 'DEP-MOB', name: 'Resource Mobilization', icon: '💰', color: '#06b6d4' },
-  { id: 'DEP-LOG', name: 'Logistics', icon: '🚚', color: '#3b82f6' },
-  { id: 'DEP-LEG', name: 'Legal & Compliance', icon: '⚖️', color: '#ef4444' },
-  { id: 'DEP-ICT', name: 'ICT / Digital Operations', icon: '💻', color: '#14b8a6' }
+  { id: 'DEP-LEAD', name: 'Campaign Leadership', color: '#6366f1' },
+  { id: 'DEP-STRAT', name: 'Strategy & Planning', color: '#ec4899' },
+  { id: 'DEP-FOPS', name: 'Field Operations', color: '#10b981' },
+  { id: 'DEP-COMM', name: 'Communications & Media', color: '#f59e0b' },
+  { id: 'DEP-RES', name: 'Research & Intelligence', color: '#8b5cf6' },
+  { id: 'DEP-MOB', name: 'Resource Mobilization', color: '#06b6d4' },
+  { id: 'DEP-LOG', name: 'Logistics', color: '#3b82f6' },
+  { id: 'DEP-LEG', name: 'Legal & Compliance', color: '#ef4444' },
+  { id: 'DEP-ICT', name: 'ICT / Digital Operations', color: '#14b8a6' }
 ];
 
 export const DEPARTMENT_ROLES_MAP = {

@@ -277,7 +277,7 @@ export const StrategyTeamModule = () => {
       {activeTab === 'dashboard' && (
         <div className="strategy-dashboard-view">
           {/* Zero Dead-KPI Summary Cards */}
-          <div className="row g-3 mb-4">
+          <div className="strategy-summary-grid row g-3 mb-4">
             <div className="col-12 col-sm-6 col-md-3">
               <div className="admin-metric is-featured" onClick={() => setActiveTab('directory')} style={{ cursor: 'pointer' }}>
                 <div className="admin-metric-top">
@@ -334,13 +334,13 @@ export const StrategyTeamModule = () => {
               </div>
             </div>
 
-            <div className="row g-3">
+            <div className="strategy-department-grid row g-3">
               {STRATEGY_DEPARTMENTS.map(dept => {
                 const deptMembers = strategyMembers.filter(m => m.departmentId === dept.id);
                 const deptTasks = strategyTasks.filter(t => t.departmentId === dept.id);
                 return (
                   <div key={dept.id} className="col-12 col-md-4">
-                    <div className="p-3 rounded-xl border border-slate-800 bg-slate-900/60 h-100">
+                    <div className="strategy-department-card p-3 rounded-xl border border-slate-800 bg-slate-900/60 h-100">
                       <div className="d-flex align-items-center justify-content-between mb-2">
                         <div className="d-flex align-items-center gap-2">
                           <span className="strategy-dept-marker" style={{ backgroundColor: dept.color }} />
