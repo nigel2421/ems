@@ -8,11 +8,23 @@ const norm = (value) => String(value || '').trim().toLowerCase();
 const matchByCodeOrId = (entity, codeOrId) => {
   if (!entity || codeOrId == null || codeOrId === '') return false;
   const raw = String(codeOrId).trim();
-  const id = String(entity.id || '');
-  const code = String(entity.code || '');
+  const id = String(entity.id || '').trim();
+  const code = String(entity.code || '').trim();
+
+  if (id === raw || code === raw) return true;
+  if (id.toLowerCase() === raw.toLowerCase()) return true;
+
+  // Normalized digits comparison
+  const rawDigits = raw.replace(/\D/g, '');
+  const entityDigits = (entity.code || entity.id || '').replace(/\D/g, '');
+  if (rawDigits && entityDigits && Number(rawDigits) === Number(entityDigits)) {
+    // If entity is county, only match if raw was county-like or short
+    if (id.startsWith('C-') && (raw.startsWith('C-') || rawDigits.length <= 2)) return true;
+    if (id.startsWith('CONST-') && (raw.startsWith('CONST-') || rawDigits.length === 3)) return true;
+    if (id.startsWith('WARD-') && (raw.startsWith('WARD-') || rawDigits.length >= 4)) return true;
+  }
+
   return (
-    id === raw ||
-    code === raw ||
     id.endsWith(`-${raw}`) ||
     id === `C-${raw.padStart(3, '0')}` ||
     id === `CONST-${raw}` ||
@@ -25,46 +37,66 @@ export const resolveJurisdiction = (user, geography) => {
   const constituencies = geography?.constituencies || [];
   const wards = geography?.wards || [];
   const role = user?.role || '';
+  const contest = String(user?.contestType || user?.contest || '').toLowerCase();
 
-  const county =
+  // Try matching directly assigned constituency or ward if assignedEntity is provided
+  const directConst = constituencies.find((c) => matchByCodeOrId(c, user?.assignedEntity));
+  const directWard = wards.find((w) => matchByCodeOrId(w, user?.assignedEntity));
+
+  // 1. Resolve County (Strict matching, no default fallback to nairobi or counties[0])
+  let county =
     counties.find((c) => matchByCodeOrId(c, user?.assignedEntity)) ||
-    counties.find((c) => norm(c.name).includes(norm(user?.county))) ||
-    counties.find((c) => norm(c.name).includes('nairobi')) ||
-    counties[0] ||
-    null;
+    (user?.county
+      ? counties.find((c) => norm(c.name) === norm(user?.county) || norm(c.name).includes(norm(user?.county)) || norm(user?.county).includes(norm(c.name)))
+      : null);
 
-  const constituency =
-    constituencies.find((c) => matchByCodeOrId(c, user?.assignedEntity)) ||
-    constituencies.find(
-      (c) =>
-        (!county || c.countyId === county.id) &&
-        norm(c.name).includes(norm(user?.constituency))
-    ) ||
-    null;
+  if (!county && directConst) {
+    county = counties.find((c) => c.id === directConst.countyId) || null;
+  } else if (!county && directWard) {
+    county = counties.find((c) => c.id === directWard.countyId) || null;
+  }
 
-  const ward =
-    wards.find((w) => matchByCodeOrId(w, user?.assignedEntity)) ||
-    wards.find(
-      (w) =>
-        (!constituency || w.constituencyId === constituency.id) &&
-        norm(w.name).includes(norm(user?.ward))
-    ) ||
-    null;
+  // 2. Resolve Constituency
+  let constituency =
+    directConst ||
+    (user?.constituency
+      ? constituencies.find(
+          (c) =>
+            (!county || c.countyId === county.id) &&
+            (norm(c.name) === norm(user?.constituency) || norm(c.name).includes(norm(user?.constituency)) || norm(user?.constituency).includes(norm(c.name)))
+        )
+      : null);
 
-  // Scope by role hierarchy
-  if (role === 'MCA' || (ward && user?.ward)) {
+  if (!constituency && directWard) {
+    constituency = constituencies.find((c) => c.id === directWard.constituencyId) || null;
+  }
+
+  // 3. Resolve Ward
+  let ward =
+    directWard ||
+    (user?.ward
+      ? wards.find(
+          (w) =>
+            (!constituency || w.constituencyId === constituency.id) &&
+            (norm(w.name) === norm(user?.ward) || norm(w.name).includes(norm(user?.ward)) || norm(user?.ward).includes(norm(w.name)))
+        )
+      : null);
+
+  // Scope by role hierarchy & dynamic contest
+  if (role === 'MCA' || role === 'Ward Coordinator' || contest.includes('mca') || contest.includes('ward') || (ward && user?.ward && !['Governor', 'Senator', 'MP'].includes(role))) {
     const scopedWard =
       ward ||
-      wards.find((w) => w.constituencyId === constituency?.id) ||
-      wards[0] ||
+      (constituency ? wards.find((w) => w.constituencyId === constituency.id) : null) ||
       null;
     const scopedConstituency =
-      constituencies.find((c) => c.id === scopedWard?.constituencyId) || constituency;
-    const scopedCounty = counties.find((c) => c.id === scopedWard?.countyId) || county;
+      (scopedWard ? constituencies.find((c) => c.id === scopedWard.constituencyId) : null) || constituency;
+    const scopedCounty =
+      (scopedWard ? counties.find((c) => c.id === scopedWard.countyId) : null) || county;
+
     return {
       level: 'ward',
       label: 'Ward',
-      title: scopedWard?.name || 'Ward operations',
+      title: scopedWard?.name || user?.ward || 'Ward operations',
       county: scopedCounty,
       constituency: scopedConstituency,
       ward: scopedWard
@@ -73,19 +105,23 @@ export const resolveJurisdiction = (user, geography) => {
 
   if (
     role === 'MP' ||
+    role === 'Constituency Coordinator' ||
     role === 'Regional Coordinator' ||
-    (constituency && user?.constituency)
+    contest.includes('mp') ||
+    contest.includes('parliament') ||
+    (constituency && user?.constituency && !['Governor', 'Senator'].includes(role))
   ) {
     const scopedConstituency =
       constituency ||
-      constituencies.find((c) => c.countyId === county?.id) ||
-      constituencies[0] ||
+      (county ? constituencies.find((c) => c.countyId === county.id) : null) ||
       null;
-    const scopedCounty = counties.find((c) => c.id === scopedConstituency?.countyId) || county;
+    const scopedCounty =
+      (scopedConstituency ? counties.find((c) => c.id === scopedConstituency.countyId) : null) || county;
+
     return {
       level: 'constituency',
       label: 'Constituency',
-      title: scopedConstituency?.name || 'Constituency operations',
+      title: scopedConstituency?.name || user?.constituency || 'Constituency operations',
       county: scopedCounty,
       constituency: scopedConstituency,
       ward: null
@@ -99,7 +135,7 @@ export const resolveJurisdiction = (user, geography) => {
       null;
     const agentWard =
       ward ||
-      wards.find((w) => w.id === station?.wardId) ||
+      (station ? wards.find((w) => w.id === station.wardId) : null) ||
       null;
     if (agentWard) {
       return {
@@ -114,20 +150,39 @@ export const resolveJurisdiction = (user, geography) => {
     }
   }
 
-  // Governor / Senator / Strategy Team → county
+  // Governor / Senator / County Coordinator / Gubernatorial Campaign
   return {
     level: 'county',
     label: 'County',
-    title: county?.name || 'County operations',
-    county,
+    title: county?.name || user?.county || 'County operations',
+    county: county || (counties.length > 0 ? counties.find(c => norm(c.name).includes(norm(user?.county))) || null : null),
     constituency: null,
     ward: null
   };
 };
 
-/** National admins may browse the full IEBC register; candidates stay in assignment. */
+/** National admins may browse the full IEBC register; scoped leaders stay in assignment. */
 export const hasNationalGeographyAccess = (user) => {
   const role = user?.role || '';
+  if (
+    role === 'Governor' ||
+    role === 'Senator' ||
+    role === 'MP' ||
+    role === 'MCA' ||
+    role === 'County Coordinator' ||
+    role === 'Constituency Coordinator' ||
+    role === 'Ward Coordinator' ||
+    role === 'Field Agent' ||
+    role === 'Agent' ||
+    role === 'Observer'
+  ) {
+    return false;
+  }
+
+  if (role === 'Candidate/Campaign Admin' && user?.assignedEntity !== 'GLOBAL') {
+    return false;
+  }
+
   return (
     role === 'Super Admin' ||
     role === 'Admin' ||

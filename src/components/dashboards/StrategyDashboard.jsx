@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { JurisdictionVoterAnalytics } from './JurisdictionVoterAnalytics';
+import { ElectoralMapWidget } from '../common/ElectoralMapWidget';
 import './DashboardShared.css';
 
 const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
@@ -58,6 +59,10 @@ export const StrategyDashboard = ({ onOpenModule, onOpenAIAssistant }) => {
       {isCountyExecutive && (
         <JurisdictionVoterAnalytics user={currentUser} geography={geography} onOpenModule={onOpenModule} />
       )}
+
+      <div style={{ marginBottom: '1.25rem' }}>
+        <ElectoralMapWidget onOpenMapRoom={() => onOpenModule('interactive_map')} />
+      </div>
 
       <section className="admin-metric-grid">
         <article className="admin-metric is-featured">

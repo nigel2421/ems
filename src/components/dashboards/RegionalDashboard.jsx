@@ -11,6 +11,7 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 import { JurisdictionVoterAnalytics } from './JurisdictionVoterAnalytics';
+import { ElectoralMapWidget } from '../common/ElectoralMapWidget';
 import {
   resolveJurisdiction,
   hasNationalGeographyAccess,
@@ -84,6 +85,10 @@ export const RegionalDashboard = ({ onOpenModule }) => {
       </header>
 
       <JurisdictionVoterAnalytics user={currentUser} geography={geography} onOpenModule={onOpenModule} />
+
+      <div style={{ marginBottom: '1.25rem' }}>
+        <ElectoralMapWidget onOpenMapRoom={() => onOpenModule('interactive_map')} />
+      </div>
 
       <section className="admin-metric-grid">
         <article className="admin-metric is-featured">

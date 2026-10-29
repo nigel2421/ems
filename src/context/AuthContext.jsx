@@ -9,8 +9,33 @@ import {
   filterByScope,
   canPerformAction
 } from '../utils/rbac';
+import {
+  getLockState,
+  recordFailure,
+  recordSuccess,
+  adminUnlock,
+  loadThrottleStore,
+  saveThrottleStore,
+  normaliseEmail,
+  THROTTLE_STORAGE_KEY
+} from '../utils/loginThrottle';
+import { isSessionExpired, LAST_ACTIVITY_KEY, LOGOUT_REASON_KEY } from '../utils/sessionPolicy';
 
 const AuthContext = createContext(null);
+
+const LOCKED_TEMP_MESSAGE = 'Too many failed sign-in attempts. Please wait before trying again.';
+const LOCKED_PERMANENT_MESSAGE =
+  'This account has been locked after repeated failed sign-in attempts. Contact your system administrator to restore access.';
+
+// Drop sessions that went idle past the limit (e.g. tab closed and reopened later)
+const sessionIsStale = () => {
+  try {
+    const last = sessionStorage.getItem(LAST_ACTIVITY_KEY);
+    return last !== null && isSessionExpired(Number(last));
+  } catch {
+    return false;
+  }
+};
 
 export { ROLE_HIERARCHY, ROLES };
 
@@ -71,15 +96,45 @@ export const AuthProvider = ({ children }) => {
   });
 
   // Session-bound authentication: Require login on new browser sessions / dev app load
+  const [staleOnLoad] = useState(() => {
+    const stale = sessionIsStale();
+    if (stale) {
+      sessionStorage.removeItem('ems_current_user');
+      sessionStorage.setItem('ems_is_authenticated', 'false');
+      sessionStorage.removeItem(LAST_ACTIVITY_KEY);
+      sessionStorage.setItem(LOGOUT_REASON_KEY, 'inactivity');
+    }
+    return stale;
+  });
+
   const [currentUser, setCurrentUser] = useState(() => {
+    if (staleOnLoad) return null;
     const savedUser = sessionStorage.getItem('ems_current_user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    if (staleOnLoad) return false;
     const savedAuth = sessionStorage.getItem('ems_is_authenticated');
     return savedAuth !== null ? JSON.parse(savedAuth) : false;
   });
+
+  const [logoutReason, setLogoutReason] = useState(() => sessionStorage.getItem(LOGOUT_REASON_KEY));
+
+  const [throttleStore, setThrottleStore] = useState(() => loadThrottleStore());
+
+  useEffect(() => {
+    saveThrottleStore(throttleStore);
+  }, [throttleStore]);
+
+  // Keep lockouts consistent across tabs
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === THROTTLE_STORAGE_KEY) setThrottleStore(loadThrottleStore());
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   const [is2FAVerified, setIs2FAVerified] = useState(true);
 
@@ -110,12 +165,40 @@ export const AuthProvider = ({ children }) => {
   }, [isAuthenticated]);
 
   const login = (email, password) => {
-    const cleanEmail = email ? email.trim().toLowerCase() : '';
+    const cleanEmail = normaliseEmail(email);
+    const telemetry = getDeviceTelemetry();
+
+    // Lockout is checked BEFORE the password so a locked account cannot be probed
+    const freshStore = loadThrottleStore();
+    const lock = getLockState(freshStore, cleanEmail);
+    if (lock.locked) {
+      setLoginActivityLogs(prev => [{
+        id: `LOG-LOGIN-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        timestamp: new Date().toISOString(),
+        email: cleanEmail || 'unknown@user',
+        userName: cleanEmail || 'Unknown User',
+        role: 'Unauthenticated',
+        ipAddress: telemetry.ipAddress,
+        geoLocation: telemetry.geoLocation,
+        deviceType: telemetry.deviceType,
+        os: telemetry.os,
+        browser: telemetry.browser,
+        status: 'Failure',
+        failureReason: lock.permanent ? 'Account locked (administrator unlock required)' : 'Temporarily locked (too many attempts)'
+      }, ...prev]);
+      return {
+        success: false,
+        locked: true,
+        permanent: !!lock.permanent,
+        retryInMs: lock.retryInMs || 0,
+        error: lock.permanent ? LOCKED_PERMANENT_MESSAGE : LOCKED_TEMP_MESSAGE
+      };
+    }
+
     const foundUser = users.find(
       u => u.email.toLowerCase() === cleanEmail && u.password === password
     );
 
-    const telemetry = getDeviceTelemetry();
     const logEntry = {
       id: `LOG-LOGIN-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       timestamp: new Date().toISOString(),
@@ -134,24 +217,63 @@ export const AuthProvider = ({ children }) => {
     setLoginActivityLogs(prev => [logEntry, ...prev]);
 
     if (foundUser) {
+      const nextStore = recordSuccess(freshStore, cleanEmail);
+      saveThrottleStore(nextStore);
+      setThrottleStore(nextStore);
       setCurrentUser(foundUser);
       setIsAuthenticated(true);
       setIs2FAVerified(!foundUser.twoFactorEnabled);
+      setLogoutReason(null);
+      sessionStorage.removeItem(LOGOUT_REASON_KEY);
+      sessionStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
       sessionStorage.setItem('ems_current_user', JSON.stringify(foundUser));
       sessionStorage.setItem('ems_is_authenticated', 'true');
       return { success: true, user: foundUser };
     }
 
+    const nextStore = recordFailure(freshStore, cleanEmail);
+    saveThrottleStore(nextStore);
+    setThrottleStore(nextStore);
+    const after = getLockState(nextStore, cleanEmail);
+    if (after.locked) {
+      return {
+        success: false,
+        locked: true,
+        permanent: !!after.permanent,
+        retryInMs: after.retryInMs || 0,
+        error: after.permanent ? LOCKED_PERMANENT_MESSAGE : LOCKED_TEMP_MESSAGE
+      };
+    }
+
     return { success: false, error: 'Invalid email address or password credentials.' };
   };
 
-  const logout = () => {
+  // logout() may be wired directly to onClick, so only accept string reasons
+  const logout = (reason) => {
+    const why = typeof reason === 'string' ? reason : null;
     setIsAuthenticated(false);
     setCurrentUser(null);
+    setLogoutReason(why);
+    if (why) sessionStorage.setItem(LOGOUT_REASON_KEY, why);
+    else sessionStorage.removeItem(LOGOUT_REASON_KEY);
+    sessionStorage.removeItem(LAST_ACTIVITY_KEY);
     sessionStorage.removeItem('ems_current_user');
     sessionStorage.setItem('ems_is_authenticated', 'false');
     localStorage.removeItem('ems_is_authenticated');
     localStorage.removeItem('ems_current_user');
+  };
+
+  const clearLogoutReason = () => {
+    setLogoutReason(null);
+    sessionStorage.removeItem(LOGOUT_REASON_KEY);
+  };
+
+  const getAccountLockState = (email) => getLockState(throttleStore, email);
+
+  const unlockAccount = (email) => {
+    const nextStore = adminUnlock(loadThrottleStore(), email);
+    saveThrottleStore(nextStore);
+    setThrottleStore(nextStore);
   };
 
   const switchUser = (userId) => {
@@ -250,6 +372,10 @@ export const AuthProvider = ({ children }) => {
         canAccessLocation: checkCanAccessLocation,
         filterByScope: (items, type) => filterByScope(currentUser, items, type),
         loginActivityLogs,
+        logoutReason,
+        clearLogoutReason,
+        getAccountLockState,
+        unlockAccount,
         ROLE_HIERARCHY
       }}
     >

@@ -33,6 +33,7 @@ import {
 } from 'chart.js';
 import { Pie, Line } from 'react-chartjs-2';
 import { AddAgentModal } from '../modules/AddAgentModal';
+import { ElectoralMapWidget } from '../common/ElectoralMapWidget';
 import './AdminDashboard.css';
 
 ChartJS.register(
@@ -47,21 +48,12 @@ ChartJS.register(
   Filler
 );
 
+import { DIVERSE_CATEGORICAL_PALETTE } from '../../utils/chartPalette';
+
 const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
 const ACCOUNT_ROLES = ['Admin', 'Strategy Team', 'Regional Coordinator', 'Governor', 'Senator', 'MP', 'MCA', 'Aspirant', 'Field Agent', 'Agent', 'Observer'];
 
-const COUNTY_CHART_COLORS = [
-  '#006B3F',
-  '#0E7A45',
-  '#C9A227',
-  '#BB0A21',
-  '#2A9D8F',
-  '#3D5A80',
-  '#E76F51',
-  '#8ECAE6',
-  '#073322',
-  '#A7C4B5'
-];
+const COUNTY_CHART_COLORS = DIVERSE_CATEGORICAL_PALETTE;
 
 export const AdminDashboard = ({
   onOpenAuditLogs,
@@ -70,7 +62,7 @@ export const AdminDashboard = ({
   activeTab: controlledTab = 'overview',
   onTabChange
 }) => {
-  const { users, addUser, currentUser, updateUserProfile, deleteUser } = useAuth();
+  const { users, addUser, currentUser, updateUserProfile, deleteUser, getAccountLockState, unlockAccount } = useAuth();
   const {
     geography,
     assignAgentToPollingStation,
@@ -419,6 +411,10 @@ export const AdminDashboard = ({
               <small>Awaiting verification</small>
             </article>
           </section>
+
+          <div style={{ marginBottom: '1.25rem' }}>
+            <ElectoralMapWidget onOpenMapRoom={() => (onOpenModule ? onOpenModule('interactive_map') : onOpenGeographic?.())} />
+          </div>
 
           <section className="admin-analytics-full">
             <article className="admin-card admin-card-analytics">
@@ -844,8 +840,32 @@ export const AdminDashboard = ({
                   <div><span>Phone</span><strong>{accountModal.user.phone || '—'}</strong></div>
                   <div><span>Jurisdiction</span><strong>{accountModal.user.entityName || '—'}</strong></div>
                   <div><span>Party</span><strong>{accountModal.user.party || '—'}</strong></div>
+                  <div>
+                    <span>Security status</span>
+                    {getAccountLockState(accountModal.user.email).locked ? (
+                      <strong style={{ color: '#BB0A21' }}>
+                        {getAccountLockState(accountModal.user.email).permanent ? 'Permanently Locked' : 'Temporarily Locked'}
+                      </strong>
+                    ) : (
+                      <strong style={{ color: '#006B3F' }}>Active / Normal</strong>
+                    )}
+                  </div>
                 </div>
                 <div className="admin-modal-actions">
+                  {getAccountLockState(accountModal.user.email).locked && (
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-primary"
+                      onClick={() => {
+                        unlockAccount(accountModal.user.email);
+                        logAuditAction(currentUser, 'ACCOUNT_UNLOCKED', `Admin unlocked account access for ${accountModal.user.email}`);
+                        setAccountNotice(`Unlocked access for ${accountModal.user.name}`);
+                        setTimeout(() => setAccountNotice(''), 3500);
+                      }}
+                    >
+                      Restore Access (Unlock)
+                    </button>
+                  )}
                   <button type="button" className="admin-btn admin-btn-ghost" onClick={() => openAccountEdit(accountModal.user)}>
                     <Pencil strokeWidth={1.75} />
                     Edit

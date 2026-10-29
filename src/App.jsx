@@ -35,19 +35,47 @@ import UnifiedOperationsQueue from './components/modules/UnifiedOperationsQueue'
 import ElectionSimulationControl from './components/modules/ElectionSimulationControl';
 import ProductionReadinessBoard from './components/modules/ProductionReadinessBoard';
 import StrategyTeamModule from './components/modules/StrategyTeamModule';
+import { ElectoralMapRoom } from './components/modules/ElectoralMapRoom';
 import { LoginModal } from './components/auth/LoginModal';
+import { IdleTimeoutModal } from './components/auth/IdleTimeoutModal';
+import { useIdleTimeout } from './hooks/useIdleTimeout';
+import { useModuleRouter, resolveModuleFromHash } from './hooks/useModuleRouter';
+import { updatePageMetadata } from './utils/seoManager';
 import { Bell, X } from 'lucide-react';
 
 const MainAppContent = () => {
-  const { currentUser, isAuthenticated } = useAuth();
+  const { currentUser, isAuthenticated, logout } = useAuth();
   const { tallyResults } = useData();
 
-  const [currentModule, setCurrentModule] = useState('dashboard');
+  // Initialize module from initial URL hash so direct links and crawlers open immediately to target page
+  const [currentModule, setCurrentModule] = useState(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      return resolveModuleFromHash(window.location.hash);
+    }
+    return 'dashboard';
+  });
   const [adminPanel, setAdminPanel] = useState('overview');
   const [showAuditLogs, setShowAuditLogs] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
+
+  // Sync route and browser history back/forward buttons
+  const { navigateToModule } = useModuleRouter(currentModule, (newMod) => {
+    setShowProfilePanel(false);
+    setCurrentModule(newMod);
+  });
+
+  // Dynamically update document title, description, canonical and OpenGraph meta tags on navigation
+  React.useEffect(() => {
+    updatePageMetadata(currentModule);
+  }, [currentModule]);
+
+  // Inactivity timeout: 15 min limit with 13 min warning
+  const { phase, secondsLeft, stayActive } = useIdleTimeout({
+    isAuthenticated,
+    onTimeout: () => logout('inactivity')
+  });
 
   if (!isAuthenticated || !currentUser) {
     return <LoginModal />;
@@ -60,6 +88,7 @@ const MainAppContent = () => {
     }
     setShowProfilePanel(false);
     setCurrentModule(mod);
+    navigateToModule(mod);
     if (mod === 'dashboard') {
       setAdminPanel((prev) => prev || 'overview');
     }
@@ -128,8 +157,6 @@ const MainAppContent = () => {
         return <HierarchicalWarRoom user={currentUser} onSelectModule={(mod) => setCurrentModule(mod)} />;
 
 
-      case 'ops_queue':
-        return <OperationsQueue user={currentUser} />;
       case 'war_room':
         return <ElectionWarRoom user={currentUser} onSelectModule={(mod) => setCurrentModule(mod)} />;
       case 'field_pwa':
@@ -151,6 +178,8 @@ const MainAppContent = () => {
         return <SystemHealthPanel />;
       case 'polling_stations':
         return <PollingStationIntelligence onClose={() => setCurrentModule('dashboard')} />;
+      case 'interactive_map':
+        return <ElectoralMapRoom />;
       case 'agents':
         return <AgentManagement onClose={() => setCurrentModule('dashboard')} />;
       case 'surveys':
@@ -199,6 +228,14 @@ const MainAppContent = () => {
 
       {showAuditLogs && <AuditLogViewer onClose={() => setShowAuditLogs(false)} />}
       {showAIAssistant && <AIAssistantModal onClose={() => setShowAIAssistant(false)} />}
+
+      {phase === 'warning' && (
+        <IdleTimeoutModal
+          secondsLeft={secondsLeft}
+          onStayActive={stayActive}
+          onLogout={() => logout('manual')}
+        />
+      )}
 
       {showNotifications && (
         <div className="modal-overlay" onClick={() => setShowNotifications(false)}>

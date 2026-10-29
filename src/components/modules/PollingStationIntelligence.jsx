@@ -16,7 +16,8 @@ import {
   ChevronRight,
   ShieldAlert,
   Users,
-  MoreHorizontal
+  MoreHorizontal,
+  Lock
 } from 'lucide-react';
 import {
   resolveJurisdiction,
@@ -191,6 +192,20 @@ const PollingStationIntelligenceInner = () => {
       );
     });
   }, [scopedStations, stationIntelligence, searchTerm, selectedRisk, selectedImportance, geoLookups]);
+
+  const outOfScopeSearch = useMemo(() => {
+    if (!searchTerm || searchTerm.trim().length < 3 || isNational) return false;
+    const term = searchTerm.toLowerCase().trim();
+    const globalMatch = (geography?.pollingStations || []).some((ps) =>
+      (ps.name && ps.name.toLowerCase().includes(term)) ||
+      (ps.code && ps.code.toLowerCase().includes(term))
+    );
+    const localMatch = scopedStations.some((ps) =>
+      (ps.name && ps.name.toLowerCase().includes(term)) ||
+      (ps.code && ps.code.toLowerCase().includes(term))
+    );
+    return globalMatch && !localMatch;
+  }, [searchTerm, isNational, geography?.pollingStations, scopedStations]);
 
   const analyticsSummary = useMemo(() => {
     const intelMap = stationIntelligence || {};
@@ -424,23 +439,42 @@ const PollingStationIntelligenceInner = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <select
-          className="form-select"
-          value={selectedCounty}
-          onChange={(e) => {
-            if (!isNational) return;
-            setSelectedCounty(e.target.value);
-          }}
-          disabled={!isNational}
-          title={isNational ? 'Select county' : `Locked to your ${String(assignment.label || 'assignment').toLowerCase()}`}
-          required
-        >
-          {countyOptions.map((c) => (
-            <option key={c.id} value={c.id}>
-              {isNational ? c.name : scopeLabel}
-            </option>
-          ))}
-        </select>
+        {!isNational ? (
+          <div
+            className="locked-jurisdiction-badge"
+            title={`Locked to your ${String(assignment.label || 'assignment').toLowerCase()}`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              padding: '0.55rem 0.85rem',
+              borderRadius: '8px',
+              background: 'rgba(6, 182, 212, 0.1)',
+              border: '1px solid rgba(6, 182, 212, 0.3)',
+              color: '#06b6d4',
+              fontWeight: '600',
+              fontSize: '0.85rem',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <Lock size={14} />
+            <span>{scopeLabel} 🔒 [Locked]</span>
+          </div>
+        ) : (
+          <select
+            className="form-select"
+            value={selectedCounty}
+            onChange={(e) => setSelectedCounty(e.target.value)}
+            title="Select county"
+            required
+          >
+            {countyOptions.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        )}
         <select className="form-select" value={selectedRisk} onChange={(e) => setSelectedRisk(e.target.value)}>
           <option value="">All risk</option>
           <option value="Low">Low</option>
@@ -455,6 +489,28 @@ const PollingStationIntelligenceInner = () => {
           <option value="Low">Low</option>
         </select>
       </div>
+
+      {outOfScopeSearch && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.65rem',
+            padding: '0.75rem 1rem',
+            marginBottom: '1rem',
+            borderRadius: '8px',
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.35)',
+            color: '#fca5a5',
+            fontSize: '0.825rem'
+          }}
+        >
+          <ShieldAlert style={{ width: '18px', height: '18px', flexShrink: 0, color: '#ef4444' }} />
+          <div>
+            <strong>Access Denied:</strong> Polling stations matching &quot;{searchTerm}&quot; exist outside your assigned jurisdiction ({scopeLabel}). Access to out-of-scope polling station intelligence is strictly prohibited.
+          </div>
+        </div>
+      )}
 
       {activeTab === 'list' && (
         <article className="psi-panel">
@@ -585,9 +641,14 @@ const PollingStationIntelligenceInner = () => {
             </div>
           </div>
           <div className="psi-map-grid">
-            {pageStations.slice(0, 8).map((ps, idx) => {
+            {pageStations.slice(0, 8).map((ps) => {
               const intel = stationIntelligence?.[ps.id] || { riskLevel: 'Low' };
               const risk = intel.riskLevel || 'Low';
+              const loc = resolveLocation(ps, geoLookups);
+              const displayLoc = ps.latitude != null && ps.longitude != null
+                ? `${Number(ps.latitude).toFixed(4)}, ${Number(ps.longitude).toFixed(4)}`
+                : loc.line || `${loc.constituency} · ${loc.ward}`;
+
               return (
                 <button
                   key={ps.id}
@@ -600,8 +661,8 @@ const PollingStationIntelligenceInner = () => {
                     <span>{ps.code}</span>
                   </div>
                   <strong>{ps.name}</strong>
-                  <span>
-                    {-1.2676 - idx * 0.015}, {36.8111 + idx * 0.012}
+                  <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                    {displayLoc}
                   </span>
                   <div className="psi-map-card-foot">
                     <span>{formatCount(ps.registeredVoters || 0)} voters</span>
