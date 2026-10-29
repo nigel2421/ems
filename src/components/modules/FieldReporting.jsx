@@ -306,7 +306,9 @@ export const FieldReporting = ({ onClose }) => {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
               <MapPin style={{ width: '14px', height: '14px', color: '#06b6d4' }} />
-              <span>Location: {viewingReport.locationName} (GPS: {viewingReport.latitude}, {viewingReport.longitude})</span>
+              <span>
+                Location: {viewingReport.locationName} (GPS: {Number(viewingReport.latitude || 0).toFixed(4)}, {Number(viewingReport.longitude || 0).toFixed(4)})
+              </span>
             </div>
           </div>
         </div>

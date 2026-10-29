@@ -78,11 +78,19 @@ export const resolveEffectiveGeographicScope = ({
   const userWard = authenticatedUser?.ward;
 
   let userScopeLevel = SCOPE_LEVELS.NATIONAL;
-  if (['County Coordinator', 'Governor', 'Senator'].includes(role)) userScopeLevel = SCOPE_LEVELS.COUNTY;
-  else if (['Constituency Coordinator', 'MP'].includes(role)) userScopeLevel = SCOPE_LEVELS.CONSTITUENCY;
-  else if (['Ward Coordinator', 'MCA'].includes(role)) userScopeLevel = SCOPE_LEVELS.WARD;
-  else if (['Polling Coordinator', 'Aspirant'].includes(role)) userScopeLevel = SCOPE_LEVELS.POLLING_CENTRE;
-  else if (['Field Agent', 'Agent'].includes(role)) userScopeLevel = SCOPE_LEVELS.STATION;
+  if (['County Coordinator', 'Governor', 'Senator'].includes(role)) {
+    userScopeLevel = SCOPE_LEVELS.COUNTY;
+  } else if (['Constituency Coordinator', 'MP'].includes(role)) {
+    userScopeLevel = SCOPE_LEVELS.CONSTITUENCY;
+  } else if (['Ward Coordinator', 'MCA'].includes(role)) {
+    userScopeLevel = SCOPE_LEVELS.WARD;
+  } else if (['Polling Coordinator', 'Aspirant'].includes(role)) {
+    userScopeLevel = SCOPE_LEVELS.POLLING_CENTRE;
+  } else if (['Field Agent', 'Agent'].includes(role)) {
+    userScopeLevel = SCOPE_LEVELS.STATION;
+  } else if (role === 'Candidate/Campaign Admin' && authenticatedUser?.assignedEntity !== 'GLOBAL') {
+    userScopeLevel = policy.level || SCOPE_LEVELS.COUNTY;
+  }
 
   const campaignCounty = campaign?.county || campaign?.jurisdiction?.county || authenticatedUser?.county || null;
   const campaignConst = campaign?.constituency || campaign?.jurisdiction?.constituency || authenticatedUser?.constituency || null;
@@ -93,15 +101,15 @@ export const resolveEffectiveGeographicScope = ({
   let campaignLockedWard = null;
 
   if (policy.level === SCOPE_LEVELS.COUNTY || policy.level === SCOPE_LEVELS.CONSTITUENCY || policy.level === SCOPE_LEVELS.WARD) {
-    campaignLockedCounty = campaignCounty || 'Nairobi';
+    campaignLockedCounty = campaignCounty;
   }
 
   if (policy.level === SCOPE_LEVELS.CONSTITUENCY || policy.level === SCOPE_LEVELS.WARD) {
-    campaignLockedConst = campaignConst || 'Westlands';
+    campaignLockedConst = campaignConst;
   }
 
   if (policy.level === SCOPE_LEVELS.WARD) {
-    campaignLockedWard = campaignWard || 'Kitisuru';
+    campaignLockedWard = campaignWard;
   }
 
   let effectiveCounty = campaignLockedCounty;

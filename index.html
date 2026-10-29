@@ -4,7 +4,38 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Election Management System</title>
+    <meta name="theme-color" content="#006B3F" />
+    <meta name="description" content="Official Campaign Intelligence & Election Management System (CI-EMS). Real-time results tabulation, 47-county geospatial intelligence, polling station monitoring, and election day verification for Kenya." />
+    <meta name="keywords" content="Kenya elections 2027, IEBC, election management system, polling stations, electoral map room, tally center, Form 34A verification" />
+    <meta name="author" content="CI-EMS Kenya" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ci-ems.ke/ems/" />
+    <meta property="og:title" content="Election Management System (CI-EMS) | Kenya 2027" />
+    <meta property="og:description" content="Central operations command, verified tally transmission, 47-county geospatial intelligence, and polling station capacity." />
+    <meta property="og:image" content="/ems/favicon.svg" />
+    <meta property="og:site_name" content="CI-EMS Kenya" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://ci-ems.ke/ems/" />
+    <meta name="twitter:title" content="Election Management System (CI-EMS) | Kenya 2027" />
+    <meta name="twitter:description" content="Central operations command, verified tally transmission, 47-county geospatial intelligence, and polling station capacity." />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://ci-ems.ke/ems/" />
+    <link rel="manifest" href="/ems/manifest.json" />
+    <title>Election Management System (CI-EMS) | Kenya 2027</title>
+    <!-- Register PWA Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/ems/sw.js').catch(() => {});
+        });
+      }
+    </script>
     <!-- FOUC-Proof Theme Initialization Script -->
     <script>
       (function() {
