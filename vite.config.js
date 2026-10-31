@@ -3,7 +3,8 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/ems/',
+  // This app is served from its own domain root (for example kuratech.site).
+  base: '/',
   plugins: [react()],
   build: {
     chunkSizeWarningLimit: 10000,
