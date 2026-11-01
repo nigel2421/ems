@@ -241,6 +241,16 @@ const PollingStationIntelligenceInner = () => {
     return filteredStations.slice(start, start + PAGE_SIZE);
   }, [filteredStations, page]);
 
+  const mapStations = useMemo(() => filteredStations.map((station) => {
+    const latitude = Number(station.latitude ?? station.lat);
+    const longitude = Number(station.longitude ?? station.lng ?? station.lon);
+    return { station, latitude, longitude };
+  }).filter(({ latitude, longitude }) => Number.isFinite(latitude) && Number.isFinite(longitude) && Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180), [filteredStations]);
+  const mapCenter = mapStations.length
+    ? `${mapStations[0].latitude},${mapStations[0].longitude}`
+    : '-1.286389,36.817223';
+  const mapQuery = mapStations.map(({ latitude, longitude }) => `${latitude},${longitude}`).join('|');
+
   const rangeStart = filteredStations.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const rangeEnd = Math.min(page * PAGE_SIZE, filteredStations.length);
   const selectedCountyName = geoLookups.counties.get(selectedCounty) || 'Selected county';
@@ -577,15 +587,26 @@ const PollingStationIntelligenceInner = () => {
       {activeTab === 'gis' && (
         <article className="psi-panel">
           <div className="psi-panel-head">
-            <h2>Spatial sample</h2>
+            <div>
+              <h2>Geo Inspector map</h2>
+              <p className="psi-error-copy" style={{ marginTop: '.25rem' }}>{mapStations.length} of {filteredStations.length} filtered stations have coordinates. CSV imports may include latitude and longitude as columns 10 and 11.</p>
+            </div>
             <div className="psi-legend">
               <span><i className="psi-dot low" /> Stronghold / lean</span>
               <span><i className="psi-dot mid" /> Swing ward</span>
               <span><i className="psi-dot high" /> Hostile / severe risk</span>
             </div>
           </div>
+          <iframe
+            className="psi-google-map"
+            title="Google map of polling station coordinates"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            src={`https://www.google.com/maps?output=embed&q=${encodeURIComponent(mapQuery || 'Nairobi, Kenya')}&z=11&center=${encodeURIComponent(mapCenter)}`}
+          />
+          {mapStations.length === 0 && <p className="psi-map-notice">No stations in this selection have valid latitude and longitude values. Showing Nairobi as the map fallback.</p>}
           <div className="psi-map-grid">
-            {pageStations.slice(0, 8).map((ps, idx) => {
+            {mapStations.slice(0, 8).map(({ station: ps, latitude, longitude }) => {
               const intel = stationIntelligence?.[ps.id] || { riskLevel: 'Low' };
               const risk = intel.riskLevel || 'Low';
               return (
@@ -601,7 +622,7 @@ const PollingStationIntelligenceInner = () => {
                   </div>
                   <strong>{ps.name}</strong>
                   <span>
-                    {-1.2676 - idx * 0.015}, {36.8111 + idx * 0.012}
+                    {latitude.toFixed(6)}, {longitude.toFixed(6)}
                   </span>
                   <div className="psi-map-card-foot">
                     <span>{formatCount(ps.registeredVoters || 0)} voters</span>
