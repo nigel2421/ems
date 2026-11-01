@@ -95,6 +95,72 @@ function emsDevServerPlugin() {
           }
         }
 
+        // Handle Real-Time Tallies endpoint
+        if (url === '/api/tallies' || url === '/ems/api/tallies') {
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          if (req.method === 'GET') {
+            const currentDb = loadDb();
+            res.writeHead(200);
+            return res.end(JSON.stringify(currentDb.tallyResults || []));
+          }
+          if (req.method === 'POST') {
+            let body = '';
+            req.on('data', chunk => { body += chunk; });
+            req.on('end', () => {
+              try {
+                const tally = JSON.parse(body || '{}');
+                const currentDb = loadDb();
+                const existingIdx = (currentDb.tallyResults || []).findIndex(t => t.id === tally.id || t.pollingStationId === tally.pollingStationId);
+                const updatedTallies = [...(currentDb.tallyResults || [])];
+                if (existingIdx >= 0) {
+                  updatedTallies[existingIdx] = { ...updatedTallies[existingIdx], ...tally };
+                } else {
+                  updatedTallies.unshift(tally);
+                }
+                const updated = { ...currentDb, tallyResults: updatedTallies, updatedAt: new Date().toISOString() };
+                saveDb(updated);
+                res.writeHead(200);
+                return res.end(JSON.stringify({ success: true, tally }));
+              } catch (err) {
+                res.writeHead(400);
+                return res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+        }
+
+        // Handle Real-Time Audit Logs endpoint
+        if (url === '/api/audit-logs' || url === '/ems/api/audit-logs') {
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          if (req.method === 'GET') {
+            const currentDb = loadDb();
+            res.writeHead(200);
+            return res.end(JSON.stringify(currentDb.auditLogs || []));
+          }
+          if (req.method === 'POST') {
+            let body = '';
+            req.on('data', chunk => { body += chunk; });
+            req.on('end', () => {
+              try {
+                const logEntry = JSON.parse(body || '{}');
+                const currentDb = loadDb();
+                const updatedLogs = [logEntry, ...(currentDb.auditLogs || [])];
+                const updated = { ...currentDb, auditLogs: updatedLogs, updatedAt: new Date().toISOString() };
+                saveDb(updated);
+                res.writeHead(200);
+                return res.end(JSON.stringify({ success: true, logEntry }));
+              } catch (err) {
+                res.writeHead(400);
+                return res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+        }
+
         next();
       });
     }

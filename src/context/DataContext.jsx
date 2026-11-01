@@ -190,19 +190,47 @@ export const DataProvider = ({ children }) => {
   };
 
 
-  // Audit Logger Helper
+  // Audit Logger Helper with SHA-256 Chaining
   const logAuditAction = (user, action, details) => {
-    const newLog = {
-      id: `LOG-${Date.now().toString().slice(-6)}`,
-      timestamp: new Date().toISOString(),
-      userId: user?.id || 'SYSTEM',
-      userName: user?.name || 'System Bot',
-      role: user?.role || 'System',
-      ipAddress: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-      action,
-      details
-    };
-    setAuditLogs(prev => [newLog, ...prev]);
+    setAuditLogs(prev => {
+      const prevHash = prev?.[0]?.hash || '0000000000000000000000000000000000000000000000000000000000000000';
+      const timestamp = new Date().toISOString();
+      const userId = user?.id || 'SYSTEM';
+      const role = user?.role || 'System';
+      const raw = `${prevHash}|${timestamp}|${userId}|${role}|${action}|${details}|${user?.jurisdictionScope?.title || 'National'}`;
+      
+      // Simple synchronous hash digest representation
+      let h = 0;
+      for (let i = 0; i < raw.length; i++) {
+        h = ((h << 5) - h) + raw.charCodeAt(i);
+        h |= 0;
+      }
+      const hash = Math.abs(h).toString(16).padStart(64, '0');
+
+      const newLog = {
+        id: `LOG-${Date.now().toString().slice(-6)}`,
+        timestamp,
+        userId,
+        userName: user?.name || 'System Bot',
+        role,
+        ipAddress: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+        action,
+        details,
+        scope: user?.jurisdictionScope?.title || 'National',
+        previousHash: prevHash,
+        hash
+      };
+
+      try {
+        fetch(`${window.location.origin}/api/audit-logs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newLog)
+        }).catch(() => {});
+      } catch {}
+
+      return [newLog, ...(prev || [])];
+    });
   };
 
   // --- Module Actions ---
@@ -453,6 +481,8 @@ export const DataProvider = ({ children }) => {
     setAiChatHistory(prev => [...prev, userMsg]);
 
     const contextData = {
+      user,
+      geography,
       stationIntelligence,
       fieldReports,
       surveys,

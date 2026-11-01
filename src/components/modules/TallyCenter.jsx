@@ -350,6 +350,11 @@ export const TallyCenter = () => {
     setEntryError('');
     if (!selectedPs) return;
 
+    if (!evidenceImage) {
+      setEntryError('Form 34A photograph or scanned document is mandatory for result transmission. Please upload or scan Form 34A.');
+      return;
+    }
+
     const res = submitTallyCenterForm(
       {
         pollingStationId: selectedPs.id,
@@ -363,9 +368,7 @@ export const TallyCenter = () => {
         agentId: currentUser?.id || 'AGT-001',
         evidence: {
           formType: 'Form 34A',
-          imageUrl:
-            evidenceImage ||
-            'https://images.unsplash.com/photo-1568667256549-094345857637?w=800&auto=format&fit=crop&q=80',
+          imageUrl: evidenceImage,
           ocrExtracted: ocrData?.extractedVotes
         }
       },

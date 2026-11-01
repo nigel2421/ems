@@ -3697,7 +3697,126 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
     assert.ok(html.includes('STREAM ROOMS (9)'), 'Must include stream rooms section');
   });
 
+  test('309. Tally Center Form 34A: enforces photo attachment & flags anomalies (>95% turnout)', async () => {
+    const { validateForm34AAttachment, assessTallyAnomalyRisk } = await import('../utils/tallyValidation.js');
+
+    // Missing attachment fails
+    const failRes = validateForm34AAttachment(null);
+    assert.equal(failRes.isValid, false);
+    assert.ok(failRes.error.includes('mandatory'));
+
+    // Valid JPG succeeds
+    const passRes = validateForm34AAttachment({ name: 'FORM_34A_STATION_001.JPG', type: 'image/jpeg' });
+    assert.equal(passRes.isValid, true);
+    assert.ok(passRes.sha256Stamp.startsWith('F34A-'));
+
+    // Anomaly assessment for turnout > 95%
+    const risk = assessTallyAnomalyRisk({
+      candAVotes: 600,
+      candBVotes: 360,
+      candCVotes: 10,
+      rejectedVotes: 5,
+      registeredVoters: 1000
+    });
+    assert.equal(risk.isAnomalous, true);
+    assert.ok(risk.flags.some(f => f.code === 'ANOMALOUS_TURNOUT'));
+  });
+
+  test('310. Reconciliation Desk: resolves contested tallies to Verified / Disputed / Flagged / Locked', async () => {
+    const { resolveDiscrepancyStatus } = await import('../utils/tallyValidation.js');
+
+    const originalTally = { id: 'TALLY-101', status: 'Submitted', candAVotes: 420 };
+    const resolved = resolveDiscrepancyStatus(originalTally, 'Approve', { name: 'Officer Mary', role: 'Reconciliation Officer' });
+
+    assert.equal(resolved.status, 'Verified');
+    assert.equal(resolved.reconciledBy, 'Officer Mary');
+    assert.ok(resolved.reconciledAt);
+
+    const locked = resolveDiscrepancyStatus(originalTally, 'LockVerified', { name: 'Admin Kiprop' });
+    assert.equal(locked.status, 'Locked');
+  });
+
+  test('311. Offline Queue: queues items and flushes through sync handler', async () => {
+    const { enqueueOfflineItem, getPendingOfflineItems, processOfflineSyncQueue } = await import('../utils/offlineQueue.js');
+
+    const queued = await enqueueOfflineItem('pending_submissions', {
+      type: 'tally',
+      stationId: 'PS-WESTLANDS-01',
+      totalVotes: 550
+    });
+
+    assert.ok(queued.id);
+    assert.equal(queued.stationId, 'PS-WESTLANDS-01');
+
+    const items = await getPendingOfflineItems('pending_submissions');
+    assert.ok(items.length > 0);
+
+    const synced = [];
+    const result = await processOfflineSyncQueue(async (item) => {
+      synced.push(item.id);
+    });
+
+    assert.ok(result.processed >= 1);
+  });
+
+  test('312. Cryptographic Audit Chain: verifies SHA-256 hash chaining and detects tampering', async () => {
+    const { createChainedAuditLog, verifyAuditChainIntegrity } = await import('../utils/auditCrypto.js');
+
+    const log1 = await createChainedAuditLog({
+      action: 'LOGIN_SUCCESS',
+      userId: 'ADM-01',
+      userName: 'Super Admin',
+      details: 'Super admin authenticated'
+    });
+    assert.ok(log1.hash);
+    assert.equal(log1.hash.length, 64);
+
+    const log2 = await createChainedAuditLog({
+      previousHash: log1.hash,
+      action: 'FORM_34A_VERIFIED',
+      userId: 'ADM-01',
+      details: 'Station Form 34A approved'
+    });
+    assert.equal(log2.previousHash, log1.hash);
+
+    const intactRes = await verifyAuditChainIntegrity([log1, log2]);
+    assert.equal(intactRes.isIntact, true);
+    assert.equal(intactRes.totalChecked, 2);
+
+    // Tampering test: modify log1 action without recomputing hash
+    const tamperedLog1 = { ...log1, details: 'TAMPERED ACTION DATA' };
+    const brokenRes = await verifyAuditChainIntegrity([tamperedLog1, log2]);
+    assert.equal(brokenRes.isIntact, false);
+    assert.ok(brokenRes.brokenAt);
+  });
+
+  test('313. Scoped Gemini Campaign AI: strictly bounds system prompt within user role jurisdiction', async () => {
+    const { buildJurisdictionalContext, queryGeminiCampaignAI } = await import('../services/geminiService.js');
+
+    const governorUser = {
+      name: 'Hon. Sakaja',
+      role: 'Governor',
+      jurisdictionScope: { countyName: 'Nairobi City County', constituencyCount: 17, registeredVoters: 2658906 }
+    };
+
+    const promptContext = buildJurisdictionalContext(governorUser, {});
+    assert.ok(promptContext.includes('Nairobi City County'));
+    assert.ok(promptContext.includes('Governor'));
+    assert.ok(promptContext.includes('OPERATIONAL CONSTRAINTS'));
+
+    // Query fallback engine
+    const aiRes = await queryGeminiCampaignAI({
+      prompt: 'What are the top voter turnout priorities today?',
+      user: governorUser,
+      geography: {}
+    });
+
+    assert.equal(aiRes.success, true);
+    assert.ok(aiRes.text.length > 50);
+  });
+
 });
+
 
 
 

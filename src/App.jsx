@@ -40,6 +40,7 @@ import { IdleTimeoutModal } from './components/auth/IdleTimeoutModal';
 import { useIdleTimeout } from './hooks/useIdleTimeout';
 import { useModuleRouter, resolveModuleFromHash } from './hooks/useModuleRouter';
 import { updatePageMetadata } from './utils/seoManager';
+import { OfflineSyncBanner } from './components/common/OfflineSyncBanner';
 import { Bell, X } from 'lucide-react';
 
 const MainAppContent = () => {
@@ -208,6 +209,7 @@ const MainAppContent = () => {
 
   return (
     <div className="app-container is-admin-shell">
+      <OfflineSyncBanner />
       <AdminLayout
         currentModule={currentModule}
         adminPanel={adminPanel}

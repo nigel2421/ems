@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { exportLoginLogsToCSV } from '../../utils/deviceParser';
+import { verifyAuditChainIntegrity, exportAuditLogsToCSV, exportAuditLogsToPDF } from '../../utils/auditCrypto';
 import { 
   Activity, 
   X, 
@@ -29,6 +30,8 @@ export const AuditLogViewer = ({ onClose }) => {
   const [filterAction, setFilterAction] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterDevice, setFilterDevice] = useState('ALL');
+  const [verifyingChain, setVerifyingChain] = useState(false);
+  const [chainStatus, setChainStatus] = useState(null);
 
   const isAdmin = currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin';
 
@@ -148,9 +151,9 @@ export const AuditLogViewer = ({ onClose }) => {
         {/* TAB 1: SYSTEM OPERATIONS LEDGER */}
         {activeTab === 'system_logs' && (
           <>
-            {/* Search & Action Filter Bar */}
-            <div className="responsive-filter-bar" style={{ marginBottom: '1.25rem' }}>
-              <div className="search-input-wrap" style={{ position: 'relative', flex: 1 }}>
+            {/* Search & Action Filter Bar + Crypto Verification */}
+            <div className="responsive-filter-bar" style={{ marginBottom: '1.25rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+              <div className="search-input-wrap" style={{ position: 'relative', flex: '1 1 240px' }}>
                 <Search style={{ width: '16px', height: '16px', position: 'absolute', left: '12px', top: '12px', color: 'var(--text-muted)' }} />
                 <input 
                   type="text"
@@ -164,7 +167,7 @@ export const AuditLogViewer = ({ onClose }) => {
 
               <select 
                 className="form-select" 
-                style={{ width: 'auto', flex: '1 1 180px' }} 
+                style={{ width: 'auto', flex: '0 1 180px' }} 
                 value={filterAction} 
                 onChange={e => setFilterAction(e.target.value)}
               >
@@ -175,7 +178,66 @@ export const AuditLogViewer = ({ onClose }) => {
                 <option value="INTELLIGENCE_UPDATE">Intelligence Updates</option>
                 <option value="SYSTEM_HARDENED">System Events</option>
               </select>
+
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={async () => {
+                  setVerifyingChain(true);
+                  const res = await verifyAuditChainIntegrity(auditLogs || []);
+                  setChainStatus(res);
+                  setVerifyingChain(false);
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 0.8rem', whiteSpace: 'nowrap' }}
+              >
+                <ShieldCheck size={15} style={{ color: '#10B981' }} />
+                <span>{verifyingChain ? 'Verifying Hashes...' : 'Verify SHA-256 Chain'}</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => exportAuditLogsToPDF(filteredAuditLogs)}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 0.8rem', whiteSpace: 'nowrap' }}
+                title="Export Certified PDF Audit Certificate"
+              >
+                <Download size={15} />
+                <span>PDF Cert</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => exportAuditLogsToCSV(filteredAuditLogs)}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 0.8rem', whiteSpace: 'nowrap' }}
+                title="Export Audit Ledger CSV"
+              >
+                <Download size={15} />
+                <span>CSV</span>
+              </button>
             </div>
+
+            {chainStatus && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.6rem 1rem',
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                fontSize: '0.82rem',
+                background: chainStatus.isIntact ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.15)',
+                border: chainStatus.isIntact ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.35)',
+                color: chainStatus.isIntact ? '#10B981' : '#EF4444'
+              }}>
+                <CheckCircle2 size={16} />
+                <span>
+                  {chainStatus.isIntact
+                    ? `Cryptographic Audit Chain Intact: Verified ${chainStatus.totalChecked} immutable entries via SHA-256 hash-chaining.`
+                    : `Integrity Warning: ${chainStatus.reason}`}
+                </span>
+              </div>
+            )}
 
             {/* Audit Logs Table */}
             <div className="custom-table-container touch-table-container" style={{ maxHeight: '420px', overflowY: 'auto' }}>
