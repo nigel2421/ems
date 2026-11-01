@@ -8,6 +8,11 @@
     "build": "vite build",
     "lint": "oxlint",
     "test": "node --test src/__tests__/ci-ems.test.js",
+    "test:e2e": "python -m pytest tests/e2e_selenium",
+    "test:e2e:headed": "python -m pytest tests/e2e_selenium --headed",
+    "test:e2e:live": "python -m pytest tests/e2e_selenium --env=live",
+    "test:e2e:local": "python -m pytest tests/e2e_selenium --env=local",
+    "test:e2e:report": "python -m pytest tests/e2e_selenium --html=tests/e2e_selenium/reports/report.html --self-contained-html",
     "preview": "vite preview"
   },
   "dependencies": {

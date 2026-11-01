@@ -30,3 +30,11 @@ ems_database.sqlite
 .data/*
 users.json
 *.bak
+
+# Python & E2E Testing artifacts
+.env.test
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/e2e_selenium/reports/
+
