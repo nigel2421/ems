@@ -10,9 +10,7 @@
 
 .psi-news-fab {
   position: fixed;
-  top: 50%;
   right: 1.1rem;
-  transform: translateY(-50%);
   z-index: 1200;
   appearance: none;
   display: inline-flex;
@@ -28,6 +26,26 @@
   cursor: pointer;
   box-shadow: 0 12px 30px rgba(7, 51, 34, 0.32);
   writing-mode: horizontal-tb;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.psi-news-fab:active { cursor: grabbing; }
+
+.psi-news-enable {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1199;
+  border: 1px solid #dce5df;
+  border-radius: 999px;
+  background: #fff;
+  color: #073322;
+  padding: .45rem .75rem;
+  font: 600 .75rem/1.2 inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(7,51,34,.12);
 }
 
 .psi-news-fab svg {

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Newspaper, RefreshCw, ExternalLink, AlertTriangle, X } from 'lucide-react';
 import {
   fetchKenyaPoliticalNewsLast24h,
@@ -95,6 +95,28 @@ export const KenyaPoliticalNewsFab = () => {
   const [fetchedAt, setFetchedAt] = useState(cached?.fetchedAt || null);
   const [errors, setErrors] = useState(cached?.errors || []);
   const [loadError, setLoadError] = useState('');
+  const [enabled, setEnabled] = useState(() => window.localStorage.getItem('ems_news_enabled') !== 'false');
+  const [position, setPosition] = useState(() => {
+    try { return JSON.parse(window.localStorage.getItem('ems_news_position')) || { right: 18, top: Math.round(window.innerHeight / 2) }; }
+    catch { return { right: 18, top: Math.round(window.innerHeight / 2) }; }
+  });
+  const dragRef = useRef(null);
+
+  const handlePointerDown = (event) => {
+    if (event.button !== 0) return;
+    dragRef.current = { x: event.clientX, y: event.clientY, right: position.right, top: position.top, moved: false };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const handlePointerMove = (event) => {
+    if (!dragRef.current) return;
+    const drag = dragRef.current;
+    if (Math.abs(event.clientX - drag.x) + Math.abs(event.clientY - drag.y) > 5) drag.moved = true;
+    if (drag.moved) {
+      const next = { right: Math.max(0, Math.min(window.innerWidth - 60, drag.right - event.clientX + drag.x)), top: Math.max(8, Math.min(window.innerHeight - 60, drag.top + event.clientY - drag.y)) };
+      setPosition(next);
+      window.localStorage.setItem('ems_news_position', JSON.stringify(next));
+    }
+  };
 
   const applyResult = useCallback((result) => {
     if (result.items?.length) {
@@ -149,9 +171,15 @@ export const KenyaPoliticalNewsFab = () => {
     <>
       <button
         type="button"
-        className={`psi-news-fab${open ? ' is-open' : ''}`}
-        onClick={() => setOpen(true)}
+        className={`psi-news-fab${open ? ' is-open' : ''}${enabled ? '' : ' is-disabled'}`}
+        style={{ right: position.right, top: position.top, transform: 'none', touchAction: 'none' }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={() => { if (dragRef.current && !dragRef.current.moved) setOpen((value) => !value); dragRef.current = null; }}
+        onPointerCancel={() => { dragRef.current = null; }}
         aria-label={`Open Kenya political news, ${count} headlines in the last 24 hours`}
+        aria-pressed={open}
+        title="Drag to move · click to toggle news"
       >
         <Newspaper strokeWidth={1.75} />
         <span className="psi-news-fab-copy">
@@ -163,7 +191,11 @@ export const KenyaPoliticalNewsFab = () => {
         </em>
       </button>
 
-      {open && (
+      <button type="button" className="psi-news-enable" aria-pressed={enabled} onClick={() => { const next = !enabled; setEnabled(next); window.localStorage.setItem('ems_news_enabled', String(next)); if (!next) setOpen(false); }}>
+        {enabled ? 'Hide news button' : 'Show news button'}
+      </button>
+
+      {enabled && open && (
         <div className="psi-news-drawer-overlay" onClick={() => setOpen(false)}>
           <aside
             className="psi-news-drawer"

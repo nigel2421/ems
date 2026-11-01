@@ -16,6 +16,11 @@
 
 .strategy-module-head {
   margin-bottom: 1rem;
+  padding: 1.25rem 1.4rem;
+  border: 1px solid var(--strategy-line);
+  border-radius: 18px;
+  background: linear-gradient(115deg, var(--strategy-surface), #edf5f0);
+  box-shadow: 0 8px 24px rgba(17, 41, 28, 0.045);
 }
 
 .strategy-module-head h1 {
@@ -64,8 +69,10 @@
   display: flex;
   gap: 0.45rem;
   overflow-x: auto;
-  border-bottom: 1px solid var(--strategy-line);
-  padding: 0 0.1rem 0.7rem;
+  border: 1px solid var(--strategy-line);
+  border-radius: 15px;
+  background: var(--strategy-surface);
+  padding: 0.5rem;
   margin-bottom: 1rem;
   scrollbar-width: thin;
 }
@@ -87,6 +94,14 @@
   gap: 0.45rem;
   transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
   white-space: nowrap;
+}
+
+.strategy-module-shell .admin-card,
+.strategy-module-shell .admin-metric,
+.strategy-module-shell .strategy-department-card {
+  border-radius: 16px;
+  border-color: var(--strategy-line);
+  box-shadow: 0 6px 18px rgba(17, 41, 28, 0.045);
 }
 
 .strategy-tab-btn svg {
