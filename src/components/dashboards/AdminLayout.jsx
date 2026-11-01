@@ -35,7 +35,6 @@ import { KenyaPoliticalNewsFab } from '../modules/KenyaPoliticalNewsPanel';
 
 const PRIMARY_MODULES = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'strategy_team', label: 'Strategy Team', icon: Users },
   { id: 'strategy', label: 'Strategy', icon: Target },
   { id: 'polling_stations', label: 'Polling Intel', icon: Building2 },
   { id: 'agents', label: 'Agent Management', icon: Users },
