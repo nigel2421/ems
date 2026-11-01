@@ -106,6 +106,17 @@ export const StrategyTeamModule = () => {
     });
   }, [strategyMembers, selectedDeptFilter, searchQuery]);
 
+  const openTasks = useMemo(() => strategyTasks
+    .filter((task) => !['COMPLETED', 'DONE'].includes(String(task.status).toUpperCase()))
+    .filter((task) => !searchQuery || `${task.title} ${task.assignedToName} ${task.status}`.toLowerCase().includes(searchQuery.toLowerCase()))
+    .slice(0, 8), [strategyTasks, searchQuery]);
+
+  const departmentSummary = useMemo(() => STRATEGY_DEPARTMENTS.map((department) => ({
+    ...department,
+    members: strategyMembers.filter((member) => member.departmentId === department.id).length,
+    tasks: strategyTasks.filter((task) => task.departmentId === department.id && String(task.status).toUpperCase() !== 'COMPLETED').length
+  })).sort((a, b) => (b.members + b.tasks) - (a.members + a.tasks)).slice(0, 5), [strategyMembers, strategyTasks]);
+
   // Add Member Handler
   const handleCreateMember = (e) => {
     e.preventDefault();
@@ -275,10 +286,9 @@ export const StrategyTeamModule = () => {
       {/* TAB 1: COMMAND DASHBOARD */}
       {activeTab === 'dashboard' && (
         <div className="strategy-dashboard-view">
-          {/* Zero Dead-KPI Summary Cards */}
-          <div className="strategy-summary-grid row g-3 mb-4">
+          <div className="strategy-summary-grid mb-3">
             <div className="col-12 col-sm-6 col-md-3">
-              <button type="button" className="admin-metric is-featured strategy-metric-button" onClick={() => setActiveTab('directory')}>
+              <button type="button" className="admin-metric strategy-metric-button strategy-kpi strategy-kpi-green" onClick={() => setActiveTab('directory')}>
                 <div className="admin-metric-top">
                   <span>Active Strategy Team</span>
                   <Users size={18} />
@@ -289,7 +299,7 @@ export const StrategyTeamModule = () => {
             </div>
 
             <div className="col-12 col-sm-6 col-md-3">
-              <button type="button" className="admin-metric strategy-metric-button" onClick={() => setActiveTab('tasks')}>
+              <button type="button" className="admin-metric strategy-metric-button strategy-kpi strategy-kpi-blue" onClick={() => setActiveTab('tasks')}>
                 <div className="admin-metric-top">
                   <span>Strategy Execution</span>
                   <CheckSquare size={18} />
@@ -302,7 +312,7 @@ export const StrategyTeamModule = () => {
             </div>
 
             <div className="col-12 col-sm-6 col-md-3">
-              <button type="button" className="admin-metric strategy-metric-button" onClick={() => setActiveTab('roadmap')}>
+              <button type="button" className="admin-metric strategy-metric-button strategy-kpi strategy-kpi-orange" onClick={() => setActiveTab('roadmap')}>
                 <div className="admin-metric-top">
                   <span>Roadmap Progress</span>
                   <TrendingUp size={18} />
@@ -313,7 +323,7 @@ export const StrategyTeamModule = () => {
             </div>
 
             <div className="col-12 col-sm-6 col-md-3">
-              <button type="button" className="admin-metric strategy-metric-button" onClick={() => setActiveTab('meetings')}>
+              <button type="button" className="admin-metric strategy-metric-button strategy-kpi strategy-kpi-red" onClick={() => setActiveTab('meetings')}>
                 <div className="admin-metric-top">
                   <span>Strategy Meetings</span>
                   <Calendar size={18} />
@@ -324,50 +334,46 @@ export const StrategyTeamModule = () => {
             </div>
           </div>
 
-          {/* Department Structure Grid */}
-          <div className="admin-card mb-4">
-            <div className="admin-card-head mb-3">
+          <div className="strategy-overview-grid">
+            <section className="admin-card strategy-overview-panel">
+              <div className="admin-card-head mb-2">
               <div>
-                <h2>Departments</h2>
-                <p>Team coverage and open work</p>
+                <h2>Priority work</h2>
+                <p>Open tasks across the campaign</p>
               </div>
-            </div>
+              </div>
+              <label className="strategy-overview-search">
+                <Search size={15} />
+                <input aria-label="Search open tasks" placeholder="Search tasks" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} />
+              </label>
+              <div className="strategy-compact-table-wrap">
+                <table className="strategy-compact-table">
+                  <thead><tr><th>Task</th><th>Owner</th><th>Due</th><th>Status</th></tr></thead>
+                  <tbody>{openTasks.map((task) => <tr key={task.id}>
+                    <td><strong>{task.title}</strong><small>{STRATEGY_DEPARTMENTS.find((department) => department.id === task.departmentId)?.name || 'Campaign'}</small></td>
+                    <td>{task.assignedToName || 'Unassigned'}</td>
+                    <td>{task.dueDate || '—'}</td>
+                    <td><span className={`strategy-task-status strategy-task-status-${String(task.status).toLowerCase().replaceAll(' ', '-')}`}>{task.status}</span></td>
+                  </tr>)}</tbody>
+                </table>
+                {!openTasks.length && <p className="strategy-empty-state">No open tasks match this search.</p>}
+              </div>
+              <button type="button" className="strategy-text-action" onClick={() => setActiveTab('tasks')}>View all tasks <ChevronRight size={14} /></button>
+            </section>
 
-            <div className="strategy-department-grid row g-3">
-              {STRATEGY_DEPARTMENTS.map(dept => {
-                const deptMembers = strategyMembers.filter(m => m.departmentId === dept.id);
-                const deptTasks = strategyTasks.filter(t => t.departmentId === dept.id);
-                return (
-                  <div key={dept.id} className="col-12 col-md-4">
-                    <div className="strategy-department-card p-3 rounded-xl border border-slate-800 bg-slate-900/60 h-100">
-                      <div className="d-flex align-items-center justify-content-between mb-2">
-                        <div className="d-flex align-items-center gap-2">
-                          <span className="strategy-dept-marker" style={{ backgroundColor: dept.color }} />
-                          <span className="font-bold text-slate-200 text-sm">{dept.name}</span>
-                        </div>
-                        <span className="badge bg-slate-800 text-slate-300 text-xs">
-                          {deptMembers.length} Members
-                        </span>
-                      </div>
-                      <div className="text-xs text-slate-400 mb-2">
-                        Positions: {DEPARTMENT_ROLES_MAP[dept.id]?.slice(0, 3).join(', ')}...
-                      </div>
-                      <div className="d-flex align-items-center justify-content-between pt-2 border-t border-slate-800 text-xs">
-                        <span className="text-slate-400">{deptTasks.length} Active Tasks</span>
-                        <button
-                          className="btn btn-link btn-sm text-cyan-400 p-0 text-xs"
-                          onClick={() => {
-                            setSelectedDeptFilter(dept.id);
-                            setActiveTab('directory');
-                          }}
-                        >
-                          View Department →
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="strategy-overview-side">
+              <section className="admin-card strategy-overview-panel">
+                <div className="admin-card-head mb-2"><div><h2>Team coverage</h2><p>People and active tasks</p></div></div>
+                <div className="strategy-coverage-list">{departmentSummary.map((department) => <button type="button" key={department.id} onClick={() => { setSelectedDeptFilter(department.id); setActiveTab('directory'); }}>
+                  <span className="strategy-dept-marker" style={{ backgroundColor: department.color }} />
+                  <span>{department.name}</span><strong>{department.members}</strong><small>{department.tasks} tasks</small>
+                </button>)}</div>
+                <button type="button" className="strategy-text-action" onClick={() => setActiveTab('directory')}>Open team directory <ChevronRight size={14} /></button>
+              </section>
+              <section className="admin-card strategy-overview-panel strategy-next-panel">
+                <div className="admin-card-head mb-2"><div><h2>Next milestone</h2><p>Campaign roadmap</p></div></div>
+                {campaignRoadmap[0] ? <><strong>{campaignRoadmap[0].phaseName}</strong><p>Target {campaignRoadmap[0].targetDate || 'date not set'}</p><button type="button" className="strategy-text-action" onClick={() => setActiveTab('roadmap')}>View roadmap <ChevronRight size={14} /></button></> : <p className="strategy-empty-state">No roadmap milestones yet.</p>}
+              </section>
             </div>
           </div>
         </div>
