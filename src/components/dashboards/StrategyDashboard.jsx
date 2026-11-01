@@ -43,9 +43,6 @@ export const StrategyDashboard = ({ onOpenModule, onOpenAIAssistant }) => {
           </p>
         </div>
         <div className="admin-head-actions">
-          <button type="button" className="admin-btn admin-btn-primary" onClick={() => onOpenModule('strategy_team')}>
-            Strategy Team Org
-          </button>
           <button type="button" className="admin-btn admin-btn-ghost" onClick={onOpenAIAssistant}>
             AI assistant
           </button>
