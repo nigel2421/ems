@@ -8,6 +8,18 @@ import {
 } from '../services/llmService.js';
 
 import {
+  resolveRealm,
+  hashPassword,
+  verifyPassword,
+  signToken,
+  verifyToken,
+  isAdminRole,
+  getLockoutState,
+  recordFailedAttempt,
+  resetFailedAttempts
+} from '../../server/auth.js';
+
+import {
   parsePollingStationsCSV,
   compressImageSimulation,
   processOCRForm34A
@@ -3816,6 +3828,150 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
   });
 
 });
+
+describe('Subdomain Realm Separation & Auth Security Tests', () => {
+
+  test('315. Host-bound realm resolution for admin subdomain vs user domain', () => {
+    // Admin console hosts
+    assert.equal(resolveRealm('ops-konsole.kuratech.site'), 'admin');
+    assert.equal(resolveRealm('ops-konsole.kuratech.site:443'), 'admin');
+    assert.equal(resolveRealm('ops-konsole.localhost'), 'admin');
+    assert.equal(resolveRealm('ops-konsole.localhost:5173'), 'admin');
+
+    // User campaign hosts
+    assert.equal(resolveRealm('kuratech.site'), 'user');
+    assert.equal(resolveRealm('kuratech.site:443'), 'user');
+    assert.equal(resolveRealm('www.kuratech.site'), 'user');
+    assert.equal(resolveRealm('localhost'), 'user');
+    assert.equal(resolveRealm('localhost:5173'), 'user');
+    assert.equal(resolveRealm(''), 'user');
+    assert.equal(resolveRealm(undefined), 'user');
+  });
+
+  test('316. scrypt password hashing & timing-safe verification', () => {
+    const rawPassword = 'TestScryptSecret123!#';
+    const hash = hashPassword(rawPassword);
+
+    assert.ok(hash.includes(':'), 'Hash must contain salt:key delimiter');
+    const [salt, key] = hash.split(':');
+    assert.equal(salt.length, 32, 'Salt must be 16 bytes (32 hex characters)');
+    assert.equal(key.length, 128, 'Key must be 64 bytes (128 hex characters)');
+
+    // Verify correct password
+    assert.equal(verifyPassword(rawPassword, hash), true);
+
+    // Verify incorrect passwords
+    assert.equal(verifyPassword('WrongPassword123!', hash), false);
+    assert.equal(verifyPassword('', hash), false);
+    assert.equal(verifyPassword(rawPassword, 'tampered:hash'), false);
+    assert.equal(verifyPassword(rawPassword, null), false);
+  });
+
+  test('317. HMAC-SHA256 session token generation and tamper detection', () => {
+    const payload = {
+      sub: 'USR-ADMIN-01',
+      email: 'admin.super@ems.go.ke',
+      role: 'Super Admin',
+      realm: 'admin'
+    };
+
+    const token = signToken(payload);
+    assert.ok(typeof token === 'string');
+    assert.equal(token.split('.').length, 3);
+
+    // Verify legitimate token
+    const verified = verifyToken(token);
+    assert.ok(verified !== null);
+    assert.equal(verified.sub, 'USR-ADMIN-01');
+    assert.equal(verified.role, 'Super Admin');
+    assert.equal(verified.realm, 'admin');
+    assert.ok(verified.exp > Date.now());
+
+    // Verify tampered signature fails
+    const tamperedSig = token.slice(0, -5) + 'xxxxx';
+    assert.equal(verifyToken(tamperedSig), null);
+
+    // Verify tampered payload fails
+    const [h, p, s] = token.split('.');
+    const tamperedPayload = Buffer.from(JSON.stringify({ ...payload, role: 'Super Admin', realm: 'tampered' })).toString('base64url');
+    assert.equal(verifyToken(`${h}.${tamperedPayload}.${s}`), null);
+  });
+
+  test('318. Cross-realm access denial enforcement logic', () => {
+    // Rule: Admins can ONLY authenticate on the 'admin' realm
+    const adminUser = { role: 'Super Admin', email: 'admin.super@ems.go.ke' };
+    const adminRoleUser = { role: 'Admin', email: 'admin.ops@ems.go.ke' };
+
+    // Rule: Non-admins can ONLY authenticate on the 'user' realm
+    const governorUser = { role: 'Governor', email: 'governor.nairobi@ems.go.ke' };
+    const agentUser = { role: 'Agent', email: 'james.agent@ems.go.ke' };
+
+    // Function simulating server cross-realm enforcement
+    const checkLoginAllowed = (userRole, realm) => {
+      const isAdm = isAdminRole(userRole);
+      if (realm === 'admin' && !isAdm) return { allowed: false, reason: 'USER_LOGIN_WRONG_DOMAIN' };
+      if (realm !== 'admin' && isAdm) return { allowed: false, reason: 'ADMIN_LOGIN_WRONG_DOMAIN' };
+      return { allowed: true };
+    };
+
+    // Test A1: Admin on user realm (kuratech.site) -> DENIED
+    const resA1 = checkLoginAllowed(adminUser.role, 'user');
+    assert.equal(resA1.allowed, false);
+    assert.equal(resA1.reason, 'ADMIN_LOGIN_WRONG_DOMAIN');
+
+    // Test A2: Admin on admin realm (ops-konsole.kuratech.site) -> ALLOWED
+    const resA2 = checkLoginAllowed(adminUser.role, 'admin');
+    assert.equal(resA2.allowed, true);
+
+    // Test A3: Campaign user on admin realm (ops-konsole.kuratech.site) -> DENIED
+    const resA3 = checkLoginAllowed(governorUser.role, 'admin');
+    assert.equal(resA3.allowed, false);
+    assert.equal(resA3.reason, 'USER_LOGIN_WRONG_DOMAIN');
+
+    const resA3b = checkLoginAllowed(agentUser.role, 'admin');
+    assert.equal(resA3b.allowed, false);
+    assert.equal(resA3b.reason, 'USER_LOGIN_WRONG_DOMAIN');
+
+    // Test A4: Campaign user on user realm (kuratech.site) -> ALLOWED
+    const resA4 = checkLoginAllowed(governorUser.role, 'user');
+    assert.equal(resA4.allowed, true);
+
+    const resA4b = checkLoginAllowed(agentUser.role, 'user');
+    assert.equal(resA4b.allowed, true);
+  });
+
+  test('319. Server-side failed attempt tracker and lockout trigger', () => {
+    const testEmail = 'probe.target@ems.go.ke';
+    resetFailedAttempts(testEmail);
+
+    // Initially clean
+    let state = getLockoutState(testEmail);
+    assert.equal(state.locked, false);
+    assert.equal(state.failures, 0);
+
+    // 4 failed attempts: not locked yet
+    for (let i = 1; i <= 4; i++) {
+      recordFailedAttempt(testEmail);
+      state = getLockoutState(testEmail);
+      assert.equal(state.locked, false);
+      assert.equal(state.failures, i);
+    }
+
+    // 5th failed attempt: triggers temporary lockout
+    recordFailedAttempt(testEmail);
+    state = getLockoutState(testEmail);
+    assert.equal(state.locked, true);
+    assert.ok(state.retryInMs > 0);
+
+    // Successful login clears failure counter
+    resetFailedAttempts(testEmail);
+    const cleared = getLockoutState(testEmail);
+    assert.equal(cleared.locked, false);
+    assert.equal(cleared.failures, 0);
+  });
+
+});
+
 
 
 

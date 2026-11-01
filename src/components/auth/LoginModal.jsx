@@ -8,7 +8,7 @@ import './LoginPage.css';
 
 const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
 
-export const LoginModal = () => {
+export const LoginModal = ({ isAdminConsole = false }) => {
   const { login, logoutReason, clearLogoutReason, getAccountLockState } = useAuth();
   const { geography } = useData();
   const [email, setEmail] = useState('');
@@ -72,18 +72,25 @@ export const LoginModal = () => {
     };
   }, [geography]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      const res = login(email, password);
+    try {
+      const res = await login(email, password);
       if (!res.success) {
         setError(res.error);
+        if (res.locked) {
+          setIsPermanentLock(!!res.permanent);
+          if (res.retryInMs) setLockCountdown(Math.ceil(res.retryInMs / 1000));
+        }
       }
+    } catch {
+      setError('An unexpected error occurred during sign in.');
+    } finally {
       setIsSubmitting(false);
-    }, 280);
+    }
   };
 
   return (
@@ -91,12 +98,23 @@ export const LoginModal = () => {
       <div className="auth-frame">
         <aside className="auth-brand">
           <p className="auth-brand-kicker">
-            Authorised officer access — polling operations, field reporting, and election-day results.
+            {isAdminConsole
+              ? 'Authorised system governance — infrastructure telemetry, cryptographic audit logs, and account oversight.'
+              : 'Authorised officer access — polling operations, field reporting, and election-day results.'}
           </p>
 
           <h1>
-            Election
-            <span>Management</span>
+            {isAdminConsole ? (
+              <>
+                Operations
+                <span>Console</span>
+              </>
+            ) : (
+              <>
+                Election
+                <span>Management</span>
+              </>
+            )}
           </h1>
 
           <div className="auth-device">
@@ -234,44 +252,49 @@ export const LoginModal = () => {
           {!import.meta.env?.PROD && (
             <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 600, letterSpacing: '0.04em' }}>
-                DEMO PERSONAS (STAGING ONLY)
+                DEV PERSONAS (PRE-FILL EMAIL ONLY)
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                <button
-                  type="button"
-                  onClick={() => { setEmail('admin.super@ems.go.ke'); setPassword('dev-local-only-password'); }}
-                  style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: 'var(--text-primary)', cursor: 'pointer' }}
-                >
-                  Super Admin
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setEmail('governor.nairobi@ems.go.ke'); setPassword('dev-local-only-password'); }}
-                  style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.3)', color: '#06b6d4', cursor: 'pointer' }}
-                >
-                  Gov Nairobi
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setEmail('mp.westlands@ems.go.ke'); setPassword('dev-local-only-password'); }}
-                  style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.3)', color: '#06b6d4', cursor: 'pointer' }}
-                >
-                  MP Westlands (Nairobi)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setEmail('mp.nyali@ems.go.ke'); setPassword('dev-local-only-password'); }}
-                  style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', cursor: 'pointer' }}
-                >
-                  MP Nyali (Mombasa)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setEmail('governor.mombasa@ems.go.ke'); setPassword('dev-local-only-password'); }}
-                  style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', cursor: 'pointer' }}
-                >
-                  Gov Mombasa
-                </button>
+                {isAdminConsole ? (
+                  <button
+                    type="button"
+                    onClick={() => { setEmail('admin.super@ems.go.ke'); setPassword(''); }}
+                    style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'rgba(2,132,199,0.15)', border: '1px solid rgba(2,132,199,0.35)', color: '#38bdf8', cursor: 'pointer' }}
+                  >
+                    Super Admin (admin.super@ems.go.ke)
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => { setEmail('governor.nairobi@ems.go.ke'); setPassword(''); }}
+                      style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.3)', color: '#06b6d4', cursor: 'pointer' }}
+                    >
+                      Gov Nairobi
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setEmail('mp.westlands@ems.go.ke'); setPassword(''); }}
+                      style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.3)', color: '#06b6d4', cursor: 'pointer' }}
+                    >
+                      MP Westlands (Nairobi)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setEmail('mp.nyali@ems.go.ke'); setPassword(''); }}
+                      style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', cursor: 'pointer' }}
+                    >
+                      MP Nyali (Mombasa)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setEmail('governor.mombasa@ems.go.ke'); setPassword(''); }}
+                      style={{ fontSize: '0.72rem', padding: '0.25rem 0.5rem', borderRadius: '4px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', cursor: 'pointer' }}
+                    >
+                      Gov Mombasa
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )}

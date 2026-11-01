@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 
 export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, currentModule }) => {
-  const { currentUser, users, switchUser, logout } = useAuth();
+  const { currentUser, users, logout } = useAuth();
   const { tallyResults } = useData();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showMobileNavDrawer, setShowMobileNavDrawer] = useState(false);

@@ -1,0 +1,16 @@
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { AuthProvider } from '../context/AuthContext';
+import { DataProvider } from '../context/DataContext';
+import { AdminApp } from './AdminApp';
+import '../index.css';
+
+ReactDOM.createRoot(document.getElementById('admin-root')).render(
+  <React.StrictMode>
+    <AuthProvider>
+      <DataProvider>
+        <AdminApp />
+      </DataProvider>
+    </AuthProvider>
+  </React.StrictMode>
+);

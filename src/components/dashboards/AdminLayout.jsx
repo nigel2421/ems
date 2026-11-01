@@ -94,7 +94,7 @@ export const AdminLayout = ({
   onToggleProfilePanel,
   onCloseProfilePanel
 }) => {
-  const { currentUser, users, switchUser, logout, canAccessModule, userScope } = useAuth();
+  const { currentUser, users, logout, canAccessModule, userScope } = useAuth();
   const { tallyResults, geography } = useData();
   const [showMore, setShowMore] = useState(false);
   const [showAgentMenu, setShowAgentMenu] = useState(false);
@@ -163,17 +163,7 @@ export const AdminLayout = ({
     onOpenModule?.('dashboard');
   };
 
-  const handleSwitchPersona = (userId) => {
-    switchUser(userId);
-    onCloseProfilePanel?.();
-    onOpenModule?.('dashboard');
-    onAdminPanelChange?.('overview');
-  };
-
   const toolsLabel = isAdmin ? 'Admin tools' : 'Workspace';
-
-  const isDevMode = import.meta.env?.DEV || import.meta.env?.VITE_DEV_MODE === 'true' || true;
-  const isImpersonating = currentUser && currentUser.id !== 'USR-SUPERADMIN-01' && currentUser.id !== 'USR-ADMIN-01';
 
   return (
     <div className={`admin-layout${asideOpen ? ' is-aside-open' : ''}`}>

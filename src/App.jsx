@@ -99,13 +99,31 @@ const MainAppContent = () => {
       case 'Super Admin':
       case 'Admin':
         return (
-          <AdminDashboard
-            activeTab={adminPanel}
-            onTabChange={setAdminPanel}
-            onOpenAuditLogs={() => setShowAuditLogs(true)}
-            onOpenGeographic={() => setCurrentModule('polling_stations')}
-            onOpenModule={openModule}
-          />
+          <div style={{ padding: '3rem 1.5rem', textAlign: 'center', maxWidth: '580px', margin: '4rem auto', background: 'var(--bg-surface, #1e293b)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary, #fff)', marginBottom: '0.75rem' }}>
+              Operations Console Relocated
+            </h2>
+            <p style={{ color: 'var(--text-muted, #94a3b8)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+              Administrative tools and system governance functions are exclusively available on the dedicated Kuratech Operations Console subdomain.
+            </p>
+            <a
+              href="https://ops-konsole.kuratech.site"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.65rem 1.25rem',
+                background: '#0284c7',
+                color: '#fff',
+                borderRadius: '8px',
+                fontWeight: 600,
+                textDecoration: 'none',
+                boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)'
+              }}
+            >
+              Open ops-konsole.kuratech.site
+            </a>
+          </div>
         );
       case 'Strategy Team':
       case 'Governor':

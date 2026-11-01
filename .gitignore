@@ -26,3 +26,7 @@ ems_database.sqlite
 *.njsproj
 *.sln
 *.sw?
+.data
+.data/*
+users.json
+*.bak

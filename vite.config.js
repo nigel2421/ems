@@ -172,9 +172,23 @@ export default defineConfig({
   // This app is served from its own domain root (for example kuratech.site).
   base: '/',
   plugins: [react(), emsDevServerPlugin()],
+  server: {
+    allowedHosts: ['localhost', 'ops-konsole.localhost', '.localhost'],
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:5000',
+        changeOrigin: false,
+        xfwd: true
+      }
+    }
+  },
   build: {
     chunkSizeWarningLimit: 10000,
     rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        admin: path.resolve(__dirname, 'admin.html')
+      },
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {

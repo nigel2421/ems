@@ -164,7 +164,34 @@ export const AuthProvider = ({ children }) => {
     sessionStorage.setItem('ems_is_authenticated', JSON.stringify(isAuthenticated));
   }, [isAuthenticated]);
 
-  const login = (email, password) => {
+  // Verify session on mount with server cookie
+  useEffect(() => {
+    let active = true;
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (!active) return;
+        if (data && data.authenticated && data.user) {
+          setCurrentUser(data.user);
+          setIsAuthenticated(true);
+          sessionStorage.setItem('ems_current_user', JSON.stringify(data.user));
+          sessionStorage.setItem('ems_is_authenticated', 'true');
+        } else if (data && !data.authenticated) {
+          setCurrentUser(null);
+          setIsAuthenticated(false);
+          sessionStorage.removeItem('ems_current_user');
+          sessionStorage.setItem('ems_is_authenticated', 'false');
+        }
+      })
+      .catch(() => {
+        // Dev server or offline fallback: keep sessionStorage state
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const login = async (email, password) => {
     const cleanEmail = normaliseEmail(email);
     const telemetry = getDeviceTelemetry();
 
@@ -195,62 +222,76 @@ export const AuthProvider = ({ children }) => {
       };
     }
 
-    const foundUser = users.find(
-      u => u.email.toLowerCase() === cleanEmail && u.password === password
-    );
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email: cleanEmail, password })
+      });
+      const data = await res.json().catch(() => ({}));
 
-    const logEntry = {
-      id: `LOG-LOGIN-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      timestamp: new Date().toISOString(),
-      email: cleanEmail || 'unknown@user',
-      userName: foundUser ? foundUser.name : (cleanEmail || 'Unknown User'),
-      role: foundUser ? foundUser.role : 'Unauthenticated',
-      ipAddress: telemetry.ipAddress,
-      geoLocation: telemetry.geoLocation,
-      deviceType: telemetry.deviceType,
-      os: telemetry.os,
-      browser: telemetry.browser,
-      status: foundUser ? 'Success' : 'Failure',
-      failureReason: foundUser ? null : 'Invalid email address or password credentials'
-    };
+      const isSuccess = res.ok && data.success;
+      const authedUser = isSuccess ? data.user : null;
 
-    setLoginActivityLogs(prev => [logEntry, ...prev]);
+      const logEntry = {
+        id: `LOG-LOGIN-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        timestamp: new Date().toISOString(),
+        email: cleanEmail || 'unknown@user',
+        userName: authedUser ? authedUser.name : (cleanEmail || 'Unknown User'),
+        role: authedUser ? authedUser.role : 'Unauthenticated',
+        ipAddress: telemetry.ipAddress,
+        geoLocation: telemetry.geoLocation,
+        deviceType: telemetry.deviceType,
+        os: telemetry.os,
+        browser: telemetry.browser,
+        status: isSuccess ? 'Success' : 'Failure',
+        failureReason: isSuccess ? null : (data.error || 'Invalid email address or password credentials')
+      };
 
-    if (foundUser) {
-      const nextStore = recordSuccess(freshStore, cleanEmail);
+      setLoginActivityLogs(prev => [logEntry, ...prev]);
+
+      if (isSuccess && authedUser) {
+        const nextStore = recordSuccess(freshStore, cleanEmail);
+        saveThrottleStore(nextStore);
+        setThrottleStore(nextStore);
+        setCurrentUser(authedUser);
+        setIsAuthenticated(true);
+        setIs2FAVerified(!authedUser.twoFactorEnabled);
+        setLogoutReason(null);
+        sessionStorage.removeItem(LOGOUT_REASON_KEY);
+        sessionStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+        sessionStorage.setItem('ems_current_user', JSON.stringify(authedUser));
+        sessionStorage.setItem('ems_is_authenticated', 'true');
+        return { success: true, user: authedUser };
+      }
+
+      const nextStore = recordFailure(freshStore, cleanEmail);
       saveThrottleStore(nextStore);
       setThrottleStore(nextStore);
-      setCurrentUser(foundUser);
-      setIsAuthenticated(true);
-      setIs2FAVerified(!foundUser.twoFactorEnabled);
-      setLogoutReason(null);
-      sessionStorage.removeItem(LOGOUT_REASON_KEY);
-      sessionStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
-      sessionStorage.setItem('ems_current_user', JSON.stringify(foundUser));
-      sessionStorage.setItem('ems_is_authenticated', 'true');
-      return { success: true, user: foundUser };
-    }
+      const after = getLockState(nextStore, cleanEmail);
+      if (after.locked || data.locked) {
+        const perm = after.permanent || data.permanent;
+        const retry = after.retryInMs || data.retryInMs || 0;
+        return {
+          success: false,
+          locked: true,
+          permanent: !!perm,
+          retryInMs: retry,
+          error: perm ? LOCKED_PERMANENT_MESSAGE : LOCKED_TEMP_MESSAGE
+        };
+      }
 
-    const nextStore = recordFailure(freshStore, cleanEmail);
-    saveThrottleStore(nextStore);
-    setThrottleStore(nextStore);
-    const after = getLockState(nextStore, cleanEmail);
-    if (after.locked) {
-      return {
-        success: false,
-        locked: true,
-        permanent: !!after.permanent,
-        retryInMs: after.retryInMs || 0,
-        error: after.permanent ? LOCKED_PERMANENT_MESSAGE : LOCKED_TEMP_MESSAGE
-      };
+      return { success: false, error: data.error || 'Invalid email address or password credentials.' };
+    } catch {
+      return { success: false, error: 'Unable to reach the authentication service. Please verify server connection.' };
     }
-
-    return { success: false, error: 'Invalid email address or password credentials.' };
   };
 
   // logout() may be wired directly to onClick, so only accept string reasons
   const logout = (reason) => {
     const why = typeof reason === 'string' ? reason : null;
+    fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
     setIsAuthenticated(false);
     setCurrentUser(null);
     setLogoutReason(why);
@@ -276,13 +317,9 @@ export const AuthProvider = ({ children }) => {
     setThrottleStore(nextStore);
   };
 
-  const switchUser = (userId) => {
-    const found = users.find(u => u.id === userId);
-    if (found) {
-      setCurrentUser(found);
-      setIsAuthenticated(true);
-      setIs2FAVerified(!found.twoFactorEnabled);
-    }
+  const switchUser = () => {
+    // Impersonation is disabled for operational security
+    console.warn('[EMS-AUTH] switchUser() is disabled. Authenticate with official credentials.');
   };
 
   const addUser = (newUser) => {
