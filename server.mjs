@@ -94,6 +94,6 @@ const server = http.createServer((req, res) => {
   res.end(JSON.stringify({ error: 'Endpoint not found' }));
 });
 
-server.listen(PORT, () => {
-  console.log(`EMS Common Database Server running on port ${PORT}`);
+server.listen(PORT, '127.0.0.1', () => {
+  console.log(`EMS Common Database Server running on 127.0.0.1:${PORT}`);
 });

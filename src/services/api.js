@@ -51,6 +51,8 @@ export const parsePollingStationsCSV = (csvText) => {
         constituency: cleanValues[3] || 'Westlands',
         ward: cleanValues[4] || 'Westlands Ward',
         village: cleanValues[5] || 'Village Central',
+        latitude: Number.isFinite(Number(cleanValues[9])) ? Number(cleanValues[9]) : undefined,
+        longitude: Number.isFinite(Number(cleanValues[10])) ? Number(cleanValues[10]) : undefined,
         registeredVoters: parseInt(cleanValues[6]) || Math.floor(400 + Math.random() * 600),
         activeVoters: parseInt(cleanValues[7]) || Math.floor(300 + Math.random() * 400),
         historicalTurnoutPct: parseFloat(cleanValues[8]) || parseFloat((70 + Math.random() * 20).toFixed(1))

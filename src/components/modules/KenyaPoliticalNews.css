@@ -11,7 +11,7 @@
 .psi-news-fab {
   position: fixed;
   bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
-  right: 1.25rem;
+  right: 1.1rem;
   z-index: 1200;
   appearance: none;
   display: inline-flex;
@@ -24,10 +24,16 @@
   background: linear-gradient(160deg, #006B3F 0%, #073322 100%);
   color: #fff;
   font: inherit;
-  cursor: pointer;
   box-shadow: 0 8px 24px rgba(7, 51, 34, 0.35);
   writing-mode: horizontal-tb;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  transition: transform 0.1s ease, filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+.psi-news-fab:active {
+  cursor: grabbing;
 }
 
 .psi-news-fab.is-minimized {
@@ -37,6 +43,21 @@
 
 .psi-news-fab.is-minimized .psi-news-fab-copy {
   display: none;
+}
+
+.psi-news-enable {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1199;
+  border: 1px solid #dce5df;
+  border-radius: 999px;
+  background: #fff;
+  color: #073322;
+  padding: .45rem .75rem;
+  font: 600 .75rem/1.2 inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(7,51,34,.12);
 }
 
 .psi-news-fab svg {

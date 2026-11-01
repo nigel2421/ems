@@ -103,7 +103,8 @@ function emsDevServerPlugin() {
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/ems/',
+  // This app is served from its own domain root (for example kuratech.site).
+  base: '/',
   plugins: [react(), emsDevServerPlugin()],
   build: {
     chunkSizeWarningLimit: 10000,

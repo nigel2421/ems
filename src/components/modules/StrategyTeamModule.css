@@ -8,14 +8,19 @@
   --strategy-surface: var(--admin-surface, #fff);
   --strategy-canvas: var(--admin-canvas, #f3f6f4);
   min-height: calc(100vh - 2rem);
-  padding: 1.25rem;
+  padding: 1rem;
   background: var(--strategy-canvas);
   color: var(--strategy-ink);
   font-family: var(--admin-font, 'Inter', 'Segoe UI', system-ui, sans-serif);
 }
 
 .strategy-module-head {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--strategy-line);
+  border-radius: 12px;
+  background: var(--strategy-surface);
+  box-shadow: none;
 }
 
 .strategy-module-head h1 {
@@ -62,11 +67,13 @@
 
 .strategy-tab-nav {
   display: flex;
-  gap: 0.45rem;
+  gap: 0.25rem;
   overflow-x: auto;
-  border-bottom: 1px solid var(--strategy-line);
-  padding: 0 0.1rem 0.7rem;
-  margin-bottom: 1rem;
+  border: 1px solid var(--strategy-line);
+  border-radius: 12px;
+  background: var(--strategy-surface);
+  padding: 0.3rem;
+  margin-bottom: 0.75rem;
   scrollbar-width: thin;
 }
 
@@ -75,10 +82,10 @@
   background: var(--strategy-surface);
   border: 1px solid var(--strategy-line);
   color: var(--strategy-muted);
-  padding: 0.6rem 0.85rem;
-  border-radius: 12px;
+  padding: 0.5rem 0.7rem;
+  border-radius: 9px;
   font: inherit;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 650;
   cursor: pointer;
   display: inline-flex;
@@ -87,6 +94,55 @@
   gap: 0.45rem;
   transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
   white-space: nowrap;
+}
+
+.strategy-module-shell .admin-card,
+.strategy-module-shell .admin-metric,
+.strategy-module-shell .strategy-department-card {
+  border-radius: 12px;
+  border-color: var(--strategy-line);
+  box-shadow: none;
+}
+
+/* Compact, high contrast cards for the Strategy Team workspace. */
+.strategy-module-shell .admin-card-head h2,
+.strategy-module-shell .admin-card h2,
+.strategy-module-shell .strategy-department-card > * {
+  color: #fff;
+}
+
+.strategy-module-shell .admin-card-head p { color: rgba(255,255,255,.7); }
+
+.strategy-module-shell .admin-card,
+.strategy-module-shell .strategy-department-card {
+  background: #17211d;
+  border-color: #293831;
+}
+
+.strategy-tab-btn small {
+  min-width: 1.25rem;
+  padding: .12rem .35rem;
+  border-radius: 999px;
+  background: rgba(17, 41, 28, .08);
+  font-size: .68rem;
+  line-height: 1.2;
+}
+
+.strategy-tab-btn.active small { background: rgba(255,255,255,.18); }
+
+.strategy-module-shell .strategy-metric-button {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.strategy-module-shell .strategy-empty-state {
+  padding: 1rem;
+  border: 1px dashed var(--strategy-line);
+  border-radius: 10px;
+  color: var(--strategy-muted);
+  text-align: center;
 }
 
 .strategy-tab-btn svg {
@@ -120,6 +176,7 @@
 .strategy-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .65rem;
 }
 
 .strategy-summary-grid > [class*="col-"] {
@@ -132,6 +189,66 @@
   cursor: pointer;
   transition: transform 0.16s ease, box-shadow 0.16s ease;
 }
+
+.strategy-kpi {
+  min-height: 112px;
+  padding: .8rem .9rem;
+  border: 0;
+  border-radius: 10px;
+  color: #fff !important;
+}
+
+.strategy-kpi .admin-metric-top,
+.strategy-kpi .admin-metric-top svg,
+.strategy-kpi strong,
+.strategy-kpi small { color: #fff !important; }
+.strategy-kpi-green { background: #0d9b62 !important; }
+.strategy-kpi-blue { background: #4267b2 !important; }
+.strategy-kpi-orange { background: #eb7d27 !important; }
+.strategy-kpi-red { background: #d9534f !important; }
+.strategy-kpi:hover { filter: brightness(1.04); }
+
+.strategy-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(260px, .9fr);
+  gap: .75rem;
+  align-items: start;
+}
+
+.strategy-overview-side { display: grid; gap: .75rem; }
+.strategy-overview-panel { padding: .9rem; }
+.strategy-overview-panel .admin-card-head h2 { font-size: .95rem; }
+.strategy-overview-panel .admin-card-head p { font-size: .75rem; }
+
+.strategy-overview-search {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  margin: .55rem 0;
+  padding: .35rem .55rem;
+  border: 1px solid var(--strategy-line);
+  border-radius: 7px;
+  color: var(--strategy-muted);
+}
+.strategy-overview-search input { width: 100%; border: 0; outline: 0; color: var(--strategy-ink); background: transparent; font: inherit; font-size: .78rem; }
+
+.strategy-compact-table-wrap { overflow-x: auto; }
+.strategy-compact-table { width: 100%; border-collapse: collapse; font-size: .75rem; }
+.strategy-compact-table th { padding: .45rem .5rem; text-align: left; color: var(--strategy-muted); background: var(--strategy-canvas); font-size: .68rem; font-weight: 700; }
+.strategy-compact-table td { padding: .5rem; border-bottom: 1px solid var(--strategy-line); color: var(--strategy-ink); white-space: nowrap; }
+.strategy-compact-table td:first-child { white-space: normal; min-width: 150px; }
+.strategy-compact-table td strong,.strategy-compact-table td small { display: block; }
+.strategy-compact-table td small { margin-top: .15rem; color: var(--strategy-muted); font-size: .67rem; }
+.strategy-task-status { display: inline-flex; padding: .2rem .4rem; border-radius: 999px; background: #eef2ff; color: #475569; font-size: .65rem; font-weight: 700; }
+.strategy-task-status-blocked { background: #fff0f0; color: #a32d36; }
+.strategy-task-status-in-progress { background: #fff5e6; color: #9a5b06; }
+.strategy-text-action { display: inline-flex; align-items: center; gap: .15rem; margin-top: .6rem; padding: 0; border: 0; background: none; color: var(--strategy-green); font: inherit; font-size: .75rem; font-weight: 700; cursor: pointer; }
+.strategy-coverage-list { display: grid; }
+.strategy-coverage-list button { display: grid; grid-template-columns: 10px minmax(0,1fr) auto; align-items: center; gap: .4rem; padding: .48rem .1rem; border: 0; border-bottom: 1px solid var(--strategy-line); background: transparent; text-align: left; color: var(--strategy-ink); font: inherit; font-size: .75rem; cursor: pointer; }
+.strategy-coverage-list button strong { font-size: .75rem; }
+.strategy-coverage-list button small { grid-column: 2 / 4; color: var(--strategy-muted); font-size: .67rem; }
+.strategy-next-panel > strong { display: block; font-size: .9rem; }
+.strategy-next-panel > p { margin: .2rem 0; color: var(--strategy-muted); font-size: .75rem; }
 
 .strategy-summary-grid .admin-metric:hover {
   transform: translateY(-2px);
@@ -360,6 +477,8 @@
 }
 
 .org-tree-node {
+  appearance: none;
+  font: inherit;
   min-width: 220px;
   padding: 1rem 1.1rem;
   text-align: center;
@@ -504,16 +623,35 @@
 }
 
 .strategy-module-shell .scoped-location-sieve {
-  border: 1px solid var(--strategy-line);
-  border-radius: 16px;
-  background: var(--strategy-surface);
-  color: var(--strategy-ink);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #293831;
+  border-radius: 14px;
+  padding: .85rem;
+  background: linear-gradient(125deg, #17211d, #202e28 70%, #183c2b);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(7, 51, 34, .12);
 }
 
 .strategy-module-shell .locked-scope-header {
-  border: 1px solid var(--strategy-line);
-  border-radius: 12px;
-  background: var(--strategy-canvas);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 10px;
+  background: rgba(255,255,255,.07);
+  padding: .65rem .75rem;
+}
+
+.strategy-module-shell .scoped-location-sieve .locked-scope-header,
+.strategy-module-shell .scoped-location-sieve .locked-scope-header * {
+  color: #fff !important;
+}
+
+.strategy-module-shell .scoped-location-sieve .locked-scope-header .badge {
+  background: rgba(255,255,255,.11) !important;
+  border-color: rgba(255,255,255,.16) !important;
+}
+
+.strategy-module-shell .scoped-location-sieve .locked-scope-header .badge svg {
+  color: #c8ded1;
 }
 
 .strategy-module-shell .scoped-location-sieve .badge {
@@ -527,13 +665,14 @@
 }
 
 .strategy-module-shell .scoped-location-sieve .form-label {
-  color: var(--strategy-muted);
+  color: rgba(255,255,255,.75);
 }
 
 .strategy-module-shell .scoped-location-sieve .form-select {
-  background: var(--strategy-surface) !important;
-  border-color: var(--strategy-line) !important;
-  color: var(--strategy-ink) !important;
+  min-height: 38px;
+  background: rgba(255,255,255,.96) !important;
+  border-color: rgba(255,255,255,.3) !important;
+  color: #1a1f1c !important;
 }
 
 .strategy-module-shell .breadcrumb-nav {
@@ -626,6 +765,10 @@
   .strategy-department-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+@media (max-width: 850px) {
+  .strategy-overview-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 700px) {

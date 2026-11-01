@@ -1,24 +1,20 @@
-name: Deploy to GitHub Pages
+name: Deploy Kuratech to VPS
 
 on:
   push:
-    branches: ["main", "master"]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: "pages"
+  group: kuratech-vps-deploy
   cancel-in-progress: true
 
 jobs:
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -28,19 +24,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build site
         run: npm run build
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload site to VPS
+        uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345
         with:
-          path: './dist'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          fingerprint: ${{ secrets.VPS_FINGERPRINT }}
+          source: dist/*
+          target: ${{ secrets.VPS_TARGET }}
+          strip_components: 1

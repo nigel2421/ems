@@ -333,14 +333,6 @@ export const buildJurisdictionAnalytics = (user, geography) => {
 };
 
 export const CHART_COLORS = [
-  '#006B3F',
-  '#0E7A45',
-  '#C9A227',
-  '#2A9D8F',
-  '#073322',
-  '#BB0A21',
-  '#3D5A80',
-  '#A7C4B5',
-  '#E76F51',
-  '#8ECAE6'
+  '#2563EB', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6',
+  '#06B6D4', '#F97316', '#64748B', '#DB2777', '#84CC16'
 ];
