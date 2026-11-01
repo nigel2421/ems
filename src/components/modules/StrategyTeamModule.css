@@ -104,6 +104,21 @@
   box-shadow: none;
 }
 
+/* Compact, high contrast cards for the Strategy Team workspace. */
+.strategy-module-shell .admin-card-head h2,
+.strategy-module-shell .admin-card h2,
+.strategy-module-shell .strategy-department-card > * {
+  color: #fff;
+}
+
+.strategy-module-shell .admin-card-head p { color: rgba(255,255,255,.7); }
+
+.strategy-module-shell .admin-card,
+.strategy-module-shell .strategy-department-card {
+  background: #17211d;
+  border-color: #293831;
+}
+
 .strategy-tab-btn small {
   min-width: 1.25rem;
   padding: .12rem .35rem;
@@ -608,16 +623,35 @@
 }
 
 .strategy-module-shell .scoped-location-sieve {
-  border: 1px solid var(--strategy-line);
-  border-radius: 16px;
-  background: var(--strategy-surface);
-  color: var(--strategy-ink);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #293831;
+  border-radius: 14px;
+  padding: .85rem;
+  background: linear-gradient(125deg, #17211d, #202e28 70%, #183c2b);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(7, 51, 34, .12);
 }
 
 .strategy-module-shell .locked-scope-header {
-  border: 1px solid var(--strategy-line);
-  border-radius: 12px;
-  background: var(--strategy-canvas);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 10px;
+  background: rgba(255,255,255,.07);
+  padding: .65rem .75rem;
+}
+
+.strategy-module-shell .scoped-location-sieve .locked-scope-header,
+.strategy-module-shell .scoped-location-sieve .locked-scope-header * {
+  color: #fff !important;
+}
+
+.strategy-module-shell .scoped-location-sieve .locked-scope-header .badge {
+  background: rgba(255,255,255,.11) !important;
+  border-color: rgba(255,255,255,.16) !important;
+}
+
+.strategy-module-shell .scoped-location-sieve .locked-scope-header .badge svg {
+  color: #c8ded1;
 }
 
 .strategy-module-shell .scoped-location-sieve .badge {
@@ -631,13 +665,14 @@
 }
 
 .strategy-module-shell .scoped-location-sieve .form-label {
-  color: var(--strategy-muted);
+  color: rgba(255,255,255,.75);
 }
 
 .strategy-module-shell .scoped-location-sieve .form-select {
-  background: var(--strategy-surface) !important;
-  border-color: var(--strategy-line) !important;
-  color: var(--strategy-ink) !important;
+  min-height: 38px;
+  background: rgba(255,255,255,.96) !important;
+  border-color: rgba(255,255,255,.3) !important;
+  color: #1a1f1c !important;
 }
 
 .strategy-module-shell .breadcrumb-nav {
