@@ -17,7 +17,8 @@ import {
   ShieldAlert,
   Users,
   MoreHorizontal,
-  Lock
+  Lock,
+  Maximize2
 } from 'lucide-react';
 import {
   resolveJurisdiction,
@@ -89,7 +90,7 @@ const resolveLocation = (ps, lookups) => {
   };
 };
 
-const PollingStationIntelligenceInner = () => {
+const PollingStationIntelligenceInner = ({ onOpenModule }) => {
   const { currentUser } = useAuth();
   const { geography, stationIntelligence, updateStationIntelligence, bulkImportPollingStations } = useData();
 
@@ -261,10 +262,19 @@ const PollingStationIntelligenceInner = () => {
     const longitude = Number(station.longitude ?? station.lng ?? station.lon);
     return { station, latitude, longitude };
   }).filter(({ latitude, longitude }) => Number.isFinite(latitude) && Number.isFinite(longitude) && Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180), [filteredStations]);
-  const mapCenter = mapStations.length
-    ? `${mapStations[0].latitude},${mapStations[0].longitude}`
-    : '-1.286389,36.817223';
-  const mapQuery = mapStations.map(({ latitude, longitude }) => `${latitude},${longitude}`).join('|');
+
+  // Centroid calculation for accurate auto-centering of filtered set
+  const mapCenter = useMemo(() => {
+    if (!mapStations.length) return '-1.286389,36.817223';
+    const sumLat = mapStations.reduce((acc, s) => acc + s.latitude, 0);
+    const sumLng = mapStations.reduce((acc, s) => acc + s.longitude, 0);
+    return `${(sumLat / mapStations.length).toFixed(6)},${(sumLng / mapStations.length).toFixed(6)}`;
+  }, [mapStations]);
+
+  // Clamped to top 20 representative stations with 5 decimal precision to prevent HTTP 414 URL overflow
+  const mapQuery = useMemo(() => {
+    return mapStations.slice(0, 20).map(({ latitude, longitude }) => `${latitude.toFixed(5)},${longitude.toFixed(5)}`).join('|');
+  }, [mapStations]);
 
   const rangeStart = filteredStations.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const rangeEnd = Math.min(page * PAGE_SIZE, filteredStations.length);
@@ -642,10 +652,38 @@ const PollingStationIntelligenceInner = () => {
 
       {activeTab === 'gis' && (
         <article className="psi-panel">
-          <div className="psi-panel-head">
+          <div className="psi-panel-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
-              <h2>Geo Inspector map</h2>
-              <p className="psi-error-copy" style={{ marginTop: '.25rem' }}>{mapStations.length} of {filteredStations.length} filtered stations have coordinates. CSV imports may include latitude and longitude as columns 10 and 11.</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                <h2>Geo Inspector map</h2>
+                {onOpenModule && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenModule('interactive_map', {
+                      countyId: selectedCounty,
+                      countyName: selectedCountyName
+                    })}
+                    className="admin-btn admin-btn-secondary"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      padding: '0.35rem 0.75rem',
+                      fontSize: '0.8rem',
+                      borderRadius: '6px',
+                      cursor: 'pointer'
+                    }}
+                    title="Launch full interactive Satellite & Stream Hubs Map Room"
+                  >
+                    <Maximize2 size={14} />
+                    <span>Open in Electoral Map Room</span>
+                  </button>
+                )}
+              </div>
+              <p className="psi-error-copy" style={{ marginTop: '.25rem' }}>
+                {mapStations.length} of {filteredStations.length} filtered stations have coordinates.
+                {mapStations.length > 20 && ' Showing top 20 station pins in preview.'} CSV imports may include latitude and longitude as columns 10 and 11.
+              </p>
             </div>
             <div className="psi-legend">
               <span><i className="psi-dot low" /> Stronghold / lean</span>
@@ -1022,8 +1060,8 @@ const PollingStationIntelligenceInner = () => {
   );
 };
 
-export const PollingStationIntelligence = () => (
+export const PollingStationIntelligence = (props) => (
   <PsiErrorBoundary>
-    <PollingStationIntelligenceInner />
+    <PollingStationIntelligenceInner {...props} />
   </PsiErrorBoundary>
 );

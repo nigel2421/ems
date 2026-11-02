@@ -3970,6 +3970,36 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     assert.equal(cleared.failures, 0);
   });
 
+  test('320. Polling Station Intelligence GIS map query clamping prevents HTTP 414 URL overflow', () => {
+    // Generate 3,565 simulated stations (mimicking full Nairobi county)
+    const simulatedStations = Array.from({ length: 3565 }, (_, i) => ({
+      latitude: -1.286389 + (i * 0.0001),
+      longitude: 36.817223 + (i * 0.0001)
+    }));
+
+    // Naive concatenation would produce >60,000 characters
+    const naiveQuery = simulatedStations.map(s => `${s.latitude},${s.longitude}`).join('|');
+    assert.ok(naiveQuery.length > 50000, 'Naive concatenation exceeds safe HTTP URI limits');
+
+    // Clamped query (top 20 stations, 5 decimal precision)
+    const clampedQuery = simulatedStations.slice(0, 20).map(s => `${s.latitude.toFixed(5)},${s.longitude.toFixed(5)}`).join('|');
+    assert.ok(clampedQuery.length < 500, 'Clamped query must remain safely under 500 characters');
+    assert.equal(clampedQuery.split('|').length, 20, 'Clamped query contains exactly 20 coordinates');
+  });
+
+  test('321. Polling Station Intelligence GIS centroid computation accurately centers filtered stations', () => {
+    const stations = [
+      { latitude: -1.200000, longitude: 36.800000 },
+      { latitude: -1.400000, longitude: 36.900000 }
+    ];
+
+    const sumLat = stations.reduce((acc, s) => acc + s.latitude, 0);
+    const sumLng = stations.reduce((acc, s) => acc + s.longitude, 0);
+    const center = `${(sumLat / stations.length).toFixed(6)},${(sumLng / stations.length).toFixed(6)}`;
+
+    assert.equal(center, '-1.300000,36.850000', 'Centroid must be mathematical average of coordinates');
+  });
+
 });
 
 

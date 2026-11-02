@@ -81,10 +81,15 @@ const MainAppContent = () => {
     return <LoginModal />;
   }
 
-  const openModule = (mod) => {
+  const [mapFilters, setMapFilters] = useState(null);
+
+  const openModule = (mod, state) => {
     if (mod === 'ai_assistant') {
       setShowAIAssistant(true);
       return;
+    }
+    if (mod === 'interactive_map' && state) {
+      setMapFilters(state);
     }
     setShowProfilePanel(false);
     setCurrentModule(mod);
@@ -195,9 +200,9 @@ const MainAppContent = () => {
       case 'health':
         return <SystemHealthPanel />;
       case 'polling_stations':
-        return <PollingStationIntelligence onClose={() => setCurrentModule('dashboard')} />;
+        return <PollingStationIntelligence onOpenModule={openModule} onClose={() => setCurrentModule('dashboard')} />;
       case 'interactive_map':
-        return <ElectoralMapRoom />;
+        return <ElectoralMapRoom initialCountyId={mapFilters?.countyId} initialConstituencyId={mapFilters?.constituencyId} />;
       case 'agents':
         return <AgentManagement onClose={() => setCurrentModule('dashboard')} />;
       case 'surveys':

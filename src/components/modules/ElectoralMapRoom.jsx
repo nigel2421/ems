@@ -40,7 +40,7 @@ import {
 } from 'lucide-react';
 import './ElectoralMapRoom.css';
 
-export const ElectoralMapRoom = () => {
+export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => {
   const { currentUser } = useAuth();
   const { geography, tallyResults = [], stationIntelligence = {}, agents = [] } = useData();
 
@@ -88,6 +88,27 @@ export const ElectoralMapRoom = () => {
     });
   }, []);
 
+  // Handle explicit initial framing passed from Polling Station Intelligence or deep-links
+  useEffect(() => {
+    if (!geography) return;
+    if (initialCountyId) {
+      const found = (geography.counties || []).find(
+        c => c.id === initialCountyId || c.name.toLowerCase() === String(initialCountyId).toLowerCase()
+      );
+      if (found) {
+        setSelectedCounty(found);
+      }
+    }
+    if (initialConstituencyId) {
+      const foundConst = (geography.constituencies || []).find(
+        c => c.id === initialConstituencyId || c.name.toLowerCase() === String(initialConstituencyId).toLowerCase()
+      );
+      if (foundConst) {
+        setSelectedConstituency(foundConst);
+      }
+    }
+  }, [initialCountyId, initialConstituencyId, geography]);
+
   // --------------------------------------------------------------------
   // UNIVERSAL ROLE-BASED AUTO-FRAMING ON MOUNT OR AUTH CHANGE
   // Automatically selects user's constituency or county so MP Nyali (and all roles)
@@ -95,6 +116,7 @@ export const ElectoralMapRoom = () => {
   // --------------------------------------------------------------------
   useEffect(() => {
     if (!currentUser || !geography) return;
+    if (initialCountyId || initialConstituencyId) return;
 
     // 1. MP or Constituency-level role
     if (currentUser.constituency || (currentUser.role && currentUser.role.includes('MP'))) {
