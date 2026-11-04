@@ -149,7 +149,7 @@ Run these curl commands directly on the VPS or your workstation to confirm secur
 curl -i -X POST https://kuratech.site/api/auth/login \
   -H "Content-Type: application/json" \
   -H "Host: kuratech.site" \
-  -d '{"email":"admin.super@ems.go.ke","password":"dev-local-only-password"}'
+  -d '{"email":"admin.super@ems.go.ke","password":"<DEV_ADMIN_PASSWORD>"}'
 ```
 **Expected Outcome**: `HTTP/1.1 401 Unauthorized` with generic message:
 `{"success":false,"error":"Invalid email address or password credentials."}`
@@ -160,7 +160,7 @@ Audit log records: `ADMIN_LOGIN_WRONG_DOMAIN`.
 curl -i -X POST https://ops-konsole.kuratech.site/api/auth/login \
   -H "Content-Type: application/json" \
   -H "Host: ops-konsole.kuratech.site" \
-  -d '{"email":"admin.super@ems.go.ke","password":"dev-local-only-password"}'
+  -d '{"email":"admin.super@ems.go.ke","password":"<DEV_ADMIN_PASSWORD>"}'
 ```
 **Expected Outcome**: `HTTP/1.1 200 OK` with `Set-Cookie: ems_sid=...; HttpOnly; SameSite=Strict; Path=/; Secure`.
 
@@ -169,7 +169,7 @@ curl -i -X POST https://ops-konsole.kuratech.site/api/auth/login \
 curl -i -X POST https://ops-konsole.kuratech.site/api/auth/login \
   -H "Content-Type: application/json" \
   -H "Host: ops-konsole.kuratech.site" \
-  -d '{"email":"governor.nairobi@ems.go.ke","password":"dev-local-only-password"}'
+  -d '{"email":"governor.nairobi@ems.go.ke","password":"<DEV_GOVERNOR_PASSWORD>"}'
 ```
 **Expected Outcome**: `HTTP/1.1 401 Unauthorized` with generic message.
 Audit log records: `USER_LOGIN_WRONG_DOMAIN`.
@@ -179,6 +179,6 @@ Audit log records: `USER_LOGIN_WRONG_DOMAIN`.
 curl -i -X POST https://kuratech.site/api/auth/login \
   -H "Content-Type: application/json" \
   -H "Host: kuratech.site" \
-  -d '{"email":"governor.nairobi@ems.go.ke","password":"dev-local-only-password"}'
+  -d '{"email":"governor.nairobi@ems.go.ke","password":"<DEV_GOVERNOR_PASSWORD>"}'
 ```
 **Expected Outcome**: `HTTP/1.1 200 OK` with session cookie.

@@ -105,7 +105,7 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('dev-local-only-password');
+  const [password, setPassword] = useState('');
   const [avatar, setAvatar] = useState('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80');
 
   const selectedPs = geography.pollingStations.find(ps => ps.id === pollingStationId);
