@@ -18,8 +18,10 @@ import {
   Users,
   MoreHorizontal,
   Lock,
-  Maximize2
+  Maximize2,
+  Download
 } from 'lucide-react';
+import { downloadPollingStationsCSV } from '../../utils/pollingStationExport';
 import {
   resolveJurisdiction,
   hasNationalGeographyAccess,
@@ -327,6 +329,11 @@ const PollingStationIntelligenceInner = ({ onOpenModule }) => {
     }
   };
 
+  const handleExportCSV = () => {
+    const filename = `polling_stations_${assignment.title ? assignment.title.toLowerCase().replace(/[^a-z0-9]+/g, '_') : 'national'}_${new Date().toISOString().slice(0, 10)}.csv`;
+    downloadPollingStationsCSV(filteredStations, geoLookups, stationIntelligence, filename);
+  };
+
   const handleBulkUpdate = (e) => {
     e.preventDefault();
     // Cap updates to keep the UI responsive.
@@ -442,10 +449,30 @@ const PollingStationIntelligenceInner = ({ onOpenModule }) => {
                     <Sliders strokeWidth={1.75} />
                     Bulk update
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTools(false);
+                      handleExportCSV();
+                    }}
+                  >
+                    <Download strokeWidth={1.75} />
+                    Export CSV
+                  </button>
                 </div>
               )}
             </div>
           )}
+          <button
+            type="button"
+            className="admin-btn admin-btn-ghost psi-export-btn"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', padding: '0.45rem 0.75rem', color: 'var(--text-primary)' }}
+            title="Export filtered stations as CSV"
+            onClick={handleExportCSV}
+          >
+            <Download size={14} />
+            Export CSV
+          </button>
         </div>
       </header>
 
@@ -942,6 +969,18 @@ const PollingStationIntelligenceInner = ({ onOpenModule }) => {
                     <option value="High">High</option>
                     <option value="Severe">Severe</option>
                   </select>
+                </div>
+              </div>
+
+              <div style={{ margin: '-0.25rem 0 1rem', padding: '0.65rem 0.85rem', borderRadius: '6px', fontSize: '0.78rem', background: intelForm.riskLevel === 'Severe' ? 'rgba(239,68,68,0.12)' : intelForm.riskLevel === 'High' ? 'rgba(245,158,11,0.12)' : 'rgba(59,130,246,0.08)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <strong style={{ color: intelForm.riskLevel === 'Severe' ? '#ef4444' : intelForm.riskLevel === 'High' ? '#f59e0b' : '#3b82f6' }}>
+                  Risk Matrix Protocol:
+                </strong>
+                <div style={{ marginTop: '0.2rem', opacity: 0.9 }}>
+                  {intelForm.riskLevel === 'Severe' && 'Critical vulnerability. Mandate 2 roving agents, dual Form 34A photo captures, and hourly RTS audit comparison.'}
+                  {intelForm.riskLevel === 'High' && 'Heightened contest. Assign senior agent, confirm ballot box seal numbers pre-opening, and track turnout velocity.'}
+                  {intelForm.riskLevel === 'Medium' && 'Moderate contest. Routine stream agent deployment with standard 2-hour status check-ins.'}
+                  {intelForm.riskLevel === 'Low' && 'Low friction baseline. Normal operational protocols and standard Form 34A upload.'}
                 </div>
               </div>
 

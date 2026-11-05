@@ -14,7 +14,7 @@ import {
   resetFailedAttempts,
   adminUnlockUser
 } from './server/auth.js';
-import { loadUsers, saveUsers, findUserByEmail, findUserById } from './server/users.store.js';
+import { loadUsers, saveUsers, findUserByEmail, findUserById, findUserByPhone, updateUserInStore } from './server/users.store.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -225,7 +225,7 @@ const server = http.createServer((req, res) => {
           return;
         }
 
-        const user = findUserByEmail(cleanEmail);
+        const user = findUserByEmail(cleanEmail) || findUserByPhone(cleanEmail);
         const passwordMatches = user && verifyPassword(password, user.passwordHash);
 
         if (!user || !passwordMatches) {
@@ -242,6 +242,24 @@ const server = http.createServer((req, res) => {
           res.end(JSON.stringify({
             success: false,
             error: 'Invalid email address or password credentials.'
+          }));
+          return;
+        }
+
+        // Check if account is suspended
+        if (user.isSuspended || user.status === 'Suspended') {
+          appendServerAuditLog({
+            userId: user.id,
+            userName: user.name,
+            role: user.role,
+            action: 'LOGIN_BLOCKED_SUSPENDED',
+            details: `Suspended user (${cleanEmail}) attempted login. Access blocked.`,
+            ipAddress: clientIp
+          });
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: false,
+            error: 'Account has been suspended by administration. Contact campaign operations.'
           }));
           return;
         }

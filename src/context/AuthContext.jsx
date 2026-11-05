@@ -195,7 +195,17 @@ export const AuthProvider = ({ children }) => {
     const cleanEmail = normaliseEmail(email);
     const telemetry = getDeviceTelemetry();
 
-    // Lockout is checked BEFORE the password so a locked account cannot be probed
+    // Check if account is suspended in local store
+    const localUser = users.find(u =>
+      (u.email && u.email.toLowerCase() === cleanEmail) ||
+      (u.phone && u.phone.replace(/\s+/g, '').toLowerCase() === cleanEmail.replace(/\s+/g, '').toLowerCase())
+    );
+    if (localUser && (localUser.isSuspended || localUser.status === 'Suspended')) {
+      return {
+        success: false,
+        error: 'Account has been suspended by administration. Contact campaign operations.'
+      };
+    }
     const freshStore = loadThrottleStore();
     const lock = getLockState(freshStore, cleanEmail);
     if (lock.locked) {
@@ -333,11 +343,32 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const deleteUser = (userId) => {
-    setUsers(prev => prev.filter(u => u.id !== userId));
+  const suspendUser = (userId, reason = 'Administrative suspension') => {
+    setUsers(prev => prev.map(u => u.id === userId ? {
+      ...u,
+      status: 'Suspended',
+      isSuspended: true,
+      suspendedAt: new Date().toISOString(),
+      suspensionReason: reason
+    } : u));
     if (currentUser && currentUser.id === userId) {
-      logout();
+      logout('suspended');
     }
+  };
+
+  const reinstateUser = (userId) => {
+    setUsers(prev => prev.map(u => u.id === userId ? {
+      ...u,
+      status: 'Active',
+      isSuspended: false,
+      suspendedAt: null,
+      suspensionReason: null
+    } : u));
+  };
+
+  const deleteUser = (userId) => {
+    // Deprecated in favor of suspendUser; soft-suspends to preserve audit integrity
+    suspendUser(userId, 'Account archived/quarantined');
   };
 
   const toggle2FAStatus = () => {
@@ -398,6 +429,8 @@ export const AuthProvider = ({ children }) => {
         switchUser,
         addUser,
         updateUserProfile,
+        suspendUser,
+        reinstateUser,
         deleteUser,
         is2FAVerified,
         setIs2FAVerified,

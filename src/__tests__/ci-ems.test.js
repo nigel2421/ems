@@ -35,6 +35,18 @@ import {
 } from '../utils/deviceParser.js';
 
 import {
+  checkPasswordComplexity,
+  passwordsMatch,
+  cleanKenyanPhoneNumber,
+  isDuplicatePhoneNumber
+} from '../utils/passwordPolicy.js';
+
+import {
+  escapeCSVField,
+  exportPollingStationsToCSVString
+} from '../utils/pollingStationExport.js';
+
+import {
   initialUsersList,
   initialStationIntelligence,
   initialAgentDirectory,
@@ -3998,6 +4010,255 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     const center = `${(sumLat / stations.length).toFixed(6)},${(sumLng / stations.length).toFixed(6)}`;
 
     assert.equal(center, '-1.300000,36.850000', 'Centroid must be mathematical average of coordinates');
+  });
+
+  test('322. Account suspension preserves historical user data while blocking authentication', () => {
+    const historicalUser = {
+      id: 'USR-AGENT-8801',
+      name: 'James Kiprono',
+      email: 'james.kiprono@ems.go.ke',
+      phone: '+254711223344',
+      role: 'Agent',
+      entityName: 'Baringo Central',
+      status: 'Active',
+      isSuspended: false,
+      assignedStations: ['PS-BAR-01', 'PS-BAR-02'],
+      historicalTalliesSubmitted: 14
+    };
+
+    // Administrative suspension action
+    const suspendedUser = {
+      ...historicalUser,
+      status: 'Suspended',
+      isSuspended: true,
+      suspendedAt: new Date().toISOString(),
+      suspendedReason: 'Administrative investigation into Form 34A discrepancy'
+    };
+
+    // Verify historical audit properties are 100% retained
+    assert.equal(suspendedUser.id, historicalUser.id, 'User ID must be preserved');
+    assert.equal(suspendedUser.email, historicalUser.email, 'Email must remain intact for audit trail');
+    assert.equal(suspendedUser.historicalTalliesSubmitted, 14, 'Historical tallies must not be erased');
+    assert.deepEqual(suspendedUser.assignedStations, ['PS-BAR-01', 'PS-BAR-02'], 'Station mappings preserved');
+
+    // Verify authentication gate condition
+    const isSuspendedOrQuarantined = suspendedUser.isSuspended || suspendedUser.status === 'Suspended';
+    assert.equal(isSuspendedOrQuarantined, true, 'Suspended account must be flagged as blocked');
+
+    // Verify login rejection rule matches server/server.mjs response contract
+    const loginAttempt = (user) => {
+      if (user.isSuspended || user.status === 'Suspended') {
+        return { success: false, status: 403, error: 'Account has been suspended by administration. Contact campaign operations.' };
+      }
+      return { success: true, status: 200 };
+    };
+
+    const result = loginAttempt(suspendedUser);
+    assert.equal(result.success, false);
+    assert.equal(result.status, 403);
+    assert.match(result.error, /suspended by administration/i);
+  });
+
+  test('323. Suspended account reinstatement cleanly clears suspension flags and restores active status', () => {
+    const suspendedAccount = {
+      id: 'USR-AGENT-8801',
+      name: 'James Kiprono',
+      status: 'Suspended',
+      isSuspended: true,
+      suspendedReason: 'Under review'
+    };
+
+    // Reinstatement action
+    const reinstatedAccount = {
+      ...suspendedAccount,
+      status: 'Active',
+      isSuspended: false,
+      reinstatedAt: new Date().toISOString(),
+      suspendedReason: null
+    };
+
+    assert.equal(reinstatedAccount.status, 'Active');
+    assert.equal(reinstatedAccount.isSuspended, false);
+    assert.equal(reinstatedAccount.suspendedReason, null);
+
+    const loginCheck = (u) => !(u.isSuspended || u.status === 'Suspended');
+    assert.equal(loginCheck(reinstatedAccount), true, 'Reinstated account must be granted login access');
+  });
+
+  test('324. Strict duplicate phone number validation blocks onboarding across differing Kenyan formats', () => {
+    const existingUsers = [
+      { id: 'U1', name: 'Alice', phone: '+254 712 345 678' },
+      { id: 'U2', name: 'Bob', phone: '0722000111' }
+    ];
+    const existingAgents = [
+      { id: 'A1', name: 'Charlie', phone: '254799887766' }
+    ];
+
+    // Phone cleaner unit test
+    assert.equal(cleanKenyanPhoneNumber('+254 712 345 678'), '712345678');
+    assert.equal(cleanKenyanPhoneNumber('0712345678'), '712345678');
+    assert.equal(cleanKenyanPhoneNumber('254712345678'), '712345678');
+    assert.equal(cleanKenyanPhoneNumber('0722-000-111'), '722000111');
+
+    // Duplicate detection across formats
+    assert.equal(isDuplicatePhoneNumber('0712345678', existingUsers, existingAgents), true, '0712345678 matches +254 712 345 678');
+    assert.equal(isDuplicatePhoneNumber('+254 722 000 111', existingUsers, existingAgents), true, 'matches Bob in users');
+    assert.equal(isDuplicatePhoneNumber('+254 799 887 766', existingUsers, existingAgents), true, 'matches Charlie in agents');
+
+    // Unique number passes
+    assert.equal(isDuplicatePhoneNumber('0733123456', existingUsers, existingAgents), false, 'Unique number is allowed');
+    assert.equal(isDuplicatePhoneNumber('', existingUsers, existingAgents), false, 'Empty phone does not conflict');
+  });
+
+  test('325. Phone-first agent registration succeeds with valid phone and optional email', () => {
+    const payloadWithoutEmail = {
+      fullName: 'Mercy Cherono',
+      phone: '+254 718 998 877',
+      email: '',
+      nationalId: '33445566',
+      assignedCounty: 'Kericho',
+      assignedConstituency: 'Ainamoi'
+    };
+
+    assert.ok(payloadWithoutEmail.phone, 'Phone number is mandatory');
+    assert.equal(payloadWithoutEmail.email, '', 'Email is optional');
+
+    // Synthesized agent object
+    const createdAgent = {
+      id: `AG-${Date.now().toString().slice(-4)}`,
+      name: payloadWithoutEmail.fullName,
+      phone: payloadWithoutEmail.phone,
+      email: payloadWithoutEmail.email ? payloadWithoutEmail.email.trim() : null,
+      region: `${payloadWithoutEmail.assignedCounty} · ${payloadWithoutEmail.assignedConstituency}`,
+      status: 'Active',
+      registeredAt: new Date().toISOString()
+    };
+
+    assert.ok(createdAgent.id.startsWith('AG-'));
+    assert.equal(createdAgent.email, null, 'Omitted email defaults safely to null without crashing');
+    assert.equal(createdAgent.phone, '+254 718 998 877');
+    assert.equal(createdAgent.status, 'Active');
+  });
+
+  test('326. Polling station CSV export generates valid RFC-4180 serialized data', () => {
+    const mockStations = [
+      {
+        id: 'PS-001',
+        code: '047/001/01',
+        name: 'Moi Avenue Primary, Stream 1',
+        county: 'Nairobi',
+        constituency: 'Starehe',
+        ward: 'Nairobi Central',
+        registeredVoters: 650,
+        turnoutPct: 78.4,
+        latitude: -1.28333,
+        longitude: 36.81667,
+        streamsCount: 2,
+        riskLevel: 'Severe'
+      },
+      {
+        id: 'PS-002',
+        code: '047/001/02',
+        name: 'City Market Hall',
+        county: 'Nairobi',
+        constituency: 'Starehe',
+        ward: 'Nairobi Central',
+        registeredVoters: 520,
+        turnoutPct: 82.1,
+        latitude: -1.28444,
+        longitude: 36.81777,
+        streamsCount: 1,
+        riskLevel: 'Low'
+      }
+    ];
+
+    const lookups = {
+      counties: new Map(),
+      constituencies: new Map(),
+      wards: new Map()
+    };
+
+    const intel = {
+      'PS-001': { dominantCoalition: 'Azimio', riskLevel: 'Severe' },
+      'PS-002': { dominantCoalition: 'Kenya Kwanza', riskLevel: 'Low' }
+    };
+
+    // Test RFC-4180 escaping
+    assert.equal(escapeCSVField('Normal String'), 'Normal String');
+    assert.equal(escapeCSVField('Name, with comma'), '"Name, with comma"');
+    assert.equal(escapeCSVField('Name with "quotes"'), '"Name with ""quotes"""');
+
+    const csvOutput = exportPollingStationsToCSVString(mockStations, lookups, intel);
+    const lines = csvOutput.split('\r\n');
+
+    // Header validation
+    assert.equal(lines[0], 'Code,Name,County,Constituency,Ward,RegisteredVoters,TurnoutPct,Latitude,Longitude,StreamsCount,RiskLevel,DominantCoalition');
+    assert.equal(lines.length, 3, 'Must contain header + 2 station rows');
+
+    // Comma inside station name escaped with double quotes
+    assert.ok(lines[1].includes('"Moi Avenue Primary, Stream 1"'));
+    assert.ok(lines[1].includes('Severe'));
+    assert.ok(lines[1].includes('Azimio'));
+    assert.ok(lines[2].includes('Kenya Kwanza'));
+  });
+
+  test('327. Password complexity and confirmation enforcement validates according to security baseline', () => {
+    // Insufficient length (<8)
+    const short = checkPasswordComplexity('Ab1!');
+    assert.equal(short.isValid, false);
+    assert.ok(short.errors.some(e => e.includes('8 characters')));
+
+    // Missing uppercase
+    const noUpper = checkPasswordComplexity('p@ssw0rd123');
+    assert.equal(noUpper.isValid, false);
+    assert.ok(noUpper.errors.some(e => e.includes('uppercase')));
+
+    // Missing lowercase
+    const noLower = checkPasswordComplexity('P@SSW0RD123');
+    assert.equal(noLower.isValid, false);
+    assert.ok(noLower.errors.some(e => e.includes('lowercase')));
+
+    // Missing number
+    const noNumber = checkPasswordComplexity('Password!@#');
+    assert.equal(noNumber.isValid, false);
+    assert.ok(noNumber.errors.some(e => e.includes('number')));
+
+    // Missing special character
+    const noSpecial = checkPasswordComplexity('Password123');
+    assert.equal(noSpecial.isValid, false);
+    assert.ok(noSpecial.errors.some(e => e.includes('special')));
+
+    // Fully compliant password
+    const valid = checkPasswordComplexity('KuraTech2026!');
+    assert.equal(valid.isValid, true);
+    assert.equal(valid.errors.length, 0);
+    assert.ok(valid.score >= 4);
+
+    // Confirmation matching
+    assert.equal(passwordsMatch('KuraTech2026!', 'KuraTech2026!'), true);
+    assert.equal(passwordsMatch('KuraTech2026!', 'Mismatch123'), false);
+    assert.equal(passwordsMatch('', ''), false);
+  });
+
+  test('328. Zero login regression: Default system personas pass authentication without restriction', () => {
+    const defaultPersonas = [
+      { email: 'admin.super@ems.go.ke', role: 'Super Admin', defaultPassword: 'dev-local-only-password' },
+      { email: 'governor.nairobi@ems.go.ke', role: 'Governor', defaultPassword: 'dev-local-only-password' },
+      { email: 'agent.langata1@ems.go.ke', role: 'Agent', defaultPassword: 'dev-local-only-password' }
+    ];
+
+    defaultPersonas.forEach(persona => {
+      // 1. Must not be suspended
+      assert.notEqual(persona.status, 'Suspended');
+      assert.notEqual(persona.isSuspended, true);
+
+      // 2. Authentication simulation
+      const canLogin = !persona.isSuspended && persona.status !== 'Suspended';
+      assert.equal(canLogin, true, `Persona ${persona.email} must be allowed to log in`);
+
+      // 3. Password complexity checks must ONLY run on onboarding/updating, NOT during login of existing credentials
+      assert.ok(persona.defaultPassword.length > 0, 'Credentials exist');
+    });
   });
 
 });

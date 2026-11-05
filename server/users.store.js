@@ -52,3 +52,17 @@ export const findUserById = (id) => {
   const users = loadUsers();
   return users.find(u => u.id === id) || null;
 };
+
+export const findUserByPhone = (phone) => {
+  if (!phone) return null;
+  const cleanPhone = String(phone).replace(/\s+/g, '').toLowerCase();
+  const users = loadUsers();
+  return users.find(u => (u.phone || '').replace(/\s+/g, '').toLowerCase() === cleanPhone) || null;
+};
+
+export const updateUserInStore = (userId, updates = {}) => {
+  const users = loadUsers();
+  const updated = users.map(u => u.id === userId ? { ...u, ...updates } : u);
+  saveUsers(updated);
+  return updated.find(u => u.id === userId) || null;
+};

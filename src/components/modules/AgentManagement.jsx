@@ -213,6 +213,7 @@ export const AgentManagement = ({ onClose }) => {
           <option value="On Duty">On Duty</option>
           <option value="Inactive">Inactive</option>
           <option value="Offline">Offline</option>
+          <option value="Suspended">Suspended (Quarantined)</option>
         </select>
       </article>
 
@@ -270,6 +271,7 @@ export const AgentManagement = ({ onClose }) => {
                         <option value="On Duty">On Duty</option>
                         <option value="Inactive">Inactive</option>
                         <option value="Offline">Offline</option>
+                        <option value="Suspended">Suspended</option>
                       </select>
                     </td>
                     <td>
