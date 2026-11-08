@@ -35,6 +35,7 @@ import { KenyaPoliticalNewsFab } from '../modules/KenyaPoliticalNewsPanel';
 
 const PRIMARY_MODULES = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'interactive_map', label: 'Electoral Map Room', icon: Map },
   { id: 'strategy', label: 'Strategy', icon: Target },
   { id: 'polling_stations', label: 'Polling Intel', icon: Building2 },
   { id: 'agents', label: 'Agent Management', icon: Users },
@@ -42,6 +43,7 @@ const PRIMARY_MODULES = [
 ];
 
 const MORE_MODULES = [
+  { id: 'strategy_team', label: 'Strategy Team', icon: Users },
   { id: 'field_reports', label: 'Field Reports', icon: FileText },
   { id: 'surveys', label: 'Surveys & Sampling', icon: ClipboardList },
   { id: 'mobilization', label: 'Mobilization', icon: Layers },
@@ -93,7 +95,7 @@ export const AdminLayout = ({
   onToggleProfilePanel,
   onCloseProfilePanel
 }) => {
-  const { currentUser, users, switchUser, logout, canAccessModule, userScope } = useAuth();
+  const { currentUser, users, logout, canAccessModule, userScope } = useAuth();
   const { tallyResults, geography } = useData();
   const [showMore, setShowMore] = useState(false);
   const [showAgentMenu, setShowAgentMenu] = useState(false);
@@ -162,17 +164,7 @@ export const AdminLayout = ({
     onOpenModule?.('dashboard');
   };
 
-  const handleSwitchPersona = (userId) => {
-    switchUser(userId);
-    onCloseProfilePanel?.();
-    onOpenModule?.('dashboard');
-    onAdminPanelChange?.('overview');
-  };
-
   const toolsLabel = isAdmin ? 'Admin tools' : 'Workspace';
-
-  const isDevMode = import.meta.env?.DEV || import.meta.env?.VITE_DEV_MODE === 'true' || true;
-  const isImpersonating = currentUser && currentUser.id !== 'USR-SUPERADMIN-01' && currentUser.id !== 'USR-ADMIN-01';
 
   return (
     <div className={`admin-layout${asideOpen ? ' is-aside-open' : ''}`}>
@@ -418,12 +410,6 @@ export const AdminLayout = ({
       </aside>
 
       <div className="admin-layout-main">
-        {isImpersonating && (
-          <div style={{ background: '#7f1d1d', color: '#fca5a5', padding: '0.5rem 1rem', fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.04em', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', border: '1px solid #991b1b', marginBottom: '1rem' }}>
-            <span>⚠️ ADMINISTRATIVE IMPERSONATION ACTIVE:</span>
-            <span>Logged in as <strong>{currentUser?.name}</strong> [{currentUser?.role}] — Audit logging active</span>
-          </div>
-        )}
         {showProfilePanel && (
           <div
             id="admin-profile-panel"

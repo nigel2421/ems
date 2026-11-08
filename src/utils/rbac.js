@@ -67,8 +67,9 @@ export const getUserScope = (user) => {
   }
 
   const role = user.role;
+  const contest = String(user.contestType || user.contest || '').toLowerCase();
 
-  if (role === ROLES.SUPER_ADMIN || role === ROLES.ADMIN || role === ROLES.STRATEGY_TEAM) {
+  if (role === ROLES.SUPER_ADMIN || role === ROLES.ADMIN || (role === ROLES.STRATEGY_TEAM && user.assignedEntity === 'GLOBAL')) {
     return {
       level: SCOPE_LEVELS.NATIONAL,
       name: 'National Scope (All 47 Counties)',
@@ -77,33 +78,88 @@ export const getUserScope = (user) => {
     };
   }
 
-  if (role === ROLES.COUNTY_COORDINATOR || role === ROLES.GOVERNOR || role === ROLES.SENATOR) {
+  // Candidate Admin dynamic scoping
+  if (role === ROLES.CANDIDATE_ADMIN) {
+    if (contest.includes('presid') || user.assignedEntity === 'GLOBAL') {
+      return {
+        level: SCOPE_LEVELS.NATIONAL,
+        name: 'National Campaign HQ',
+        county: user.county || 'All',
+        entityName: user.entityName || 'National Campaign HQ'
+      };
+    }
+    if (contest.includes('mp') || contest.includes('parliament') || user.constituency) {
+      return {
+        level: SCOPE_LEVELS.CONSTITUENCY,
+        name: `${user.constituency || 'Assigned'} Constituency`,
+        county: user.county || '',
+        constituency: user.constituency || '',
+        entityName: user.entityName || `${user.constituency} Campaign HQ`
+      };
+    }
+    if (contest.includes('mca') || contest.includes('ward') || user.ward) {
+      return {
+        level: SCOPE_LEVELS.WARD,
+        name: `${user.ward || 'Assigned'} Ward`,
+        county: user.county || '',
+        constituency: user.constituency || '',
+        ward: user.ward || '',
+        entityName: user.entityName || `${user.ward} Campaign HQ`
+      };
+    }
+    // Default candidate to county (Gubernatorial / Senatorial)
     return {
       level: SCOPE_LEVELS.COUNTY,
       name: `${user.county || 'Assigned'} County`,
-      county: user.county || 'Nairobi',
-      entityName: user.entityName || `${user.county || 'Nairobi'} County HQ`
+      county: user.county || '',
+      entityName: user.entityName || `${user.county} Campaign HQ`
     };
   }
 
-  if (role === ROLES.CONSTITUENCY_COORDINATOR || role === ROLES.MP) {
+  if (
+    role === ROLES.COUNTY_COORDINATOR ||
+    role === ROLES.GOVERNOR ||
+    role === ROLES.SENATOR ||
+    String(role).includes('Governor') ||
+    String(role).includes('Senator') ||
+    (String(role).includes('County') && !String(role).includes('Constituency'))
+  ) {
+    return {
+      level: SCOPE_LEVELS.COUNTY,
+      name: `${user.county || 'Assigned'} County`,
+      county: user.county || '',
+      entityName: user.entityName || `${user.county || 'Assigned'} County HQ`
+    };
+  }
+
+  if (
+    role === ROLES.CONSTITUENCY_COORDINATOR ||
+    role === ROLES.MP ||
+    String(role).includes('MP') ||
+    String(role).includes('Constituency')
+  ) {
     return {
       level: SCOPE_LEVELS.CONSTITUENCY,
       name: `${user.constituency || 'Assigned'} Constituency`,
-      county: user.county || 'Nairobi',
-      constituency: user.constituency || 'Westlands',
-      entityName: user.entityName || `${user.constituency || 'Westlands'} Constituency HQ`
+      county: user.county || '',
+      constituency: user.constituency || '',
+      entityName: user.entityName || `${user.constituency || 'Assigned'} Constituency HQ`
     };
   }
 
-  if (role === ROLES.WARD_COORDINATOR || role === ROLES.MCA) {
+  if (
+    role === ROLES.WARD_COORDINATOR ||
+    role === ROLES.MCA ||
+    String(role).includes('MCA') ||
+    String(role).includes('Ward')
+  ) {
     return {
       level: SCOPE_LEVELS.WARD,
       name: `${user.ward || 'Assigned'} Ward`,
-      county: user.county || 'Nairobi',
-      constituency: user.constituency || 'Westlands',
-      ward: user.ward || 'Parklands/Highridge',
-      entityName: user.entityName || `${user.ward || 'Parklands/Highridge'} Ward HQ`
+      county: user.county || '',
+      constituency: user.constituency || '',
+      ward: user.ward || '',
+      entityName: user.entityName || `${user.ward || 'Assigned'} Ward HQ`
     };
   }
 
@@ -130,8 +186,116 @@ export const getUserScope = (user) => {
   };
 };
 
+// Comprehensive 47-County ID -> Official Name Lookup
+export const COUNTY_ID_TO_NAME = {
+  '1': 'MOMBASA', 'C-001': 'MOMBASA', 'C-1': 'MOMBASA',
+  '2': 'KWALE', 'C-002': 'KWALE', 'C-2': 'KWALE',
+  '3': 'KILIFI', 'C-003': 'KILIFI', 'C-3': 'KILIFI',
+  '4': 'TANA RIVER', 'C-004': 'TANA RIVER', 'C-4': 'TANA RIVER',
+  '5': 'LAMU', 'C-005': 'LAMU', 'C-5': 'LAMU',
+  '6': 'TAITA TAVETA', 'C-006': 'TAITA TAVETA', 'C-6': 'TAITA TAVETA',
+  '7': 'GARISSA', 'C-007': 'GARISSA', 'C-7': 'GARISSA',
+  '8': 'WAJIR', 'C-008': 'WAJIR', 'C-8': 'WAJIR',
+  '9': 'MANDERA', 'C-009': 'MANDERA', 'C-9': 'MANDERA',
+  '10': 'MARSABIT', 'C-010': 'MARSABIT',
+  '11': 'ISIOLO', 'C-011': 'ISIOLO',
+  '12': 'MERU', 'C-012': 'MERU',
+  '13': 'THARAKA-NITHI', 'C-013': 'THARAKA-NITHI', 'C-013': 'THARAKA - NITHI',
+  '14': 'EMBU', 'C-014': 'EMBU',
+  '15': 'KITUI', 'C-015': 'KITUI',
+  '16': 'MACHAKOS', 'C-016': 'MACHAKOS',
+  '17': 'MAKUENI', 'C-017': 'MAKUENI',
+  '18': 'NYANDARUA', 'C-018': 'NYANDARUA',
+  '19': 'NYERI', 'C-019': 'NYERI',
+  '20': 'KIRINYAGA', 'C-020': 'KIRINYAGA',
+  '21': 'MURANG\'A', 'C-021': 'MURANG\'A',
+  '22': 'KIAMBU', 'C-022': 'KIAMBU',
+  '23': 'TURKANA', 'C-023': 'TURKANA',
+  '24': 'WEST POKOT', 'C-024': 'WEST POKOT',
+  '25': 'SAMBURU', 'C-025': 'SAMBURU',
+  '26': 'TRANS NZOIA', 'C-026': 'TRANS NZOIA',
+  '27': 'UASIN GISHU', 'C-027': 'UASIN GISHU',
+  '28': 'ELGEYO-MARAKWET', 'C-028': 'ELGEYO-MARAKWET',
+  '29': 'NANDI', 'C-029': 'NANDI',
+  '30': 'BARINGO', 'C-030': 'BARINGO',
+  '31': 'LAIKIPIA', 'C-031': 'LAIKIPIA',
+  '32': 'NAKURU', 'C-032': 'NAKURU',
+  '33': 'NAROK', 'C-033': 'NAROK',
+  '34': 'KAJIADO', 'C-034': 'KAJIADO',
+  '35': 'KERICHO', 'C-035': 'KERICHO',
+  '36': 'BOMET', 'C-036': 'BOMET',
+  '37': 'KAKAMEGA', 'C-037': 'KAKAMEGA',
+  '38': 'VIHIGA', 'C-038': 'VIHIGA',
+  '39': 'BUNGOMA', 'C-039': 'BUNGOMA',
+  '40': 'BUSIA', 'C-040': 'BUSIA',
+  '41': 'SIAYA', 'C-041': 'SIAYA',
+  '42': 'KISUMU', 'C-042': 'KISUMU',
+  '43': 'HOMA BAY', 'C-043': 'HOMA BAY',
+  '44': 'MIGORI', 'C-044': 'MIGORI',
+  '45': 'KISII', 'C-045': 'KISII',
+  '46': 'NYAMIRA', 'C-046': 'NYAMIRA',
+  '47': 'NAIROBI', 'C-047': 'NAIROBI', 'C-47': 'NAIROBI'
+};
+
+// Constituency ID -> Official Name Lookup
+export const CONSTITUENCY_ID_TO_NAME = {
+  'CONST-001': 'CHANGAMWE',
+  'CONST-002': 'JOMVU',
+  'CONST-003': 'KISAUNI',
+  'CONST-004': 'NYALI',
+  'CONST-005': 'LIKONI',
+  'CONST-006': 'MVITA',
+  'CONST-274': 'WESTLANDS',
+  'CONST-275': 'PARKLANDS/HIGHRIDGE',
+  'CONST-276': 'DAGORETTI NORTH',
+  'CONST-277': 'DAGORETTI SOUTH',
+  'CONST-278': 'LANGATA',
+  'CONST-279': 'KIBRA',
+  'CONST-280': 'ROYSAMBU',
+  'CONST-281': 'KASARANI',
+  'CONST-282': 'RUARAKA',
+  'CONST-283': 'EMBAKASI SOUTH',
+  'CONST-284': 'EMBAKASI NORTH',
+  'CONST-285': 'EMBAKASI CENTRAL',
+  'CONST-286': 'EMBAKASI EAST',
+  'CONST-287': 'EMBAKASI WEST',
+  'CONST-288': 'MAKADARA',
+  'CONST-289': 'KAMUKUNJI',
+  'CONST-290': 'STAREHE'
+};
+
+export const resolveCanonicalCounty = (input) => {
+  if (!input) return '';
+  const s = String(input).trim().toUpperCase();
+  const cCode = s.replace(/^C-0*/, '');
+  return COUNTY_ID_TO_NAME[s] || COUNTY_ID_TO_NAME[cCode] || s;
+};
+
+export const resolveCanonicalConstituency = (input) => {
+  if (!input) return '';
+  const s = String(input).trim().toUpperCase();
+  return CONSTITUENCY_ID_TO_NAME[s] || s;
+};
+
+const normStr = (str) => String(str || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+
+const geoMatches = (target, userVal) => {
+  if (!userVal) return false;
+  if (!target) return false;
+  const nTarget = normStr(target);
+  const nUser = normStr(userVal);
+  if (!nTarget || !nUser) return false;
+  if (nTarget === nUser || nTarget.includes(nUser) || nUser.includes(nTarget)) return true;
+
+  // Check canonical cross-mapping
+  const canonTarget = normStr(resolveCanonicalCounty(target) || resolveCanonicalConstituency(target));
+  const canonUser = normStr(resolveCanonicalCounty(userVal) || resolveCanonicalConstituency(userVal));
+  return Boolean(canonTarget && canonUser && (canonTarget === canonUser || canonTarget.includes(canonUser) || canonUser.includes(canonTarget)));
+};
+
 /**
  * Checks if a geographic location (County, Constituency, Ward, Station) is within the user's scope
+ * Works uniformly across all roles: Governor, Senator, MP, MCA, Coordinators, Agents & Admins.
  */
 export const canAccessLocation = (user, location = {}) => {
   if (!user) return false;
@@ -139,41 +303,62 @@ export const canAccessLocation = (user, location = {}) => {
 
   if (scope.level === SCOPE_LEVELS.NATIONAL) return true;
 
-  const targetCounty = (location.county || location.countyName || location.countyId || '').toString().toLowerCase().trim();
-  const targetConst = (location.constituency || location.constituencyName || location.constituencyId || '').toString().toLowerCase().trim();
-  const targetWard = (location.ward || location.wardName || location.wardId || '').toString().toLowerCase().trim();
-  const targetStation = (location.pollingStation || location.stationName || location.pollingStationCode || location.id || '').toString().toLowerCase().trim();
+  const targetCounty = resolveCanonicalCounty(location.county || location.countyName || location.countyId);
+  const targetConst = resolveCanonicalConstituency(location.constituency || location.constituencyName || location.constituencyId);
+  const targetWard = location.ward || location.wardName || location.wardId || '';
+  const targetStation = location.pollingStation || location.stationName || location.pollingStationCode || location.id || '';
 
-  const userCounty = (scope.county || user.county || '').toString().toLowerCase().trim();
-  const userConst = (scope.constituency || user.constituency || '').toString().toLowerCase().trim();
-  const userWard = (scope.ward || user.ward || '').toString().toLowerCase().trim();
-  const userStation = (scope.assignedEntity || user.assignedEntity || '').toString().toLowerCase().trim();
+  const userCounty = resolveCanonicalCounty(scope.county || user.county);
+  const userConst = resolveCanonicalConstituency(scope.constituency || user.constituency);
+  const userWard = scope.ward || user.ward || '';
+  const userStation = scope.assignedEntity || user.assignedEntity || '';
 
   if (scope.level === SCOPE_LEVELS.COUNTY) {
-    if (!userCounty) return true;
-    return targetCounty.includes(userCounty) || userCounty.includes(targetCounty) || !targetCounty;
+    if (!userCounty && !userStation) return false;
+    if (targetCounty) {
+      return Boolean(
+        (userCounty && geoMatches(targetCounty, userCounty)) ||
+        (userStation && geoMatches(targetCounty, userStation))
+      );
+    }
+    return false;
   }
 
   if (scope.level === SCOPE_LEVELS.CONSTITUENCY) {
-    const countyMatch = !userCounty || targetCounty.includes(userCounty) || userCounty.includes(targetCounty) || !targetCounty;
-    const constMatch = !userConst || targetConst.includes(userConst) || userConst.includes(targetConst) || !targetConst;
-    return countyMatch && constMatch;
+    if (!userConst && !userStation) return false;
+    // County must match if present in target
+    if (targetCounty && userCounty && !geoMatches(targetCounty, userCounty) && !(userStation && geoMatches(targetCounty, userStation))) {
+      return false;
+    }
+    // Target constituency must match name or assignedEntity code
+    if (targetConst) {
+      return Boolean(
+        (userConst && geoMatches(targetConst, userConst)) ||
+        (userStation && geoMatches(targetConst, userStation)) ||
+        (location.constituencyId && userStation && geoMatches(location.constituencyId, userStation))
+      );
+    }
+    return false;
   }
 
   if (scope.level === SCOPE_LEVELS.WARD) {
-    const constMatch = !userConst || targetConst.includes(userConst) || userConst.includes(targetConst) || !targetConst;
-    const wardMatch = !userWard || targetWard.includes(userWard) || userWard.includes(targetWard) || !targetWard;
-    return constMatch && wardMatch;
+    if (!userWard) return false;
+    if (targetCounty && userCounty && !geoMatches(targetCounty, userCounty)) return false;
+    if (targetConst && userConst && !geoMatches(targetConst, userConst)) return false;
+    if (targetWard) {
+      return Boolean(geoMatches(targetWard, userWard));
+    }
+    return false;
   }
 
   if (scope.level === SCOPE_LEVELS.POLLING_CENTRE || scope.level === SCOPE_LEVELS.STATION) {
-    if (!userStation) return true;
-    const stationMatch = userStation && targetStation && (targetStation.includes(userStation) || userStation.includes(targetStation));
-    const wardMatch = userWard && targetWard && targetWard.includes(userWard);
+    if (!userStation) return false;
+    const stationMatch = targetStation && (geoMatches(targetStation, userStation) || location.id === userStation);
+    const wardMatch = userWard && targetWard && geoMatches(targetWard, userWard);
     return Boolean(stationMatch || wardMatch);
   }
 
-  return true;
+  return false;
 };
 
 /**

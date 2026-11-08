@@ -13,6 +13,7 @@ import { SurveyEngine } from './components/modules/SurveyEngine';
 import { FieldReporting } from './components/modules/FieldReporting';
 import { TeamMobilization } from './components/modules/TeamMobilization';
 import { CampaignStrategy } from './components/modules/CampaignStrategy';
+import { StrategyTeamModule } from './components/modules/StrategyTeamModule';
 import { TallyCenter } from './components/modules/TallyCenter';
 import { AIAssistantModal } from './components/modules/AIAssistantModal';
 import { AuditLogViewer } from './components/modules/AuditLogViewer';
@@ -34,31 +35,66 @@ import ExecutiveBriefing from './components/modules/ExecutiveBriefing';
 import UnifiedOperationsQueue from './components/modules/UnifiedOperationsQueue';
 import ElectionSimulationControl from './components/modules/ElectionSimulationControl';
 import ProductionReadinessBoard from './components/modules/ProductionReadinessBoard';
+import { ElectoralMapRoom } from './components/modules/ElectoralMapRoom';
 import { LoginModal } from './components/auth/LoginModal';
+import { IdleTimeoutModal } from './components/auth/IdleTimeoutModal';
+import { useIdleTimeout } from './hooks/useIdleTimeout';
+import { useModuleRouter, resolveModuleFromHash } from './hooks/useModuleRouter';
+import { updatePageMetadata } from './utils/seoManager';
+import { OfflineSyncBanner } from './components/common/OfflineSyncBanner';
 import { Bell, X } from 'lucide-react';
 
 const MainAppContent = () => {
-  const { currentUser, isAuthenticated } = useAuth();
+  const { currentUser, isAuthenticated, logout } = useAuth();
   const { tallyResults } = useData();
 
-  const [currentModule, setCurrentModule] = useState('dashboard');
+  // Initialize module from initial URL hash so direct links and crawlers open immediately to target page
+  const [currentModule, setCurrentModule] = useState(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      return resolveModuleFromHash(window.location.hash);
+    }
+    return 'dashboard';
+  });
   const [adminPanel, setAdminPanel] = useState('overview');
   const [showAuditLogs, setShowAuditLogs] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
 
+  // Sync route and browser history back/forward buttons
+  const { navigateToModule } = useModuleRouter(currentModule, (newMod) => {
+    setShowProfilePanel(false);
+    setCurrentModule(newMod);
+  });
+
+  // Dynamically update document title, description, canonical and OpenGraph meta tags on navigation
+  React.useEffect(() => {
+    updatePageMetadata(currentModule);
+  }, [currentModule]);
+
+  // Inactivity timeout: 15 min limit with 13 min warning
+  const { phase, secondsLeft, stayActive } = useIdleTimeout({
+    isAuthenticated,
+    onTimeout: () => logout('inactivity')
+  });
+
+  const [mapFilters, setMapFilters] = useState(null);
+
   if (!isAuthenticated || !currentUser) {
     return <LoginModal />;
   }
 
-  const openModule = (mod) => {
+  const openModule = (mod, state) => {
     if (mod === 'ai_assistant') {
       setShowAIAssistant(true);
       return;
     }
+    if (mod === 'interactive_map' && state) {
+      setMapFilters(state);
+    }
     setShowProfilePanel(false);
     setCurrentModule(mod);
+    navigateToModule(mod);
     if (mod === 'dashboard') {
       setAdminPanel((prev) => prev || 'overview');
     }
@@ -69,13 +105,31 @@ const MainAppContent = () => {
       case 'Super Admin':
       case 'Admin':
         return (
-          <AdminDashboard
-            activeTab={adminPanel}
-            onTabChange={setAdminPanel}
-            onOpenAuditLogs={() => setShowAuditLogs(true)}
-            onOpenGeographic={() => setCurrentModule('polling_stations')}
-            onOpenModule={openModule}
-          />
+          <div style={{ padding: '3rem 1.5rem', textAlign: 'center', maxWidth: '580px', margin: '4rem auto', background: 'var(--bg-surface, #1e293b)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary, #fff)', marginBottom: '0.75rem' }}>
+              Operations Console Relocated
+            </h2>
+            <p style={{ color: 'var(--text-muted, #94a3b8)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+              Administrative tools and system governance functions are exclusively available on the dedicated Kuratech Operations Console subdomain.
+            </p>
+            <a
+              href="https://ops-konsole.kuratech.site"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.65rem 1.25rem',
+                background: '#0284c7',
+                color: '#fff',
+                borderRadius: '8px',
+                fontWeight: 600,
+                textDecoration: 'none',
+                boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)'
+              }}
+            >
+              Open ops-konsole.kuratech.site
+            </a>
+          </div>
         );
       case 'Strategy Team':
       case 'Governor':
@@ -127,8 +181,6 @@ const MainAppContent = () => {
         return <HierarchicalWarRoom user={currentUser} onSelectModule={(mod) => setCurrentModule(mod)} />;
 
 
-      case 'ops_queue':
-        return <OperationsQueue user={currentUser} />;
       case 'war_room':
         return <ElectionWarRoom user={currentUser} onSelectModule={(mod) => setCurrentModule(mod)} />;
       case 'field_pwa':
@@ -149,7 +201,9 @@ const MainAppContent = () => {
       case 'health':
         return <SystemHealthPanel />;
       case 'polling_stations':
-        return <PollingStationIntelligence onClose={() => setCurrentModule('dashboard')} />;
+        return <PollingStationIntelligence onOpenModule={openModule} onClose={() => setCurrentModule('dashboard')} />;
+      case 'interactive_map':
+        return <ElectoralMapRoom initialCountyId={mapFilters?.countyId} initialConstituencyId={mapFilters?.constituencyId} />;
       case 'agents':
         return <AgentManagement onClose={() => setCurrentModule('dashboard')} />;
       case 'surveys':
@@ -160,6 +214,8 @@ const MainAppContent = () => {
         return <TeamMobilization onClose={() => setCurrentModule('dashboard')} />;
       case 'strategy':
         return <CampaignStrategy onClose={() => setCurrentModule('dashboard')} />;
+      case 'strategy_team':
+        return <StrategyTeamModule onClose={() => setCurrentModule('dashboard')} />;
       case 'tally_center':
         return <TallyCenter onClose={() => setCurrentModule('dashboard')} />;
       case 'ai_assistant':
@@ -179,6 +235,7 @@ const MainAppContent = () => {
 
   return (
     <div className="app-container is-admin-shell">
+      <OfflineSyncBanner />
       <AdminLayout
         currentModule={currentModule}
         adminPanel={adminPanel}
@@ -196,6 +253,14 @@ const MainAppContent = () => {
 
       {showAuditLogs && <AuditLogViewer onClose={() => setShowAuditLogs(false)} />}
       {showAIAssistant && <AIAssistantModal onClose={() => setShowAIAssistant(false)} />}
+
+      {phase === 'warning' && (
+        <IdleTimeoutModal
+          secondsLeft={secondsLeft}
+          onStayActive={stayActive}
+          onLogout={() => logout('manual')}
+        />
+      )}
 
       {showNotifications && (
         <div className="modal-overlay" onClick={() => setShowNotifications(false)}>

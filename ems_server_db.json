@@ -1,0 +1,69 @@
+{
+  "strategyMembers": [],
+  "strategyTasks": [],
+  "campaignRoadmap": [],
+  "strategyMeetings": [],
+  "agents": [],
+  "tallyResults": [],
+  "fieldReports": [],
+  "surveys": [],
+  "stakeholders": [],
+  "submissions": [],
+  "readinessWorkstreams": [],
+  "readinessSignOffs": {},
+  "updatedAt": "2026-11-08T20:59:52.311Z",
+  "auditLogs": [
+    {
+      "id": "LOG-592291",
+      "timestamp": "2026-11-08T20:59:52.291Z",
+      "userId": "USR-ADMIN-01",
+      "userName": "Admin System Director",
+      "role": "Super Admin",
+      "ipAddress": "192.168.12.213",
+      "action": "FEATURE_TOGGLED",
+      "details": "Strategic Intelligence set to OFF for Hon. Johnson Sakaja (Governor Nairobi)",
+      "scope": "National",
+      "previousHash": "00000000000000000000000000000000000000000000000000000000303666c5",
+      "hash": "000000000000000000000000000000000000000000000000000000007b16dd86"
+    },
+    {
+      "id": "LOG-592289",
+      "timestamp": "2026-11-08T20:59:52.289Z",
+      "userId": "USR-ADMIN-01",
+      "userName": "Admin System Director",
+      "role": "Super Admin",
+      "ipAddress": "192.168.121.33",
+      "action": "FEATURE_TOGGLED",
+      "details": "Strategic Intelligence set to OFF for Hon. Johnson Sakaja (Governor Nairobi)",
+      "scope": "National",
+      "previousHash": "00000000000000000000000000000000000000000000000000000000303666c5",
+      "hash": "0000000000000000000000000000000000000000000000000000000004ef4d6f"
+    },
+    {
+      "id": "LOG-589928",
+      "timestamp": "2026-11-08T20:59:49.928Z",
+      "userId": "USR-ADMIN-01",
+      "userName": "Admin System Director",
+      "role": "Super Admin",
+      "ipAddress": "192.168.186.159",
+      "action": "FEATURE_TOGGLED",
+      "details": "Strategic Intelligence set to ON for Hon. Johnson Sakaja (Governor Nairobi)",
+      "scope": "National",
+      "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "hash": "000000000000000000000000000000000000000000000000000000000d5b7e83"
+    },
+    {
+      "id": "LOG-589926",
+      "timestamp": "2026-11-08T20:59:49.926Z",
+      "userId": "USR-ADMIN-01",
+      "userName": "Admin System Director",
+      "role": "Super Admin",
+      "ipAddress": "192.168.163.120",
+      "action": "FEATURE_TOGGLED",
+      "details": "Strategic Intelligence set to ON for Hon. Johnson Sakaja (Governor Nairobi)",
+      "scope": "National",
+      "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "hash": "00000000000000000000000000000000000000000000000000000000303666c5"
+    }
+  ]
+}

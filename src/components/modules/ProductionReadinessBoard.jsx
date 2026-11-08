@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { READINESS_WORKSTREAMS, STAKEHOLDER_ROLES, DISASTER_RECOVERY_METRICS, evaluateProductionReadiness, signOffReadinessGate } from '../../utils/productionReadinessGate';
 import { ASVS_5_MATRIX, evaluateASVSCompliance, ASVS_VERIFICATION_STATUS } from '../../utils/asvsVerificationMatrix';
 import { generatePostgresRlsDDL, runPostgresRlsExecutionTest } from '../../services/postgresRlsEngine';
 import { getLegallyApprovedRetentionPolicy, ELECTION_RETENTION_POLICIES, RETENTION_DISCLAIMER } from '../../services/legallyApprovedRetentionPolicyEngine';
 import { CURRENT_RELEASE_MANIFEST, verifyReleaseProvenance } from '../../utils/releaseProvenance';
+import { fetchServerReadiness, submitServerSignOff } from '../../services/readinessApiService';
 
 export default function ProductionReadinessBoard({ userRole = 'SUPER_ADMIN' }) {
+  const [workstreams, setWorkstreams] = useState(READINESS_WORKSTREAMS);
   const [signOffs, setSignOffs] = useState({
     [STAKEHOLDER_ROLES.ENGINEERING]: 'APPROVED',
     [STAKEHOLDER_ROLES.OPERATIONS]: 'APPROVED',
@@ -13,18 +15,38 @@ export default function ProductionReadinessBoard({ userRole = 'SUPER_ADMIN' }) {
     [STAKEHOLDER_ROLES.SECURITY]: 'APPROVED',
     [STAKEHOLDER_ROLES.CAMPAIGN_COMMAND]: 'APPROVED'
   });
-
+  const [isServerManaged, setIsServerManaged] = useState(false);
   const [activeTab, setActiveTab] = useState('WORKSTREAMS');
 
-  const readiness = evaluateProductionReadiness(READINESS_WORKSTREAMS, signOffs);
+  useEffect(() => {
+    let isMounted = true;
+    fetchServerReadiness().then((res) => {
+      if (!isMounted || !res) return;
+      if (Array.isArray(res.workstreams) && res.workstreams.length > 0) {
+        setWorkstreams(res.workstreams);
+      }
+      if (res.signOffs && Object.keys(res.signOffs).length > 0) {
+        setSignOffs(res.signOffs);
+      }
+      setIsServerManaged(!!res.serverManaged);
+    }).catch(() => {});
+
+    return () => { isMounted = false; };
+  }, []);
+
+  const readiness = evaluateProductionReadiness(workstreams, signOffs);
   const asvsCompliance = evaluateASVSCompliance(ASVS_5_MATRIX);
   const activeLegalPolicy = getLegallyApprovedRetentionPolicy();
   const rlsTestResult = runPostgresRlsExecutionTest();
   const releaseProvenance = verifyReleaseProvenance();
 
-  const handleSignOff = (role) => {
+  const handleSignOff = async (role) => {
     const updated = signOffReadinessGate(signOffs, role, 'APPROVED', 'Production dress rehearsal passed');
     setSignOffs(updated);
+
+    if (isServerManaged) {
+      await submitServerSignOff(role, 'APPROVED', 'Signed off via Production Readiness Board');
+    }
   };
 
   const getASVSBadgeColor = (status) => {
@@ -51,7 +73,10 @@ export default function ProductionReadinessBoard({ userRole = 'SUPER_ADMIN' }) {
             Infrastructure evidence verification, OWASP ASVS v5.0 audit status, release provenance, legal retention rules, and decision gate.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <span style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: isServerManaged ? '#064e3b' : '#334155', color: isServerManaged ? '#34d399' : '#94a3b8', fontSize: '12px', fontWeight: 600, border: `1px solid ${isServerManaged ? '#059669' : '#475569'}` }}>
+            {isServerManaged ? '● SERVER SYNCED (LIVE DB)' : '○ CLIENT / OFFLINE MODE'}
+          </span>
           <span style={{ padding: '8px 16px', borderRadius: '6px', backgroundColor: readiness.decisionStatus === 'GO' ? '#065f46' : (readiness.decisionStatus === 'CONDITIONAL_GO' ? '#854d0e' : '#991b1b'), color: '#ffffff', fontWeight: 'bold', fontSize: '13px' }}>
             {readiness.decisionBadge} ({readiness.readinessScore}%)
           </span>
@@ -96,7 +121,7 @@ export default function ProductionReadinessBoard({ userRole = 'SUPER_ADMIN' }) {
       {/* Tab 1: Workstreams */}
       {activeTab === 'WORKSTREAMS' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
-          {READINESS_WORKSTREAMS.map((ws) => (
+          {workstreams.map((ws) => (
             <div key={ws.id} style={{ backgroundColor: '#1e293b', padding: '16px 20px', borderRadius: '8px', border: '1px solid #334155' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>{ws.id}</span>

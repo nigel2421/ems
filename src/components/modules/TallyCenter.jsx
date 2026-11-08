@@ -14,7 +14,8 @@ import {
   X,
   Clock3,
   Scale,
-  BarChart3
+  BarChart3,
+  Lock
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -89,6 +90,8 @@ export const TallyCenter = () => {
 
   const [verifyingTally, setVerifyingTally] = useState(null);
   const [verifyComment, setVerifyComment] = useState('');
+  const [entryError, setEntryError] = useState('');
+  const [historyModalTally, setHistoryModalTally] = useState(null);
 
   useEffect(() => {
     if (!isNational && assignment.county?.id) {
@@ -344,29 +347,39 @@ export const TallyCenter = () => {
 
   const handleSubmitTally = (e) => {
     e.preventDefault();
+    setEntryError('');
     if (!selectedPs) return;
 
-    submitTallyCenterForm(
+    if (!evidenceImage) {
+      setEntryError('Form 34A photograph or scanned document is mandatory for result transmission. Please upload or scan Form 34A.');
+      return;
+    }
+
+    const res = submitTallyCenterForm(
       {
         pollingStationId: selectedPs.id,
         pollingStationCode: selectedPs.code,
         pollingStationName: selectedPs.name,
         registeredVoters,
-        candAVotes: Number(candAVotes),
-        candBVotes: Number(candBVotes),
-        candCVotes: Number(candCVotes),
-        rejectedVotes: Number(rejectedVotes),
+        candAVotes,
+        candBVotes,
+        candCVotes,
+        rejectedVotes,
         agentId: currentUser?.id || 'AGT-001',
         evidence: {
           formType: 'Form 34A',
-          imageUrl:
-            evidenceImage ||
-            'https://images.unsplash.com/photo-1568667256549-094345857637?w=800&auto=format&fit=crop&q=80',
+          imageUrl: evidenceImage,
           ocrExtracted: ocrData?.extractedVotes
         }
       },
-      currentUser
+      currentUser,
+      { allowOverwrite: false }
     );
+
+    if (res && !res.success) {
+      setEntryError(res.errors?.join('; ') || 'Validation failed');
+      return;
+    }
 
     setActiveTab('summary');
   };
@@ -635,25 +648,63 @@ export const TallyCenter = () => {
           </div>
 
           <form onSubmit={handleSubmitTally} className="tc-entry-form">
+            {entryError && (
+              <div
+                role="alert"
+                style={{
+                  padding: '0.85rem 1rem',
+                  borderRadius: '10px',
+                  background: 'rgba(187, 10, 33, 0.12)',
+                  border: '1px solid #BB0A21',
+                  color: '#ff6b6b',
+                  fontSize: '0.85rem',
+                  marginBottom: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                <AlertTriangle size={18} strokeWidth={2} />
+                <span>{entryError}</span>
+              </div>
+            )}
             <div className="tc-form-grid">
               <div className="form-group">
                 <label className="form-label">County</label>
-                <select
-                  className="form-select"
-                  value={selectedCountyId}
-                  onChange={(e) => {
-                    if (!isNational) return;
-                    setSelectedCountyId(e.target.value);
-                  }}
-                  disabled={!isNational}
-                  title={isNational ? 'Select county' : `Locked to your ${String(assignment.label || 'assignment').toLowerCase()}`}
-                >
-                  {countyOptions.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {isNational ? c.name : scopeLabel}
-                    </option>
-                  ))}
-                </select>
+                {!isNational ? (
+                  <div
+                    className="locked-jurisdiction-badge"
+                    title={`Locked to your ${String(assignment.label || 'assignment').toLowerCase()}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      padding: '0.6rem 0.85rem',
+                      borderRadius: '8px',
+                      background: 'rgba(6, 182, 212, 0.1)',
+                      border: '1px solid rgba(6, 182, 212, 0.3)',
+                      color: '#06b6d4',
+                      fontWeight: '600',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    <Lock size={14} />
+                    <span>{scopeLabel} 🔒 [Locked]</span>
+                  </div>
+                ) : (
+                  <select
+                    className="form-select"
+                    value={selectedCountyId}
+                    onChange={(e) => setSelectedCountyId(e.target.value)}
+                    title="Select county"
+                  >
+                    {countyOptions.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div className="form-group">
                 <label className="form-label">Polling station</label>

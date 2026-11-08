@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { UserPlus, X, Camera, MapPin, Filter } from 'lucide-react';
+import { UserPlus, X, Camera, MapPin, Filter, AlertTriangle, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { ScopedLocationSieve } from './ScopedLocationSieve';
-
+import { checkPasswordComplexity, passwordsMatch } from '../../utils/passwordPolicy';
 
 export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
-  const { addUser, currentUser } = useAuth();
-  const { geography, logAuditAction } = useData();
+  const { addUser, currentUser, users } = useAuth();
+  const { geography, logAuditAction, agents } = useData();
 
   // Cascading Selection State: County -> Constituency -> Ward -> Polling Station
   const [countyId, setCountyId] = useState(() => geography.counties[0]?.id || '');
@@ -26,89 +26,32 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
       setWardId(firstWard);
       const firstPs = geography.pollingStations.find(ps => ps.wardId === firstWard)?.id || '';
       setPollingStationId(firstPs);
-      return;
-    }
-
-    // Try matching user assigned entity to Ward, Constituency or County
-    const matchedWard = geography.wards.find(w => w.id === currentUser.assignedEntity || w.name.toLowerCase() === currentUser.entityName?.toLowerCase());
-    if (matchedWard) {
-      setCountyId(matchedWard.countyId);
-      setConstituencyId(matchedWard.constituencyId);
-      setWardId(matchedWard.id);
-      const ps = geography.pollingStations.find(p => p.wardId === matchedWard.id);
-      setPollingStationId(ps?.id || '');
-      return;
-    }
-
-    const matchedConst = geography.constituencies.find(c => c.id === currentUser.assignedEntity || c.name.toLowerCase() === currentUser.entityName?.toLowerCase());
-    if (matchedConst) {
-      setCountyId(matchedConst.countyId);
-      setConstituencyId(matchedConst.id);
-      const w = geography.wards.find(ward => ward.constituencyId === matchedConst.id);
-      setWardId(w?.id || '');
-      const ps = geography.pollingStations.find(p => p.wardId === w?.id);
-      setPollingStationId(ps?.id || '');
-      return;
-    }
-
-    const matchedCounty = geography.counties.find(c => c.id === currentUser.assignedEntity || c.name.toLowerCase() === currentUser.entityName?.toLowerCase());
-    if (matchedCounty) {
-      setCountyId(matchedCounty.id);
-      const c = geography.constituencies.find(cs => cs.countyId === matchedCounty.id);
-      setConstituencyId(c?.id || '');
-      const w = geography.wards.find(ward => ward.constituencyId === c?.id);
-      setWardId(w?.id || '');
-      const ps = geography.pollingStations.find(p => p.wardId === w?.id);
-      setPollingStationId(ps?.id || '');
     }
   }, [currentUser, geography]);
-
-  // Derived filtered lists
-  const availableConstituencies = useMemo(() => {
-    return geography.constituencies.filter(c => c.countyId === countyId);
-  }, [geography, countyId]);
-
-  const availableWards = useMemo(() => {
-    return geography.wards.filter(w => w.constituencyId === constituencyId);
-  }, [geography, constituencyId]);
-
-  const availablePollingStations = useMemo(() => {
-    if (!wardId) return [];
-    return geography.pollingStations.filter(ps => ps.wardId === wardId);
-  }, [geography, wardId]);
-
-  // Handle cascading dropdown resets
-  const handleCountyChange = (newCountyId) => {
-    setCountyId(newCountyId);
-    const firstConst = geography.constituencies.find(c => c.countyId === newCountyId)?.id || '';
-    setConstituencyId(firstConst);
-    const firstWard = geography.wards.find(w => w.constituencyId === firstConst)?.id || '';
-    setWardId(firstWard);
-    const firstPs = geography.pollingStations.find(ps => ps.wardId === firstWard)?.id || '';
-    setPollingStationId(firstPs);
-  };
-
-  const handleConstituencyChange = (newConstId) => {
-    setConstituencyId(newConstId);
-    const firstWard = geography.wards.find(w => w.constituencyId === newConstId)?.id || '';
-    setWardId(firstWard);
-    const firstPs = geography.pollingStations.find(ps => ps.wardId === firstWard)?.id || '';
-    setPollingStationId(firstPs);
-  };
-
-  const handleWardChange = (newWardId) => {
-    setWardId(newWardId);
-    const firstPs = geography.pollingStations.find(ps => ps.wardId === newWardId)?.id || '';
-    setPollingStationId(firstPs);
-  };
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('Agent2026!');
+  const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [submitError, setSubmitError] = useState('');
   const [avatar, setAvatar] = useState('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80');
 
   const selectedPs = geography.pollingStations.find(ps => ps.id === pollingStationId);
+
+  // Strict Duplicate Phone Validation
+  const cleanPhone = phone.trim().replace(/\s+/g, '');
+  const duplicateUser = useMemo(() => {
+    if (!cleanPhone || cleanPhone.length < 7) return null;
+    const allAccounts = [...(users || []), ...(agents || [])];
+    return allAccounts.find(u => {
+      const p = (u.phone || '').trim().replace(/\s+/g, '');
+      return p && p.length >= 7 && (p === cleanPhone || p.endsWith(cleanPhone.slice(-9)) || cleanPhone.endsWith(p.slice(-9)));
+    });
+  }, [cleanPhone, users, agents]);
+
+  const passwordComplexity = useMemo(() => checkPasswordComplexity(password), [password]);
+  const isMatch = useMemo(() => passwordsMatch(password, passwordConfirm), [password, passwordConfirm]);
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
@@ -123,26 +66,44 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setSubmitError('');
+
+    if (duplicateUser) {
+      setSubmitError(`Duplicate Phone: ${phone} is already registered to ${duplicateUser.name || duplicateUser.fullName || 'another agent'}. Duplicate registrations are strictly prohibited.`);
+      return;
+    }
+
+    if (password && !passwordComplexity.isValid) {
+      setSubmitError(passwordComplexity.errors.join(' · '));
+      return;
+    }
+
+    if (password && !isMatch) {
+      setSubmitError('Passwords do not match. Please verify password confirmation.');
+      return;
+    }
 
     const targetAspirantId = defaultAspirantId || currentUser.id;
+    const resolvedEmail = email.trim() || `${cleanPhone.replace(/[^0-9]/g, '') || Date.now()}@agent.ems.ke`;
 
     const newAgent = {
       id: `USR-AGENT-${Date.now().toString().slice(-4)}`,
       name,
       role: 'Agent',
-      email,
-      password,
+      email: resolvedEmail,
+      password: password || 'dev-local-only-password',
       phone,
       assignedEntity: pollingStationId || 'PS-1',
       entityName: selectedPs ? `${selectedPs.code} - ${selectedPs.name}` : 'Assigned Polling Station',
       aspirantId: targetAspirantId,
       creatorId: currentUser.id,
       twoFactorEnabled: false,
+      status: 'Active',
       avatar
     };
 
     addUser(newAgent);
-    logAuditAction(currentUser, 'AGENT_REGISTERED', `Added new agent ${name} bound to polling station ${selectedPs?.name || pollingStationId}`);
+    logAuditAction(currentUser, 'AGENT_REGISTERED', `Added new agent ${name} bound to polling station ${selectedPs?.name || pollingStationId} (Phone: ${phone})`);
     onClose();
   };
 
@@ -150,7 +111,7 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div 
         className="modal-content" 
-        style={{ maxWidth: '560px', padding: '1.75rem', borderRadius: '20px' }}
+        style={{ maxWidth: '580px', padding: '1.75rem', borderRadius: '20px' }}
         onClick={e => e.stopPropagation()}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
@@ -160,13 +121,20 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
             </div>
             <div>
               <h3 style={{ fontSize: '1.2rem', fontWeight: '800' }}>Register Polling Station Agent</h3>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Sieve location by County → Constituency → Ward to pick exact stream</p>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Phone-first agent onboarding with anti-duplicate validation</p>
             </div>
           </div>
-          <button className="btn btn-secondary btn-sm" onClick={onClose}>
+          <button className="btn btn-secondary btn-sm" onClick={onClose} aria-label="Close">
             <X style={{ width: '16px', height: '16px' }} />
           </button>
         </div>
+
+        {submitError && (
+          <div style={{ padding: '0.75rem', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.35)', color: '#fca5a5', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <AlertTriangle size={16} />
+            <span>{submitError}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {/* Photo Preview & Upload */}
@@ -190,12 +158,39 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
 
           <div className="responsive-form-grid">
             <div className="form-group">
-              <label className="form-label">Email Address</label>
-              <input type="email" className="form-input" placeholder="samuel@agent.ke" value={email} onChange={e => setEmail(e.target.value)} required />
+              <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Phone Number</span>
+                <span style={{ color: '#10b981', fontSize: '0.75rem' }}>Required / Primary ID</span>
+              </label>
+              <input
+                type="tel"
+                className={`form-input${duplicateUser ? ' is-invalid' : ''}`}
+                style={duplicateUser ? { borderColor: '#ef4444', background: 'rgba(239,68,68,0.08)' } : {}}
+                placeholder="+254 7..."
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                required
+              />
+              {duplicateUser && (
+                <div style={{ color: '#ef4444', fontSize: '0.74rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <ShieldAlert size={13} />
+                  <span>Duplicate: Registered to {duplicateUser.name || duplicateUser.fullName} ({duplicateUser.role || 'Agent'})</span>
+                </div>
+              )}
             </div>
+
             <div className="form-group">
-              <label className="form-label">Phone Number</label>
-              <input type="tel" className="form-input" placeholder="+254 7..." value={phone} onChange={e => setPhone(e.target.value)} required />
+              <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Email Address</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Optional</span>
+              </label>
+              <input
+                type="email"
+                className="form-input"
+                placeholder="samuel@agent.ke (optional)"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+              />
             </div>
           </div>
 
@@ -211,12 +206,48 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
             }}
           />
 
-          <div className="form-group">
-            <label className="form-label">Default Account Password</label>
-            <input type="text" className="form-input" value={password} onChange={e => setPassword(e.target.value)} required />
+          <div className="responsive-form-grid">
+            <div className="form-group">
+              <label className="form-label">Account Password</label>
+              <input
+                type="password"
+                className="form-input"
+                placeholder="Min. 8 characters"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+              />
+              {password && (
+                <div style={{ fontSize: '0.72rem', marginTop: '0.2rem', color: passwordComplexity.isValid ? '#10b981' : '#f59e0b' }}>
+                  Strength: {passwordComplexity.strengthLabel} {passwordComplexity.isValid && '✓'}
+                </div>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Confirm Password</label>
+              <input
+                type="password"
+                className="form-input"
+                placeholder="Re-enter password"
+                value={passwordConfirm}
+                onChange={e => setPasswordConfirm(e.target.value)}
+                required
+              />
+              {passwordConfirm && (
+                <div style={{ fontSize: '0.72rem', marginTop: '0.2rem', color: isMatch ? '#10b981' : '#ef4444' }}>
+                  {isMatch ? '✓ Passwords match' : '✗ Passwords do not match'}
+                </div>
+              )}
+            </div>
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem', marginTop: '0.25rem', background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' }}>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={Boolean(duplicateUser || (password && (!passwordComplexity.isValid || !isMatch)))}
+            style={{ padding: '0.75rem', marginTop: '0.25rem', background: duplicateUser ? '#64748b' : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', cursor: duplicateUser ? 'not-allowed' : 'pointer' }}
+          >
             <UserPlus style={{ width: '16px', height: '16px' }} />
             <span>Confirm Agent Registration</span>
           </button>

@@ -10,28 +10,40 @@
 
 .psi-news-fab {
   position: fixed;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
   right: 1.1rem;
   z-index: 1200;
   appearance: none;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  min-height: 56px;
-  padding: 0.55rem 0.7rem 0.55rem 0.75rem;
+  min-height: 48px;
+  padding: 0.45rem 0.75rem;
   border: none;
-  border-radius: 16px;
+  border-radius: 999px;
   background: linear-gradient(160deg, #006B3F 0%, #073322 100%);
   color: #fff;
   font: inherit;
-  cursor: pointer;
-  box-shadow: 0 12px 30px rgba(7, 51, 34, 0.32);
+  box-shadow: 0 8px 24px rgba(7, 51, 34, 0.35);
   writing-mode: horizontal-tb;
   cursor: grab;
   user-select: none;
   touch-action: none;
+  transition: transform 0.1s ease, filter 0.2s ease, box-shadow 0.2s ease;
 }
 
-.psi-news-fab:active { cursor: grabbing; }
+.psi-news-fab:active {
+  cursor: grabbing;
+}
+
+.psi-news-fab.is-minimized {
+  min-height: 40px;
+  padding: 0.35rem 0.5rem;
+}
+
+.psi-news-fab.is-minimized .psi-news-fab-copy {
+  display: none;
+}
 
 .psi-news-enable {
   position: fixed;
@@ -311,5 +323,9 @@
 @media (max-width: 900px) {
   .psi-news-fab {
     right: 0.75rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+  .psi-news-fab .psi-news-fab-copy small {
+    display: none;
   }
 }

@@ -32,6 +32,7 @@ export const setLLMApiKey = (key) => {
  */
 const buildSystemContextPrompt = (contextData = {}) => {
   const {
+    user = null,
     stationIntelligence = {},
     fieldReports = [],
     surveys = [],
@@ -39,6 +40,10 @@ const buildSystemContextPrompt = (contextData = {}) => {
     tallyResults = [],
     campaignPhases = []
   } = contextData;
+
+  const role = user?.role || 'Campaign Officer';
+  const name = user?.name || 'Leader';
+  const scopeDesc = user?.jurisdictionScope?.title || user?.jurisdictionScope?.countyName || 'Authorized Jurisdiction';
 
   const totalStations = Object.keys(stationIntelligence).length;
   const severeRiskCount = Object.values(stationIntelligence).filter(s => s.riskLevel === 'Severe' || s.riskLevel === 'High').length;
@@ -50,7 +55,13 @@ const buildSystemContextPrompt = (contextData = {}) => {
   const tallySummary = (tallyResults || []).map(t => `- ${t.pollingStationName}: Total ${t.totalVotesCast} votes (Cand A: ${t.candAVotes}, Cand B: ${t.candBVotes}) Status: ${t.status}`).join('\n');
 
   return `You are the Chief AI Campaign Strategist for the Campaign Intelligence & Election Management System (CI-EMS).
-Your mission is to provide high-fidelity, actionable strategic campaign advice, risk assessments, voter sentiment analysis, and executive briefings.
+OPERATING FOR: ${name} (${role})
+ASSIGNED JURISDICTION: ${scopeDesc}
+
+JURISDICTIONAL POLICY:
+1. Advise strictly within the user's assigned jurisdiction (${scopeDesc}).
+2. Do not reveal data for outside rival contests.
+3. Reference real Kenyan election operations: Form 34A verification, voter capacity constraints, polling stream mobilization, and agent deployment.
 
 LIVE CAMPAIGN GROUND TRUTH METRICS:
 - Active Campaign Phase: Phase ${activePhase.phaseNumber} (${activePhase.name}) - Progress: ${activePhase.progressPct}%

@@ -303,18 +303,18 @@
 }
 
 .psi-risk-medium {
-  background: #E8F5EE;
-  color: #0E7A45;
+  background: #FEF3C7;
+  color: #78350F;
 }
 
 .psi-risk-high {
-  background: rgba(187, 10, 33, 0.1);
+  background: rgba(187, 10, 33, 0.12);
   color: #BB0A21;
 }
 
 .psi-risk-severe {
-  background: rgba(187, 10, 33, 0.18);
-  color: #8a0718;
+  background: rgba(138, 7, 24, 0.22);
+  color: #8A0718;
 }
 
 .psi-icon-action {
@@ -421,7 +421,7 @@
 }
 
 .psi-dot.low { background: #006B3F; }
-.psi-dot.mid { background: #0E7A45; }
+.psi-dot.mid { background: #D97706; }
 .psi-dot.high { background: #BB0A21; }
 
 .psi-map-grid {

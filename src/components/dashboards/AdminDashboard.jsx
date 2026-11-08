@@ -17,8 +17,17 @@ import {
   Eye,
   Pencil,
   Trash2,
-  X
+  X,
+  ShieldAlert,
+  RotateCcw,
+  AlertTriangle,
+  ShieldCheck,
+  Lock,
+  Key,
+  Sliders,
+  Target
 } from 'lucide-react';
+import { checkPasswordComplexity, passwordsMatch } from '../../utils/passwordPolicy';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -47,21 +56,12 @@ ChartJS.register(
   Filler
 );
 
+import { DIVERSE_CATEGORICAL_PALETTE } from '../../utils/chartPalette';
+
 const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
 const ACCOUNT_ROLES = ['Admin', 'Strategy Team', 'Regional Coordinator', 'Governor', 'Senator', 'MP', 'MCA', 'Aspirant', 'Field Agent', 'Agent', 'Observer'];
 
-const COUNTY_CHART_COLORS = [
-  '#006B3F',
-  '#0E7A45',
-  '#C9A227',
-  '#BB0A21',
-  '#2A9D8F',
-  '#3D5A80',
-  '#E76F51',
-  '#8ECAE6',
-  '#073322',
-  '#A7C4B5'
-];
+const COUNTY_CHART_COLORS = DIVERSE_CATEGORICAL_PALETTE;
 
 export const AdminDashboard = ({
   onOpenAuditLogs,
@@ -70,7 +70,17 @@ export const AdminDashboard = ({
   activeTab: controlledTab = 'overview',
   onTabChange
 }) => {
-  const { users, addUser, currentUser, updateUserProfile, deleteUser } = useAuth();
+  const {
+    users,
+    addUser,
+    currentUser,
+    updateUserProfile,
+    updateUserFeatures,
+    suspendUser,
+    reinstateUser,
+    getAccountLockState,
+    unlockAccount
+  } = useAuth();
   const {
     geography,
     assignAgentToPollingStation,
@@ -83,9 +93,9 @@ export const AdminDashboard = ({
   const [activeTab, setActiveTab] = useState(controlledTab);
   const [accountModal, setAccountModal] = useState(null); // { mode: 'view' | 'edit', user }
   const [editDraft, setEditDraft] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
   const [accountNotice, setAccountNotice] = useState('');
-
+  const [directoryFilter, setDirectoryFilter] = useState('active'); // 'active' | 'suspended'
+  const [suspendTarget, setSuspendTarget] = useState(null);
 
   useEffect(() => {
     setActiveTab(controlledTab);
@@ -100,6 +110,8 @@ export const AdminDashboard = ({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [phone, setPhone] = useState('');
   const [countyId, setCountyId] = useState(geography.counties[0]?.id || '');
   const [constituencyId, setConstituencyId] = useState('');
@@ -231,6 +243,17 @@ export const AdminDashboard = ({
 
   const handleCreateAspirant = (e) => {
     e.preventDefault();
+    setPasswordError('');
+
+    if (password && !passwordsMatch(password, passwordConfirm)) {
+      setPasswordError('Passwords do not match. Please verify your confirmation password.');
+      return;
+    }
+    const complexity = checkPasswordComplexity(password);
+    if (password && !complexity.isValid) {
+      setPasswordError(complexity.errors.join(' · '));
+      return;
+    }
 
     let assignedEntity = countyId;
     let entityName = selectedCounty ? selectedCounty.name : 'National';
@@ -262,6 +285,7 @@ export const AdminDashboard = ({
       entityName,
       party,
       twoFactorEnabled: true,
+      status: 'Active',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
     });
     logAuditAction(
@@ -274,6 +298,8 @@ export const AdminDashboard = ({
     setName('');
     setEmail('');
     setPassword('');
+    setPasswordConfirm('');
+    setPasswordError('');
     setPhone('');
     setTimeout(() => setCreatedNotice(''), 4000);
   };
@@ -298,12 +324,14 @@ export const AdminDashboard = ({
   const openAccountEdit = (user) => {
     setAccountModal({ mode: 'edit', user });
     setEditDraft({
+      id: user.id,
       name: user.name || '',
       email: user.email || '',
       role: user.role || 'Aspirant',
       entityName: user.entityName || '',
       party: user.party || '',
-      phone: user.phone || ''
+      phone: user.phone || '',
+      features: { ...(user.features || { strategicIntelligence: false, strategyTeam: false }) }
     });
   };
 
@@ -316,8 +344,12 @@ export const AdminDashboard = ({
       role: editDraft.role,
       entityName: editDraft.entityName.trim(),
       party: editDraft.party.trim(),
-      phone: editDraft.phone.trim()
+      phone: editDraft.phone.trim(),
+      features: editDraft.features
     });
+    if (updateUserFeatures && editDraft.features) {
+      updateUserFeatures(accountModal.user.id, editDraft.features);
+    }
     logAuditAction(
       currentUser,
       'ACCOUNT_UPDATED',
@@ -329,17 +361,17 @@ export const AdminDashboard = ({
     setTimeout(() => setAccountNotice(''), 3500);
   };
 
-  const handleDeleteAccount = () => {
-    if (!deleteTarget) return;
-    const name = deleteTarget.name;
-    deleteUser(deleteTarget.id);
-    logAuditAction(currentUser, 'ACCOUNT_DELETED', `Deleted account ${name} (${deleteTarget.email})`);
-    setAccountNotice(`Removed ${name}`);
-    setDeleteTarget(null);
-    if (accountModal?.user?.id === deleteTarget.id) {
+  const handleConfirmSuspend = () => {
+    if (!suspendTarget) return;
+    const name = suspendTarget.name;
+    suspendUser(suspendTarget.id, 'Administrative suspension via User Directory');
+    logAuditAction(currentUser, 'ACCOUNT_SUSPENDED', `Suspended user ${name} (${suspendTarget.email || suspendTarget.phone})`);
+    setAccountNotice(`Account for ${name} quarantined and suspended.`);
+    if (accountModal?.user?.id === suspendTarget.id) {
       setAccountModal(null);
       setEditDraft(null);
     }
+    setSuspendTarget(null);
     setTimeout(() => setAccountNotice(''), 3500);
   };
 
@@ -358,7 +390,11 @@ export const AdminDashboard = ({
     },
     user_directory: {
       title: 'Accounts Directory',
-      subtitle: 'Provisioned candidates and field officers with role-based access.'
+      subtitle: 'Provisioned candidates, campaign coordinators, and field agents with security controls.'
+    },
+    feature_settings: {
+      title: 'Campaign Feature Controls',
+      subtitle: 'Manage Strategic Intelligence and Strategy Team module activation per candidate.'
     }
   };
 
@@ -579,14 +615,32 @@ export const AdminDashboard = ({
               </div>
             </div>
 
+            {passwordError && (
+              <div style={{ padding: '0.65rem 0.85rem', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.35)', color: '#fca5a5', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertTriangle size={15} />
+                <span>{passwordError}</span>
+              </div>
+            )}
+
             <div className="responsive-form-grid">
               <div className="form-group">
                 <label className="form-label">Login email</label>
                 <input type="email" className="form-input" placeholder="candidate@ems.go.ke" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
               <div className="form-group">
+                <label className="form-label">Phone number</label>
+                <input type="tel" className="form-input" placeholder="+254 7..." value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="responsive-form-grid">
+              <div className="form-group">
                 <label className="form-label">Login password</label>
-                <input type="password" className="form-input" placeholder="••••••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <input type="password" className="form-input" placeholder="Min. 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Confirm password</label>
+                <input type="password" className="form-input" placeholder="Re-enter password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} required />
               </div>
             </div>
 
@@ -735,86 +789,472 @@ export const AdminDashboard = ({
         </div>
       )}
 
-      {activeTab === 'user_directory' && (
-        <div className="admin-panel">
-          <div className="admin-panel-toolbar">
-            <div>
-              <h2>Active accounts ({users.length})</h2>
-              <p>Provisioned candidates and polling station agents.</p>
-            </div>
-            <button type="button" className="admin-btn admin-btn-primary" onClick={() => setTab('add_aspirant')}>
-              <Plus strokeWidth={1.75} />
-              Add account
-            </button>
-          </div>
+      {activeTab === 'feature_settings' && (() => {
+        const candidateAccounts = users.filter((u) => ['Governor', 'Senator', 'MP', 'MCA', 'Aspirant', 'Candidate Admin'].includes(u.role));
+        const activeIntelCount = candidateAccounts.filter((u) => u.features?.strategicIntelligence).length;
+        const activeTeamCount = candidateAccounts.filter((u) => u.features?.strategyTeam).length;
 
-          {accountNotice && (
-            <div className="admin-notice">
-              <CheckCircle strokeWidth={1.75} />
-              <span>{accountNotice}</span>
+        return (
+          <div className="admin-panel">
+            <div className="admin-panel-toolbar" style={{ flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
+              <div>
+                <h2>Campaign Feature Controls ({candidateAccounts.length} Campaigns)</h2>
+                <p>Activate or mute Strategic Intelligence & Strategy Team modules per candidate ticket. When active, all subordinate officers and agents inherit access automatically.</p>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-sm admin-btn-primary"
+                  onClick={() => {
+                    candidateAccounts.forEach((cand) => {
+                      updateUserFeatures(cand.id, { strategicIntelligence: true, strategyTeam: true });
+                    });
+                    logAuditAction(currentUser, 'FEATURES_BULK_ENABLED', 'Enabled Strategic Intelligence & Strategy Team for all candidates');
+                    setAccountNotice('Strategic Intelligence & Strategy Team enabled for all candidates.');
+                    setTimeout(() => setAccountNotice(''), 3500);
+                  }}
+                >
+                  <CheckCircle size={14} style={{ marginRight: 4 }} />
+                  Enable All
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-sm admin-btn-ghost"
+                  onClick={() => {
+                    candidateAccounts.forEach((cand) => {
+                      updateUserFeatures(cand.id, { strategicIntelligence: false, strategyTeam: false });
+                    });
+                    logAuditAction(currentUser, 'FEATURES_BULK_DISABLED', 'Disabled Strategic Intelligence & Strategy Team for all candidates');
+                    setAccountNotice('Strategic modules disabled for all candidates.');
+                    setTimeout(() => setAccountNotice(''), 3500);
+                  }}
+                >
+                  <X size={14} style={{ marginRight: 4 }} />
+                  Mute All
+                </button>
+              </div>
             </div>
-          )}
 
-          <div className="custom-table-container">
-            <table className="custom-table">
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Role</th>
-                  <th>Email</th>
-                  <th>Jurisdiction</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u) => (
-                  <tr key={u.id}>
-                    <td style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                      <img src={u.avatar} alt="" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
-                      <span>{u.name}</span>
-                    </td>
-                    <td><span className={`role-badge role-${String(u.role).toLowerCase().replace(/\s+/g, '-')}`}>{u.role}</span></td>
-                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem' }}>{u.email}</td>
-                    <td>{u.entityName}</td>
-                    <td>
-                      <div className="admin-row-actions">
+            {accountNotice && (
+              <div className="admin-notice" style={{ marginBottom: '1rem' }}>
+                <CheckCircle strokeWidth={1.75} />
+                <span>{accountNotice}</span>
+              </div>
+            )}
+
+            {/* Feature Metrics Banner */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div style={{ padding: '1rem 1.25rem', borderRadius: '14px', background: 'var(--admin-surface)', border: '1px solid var(--admin-line)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                  <Target size={22} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--admin-ink)' }}>{activeIntelCount} / {candidateAccounts.length}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--admin-muted)' }}>Campaigns with Strategic Intelligence ON</div>
+                </div>
+              </div>
+              <div style={{ padding: '1rem 1.25rem', borderRadius: '14px', background: 'var(--admin-surface)', border: '1px solid var(--admin-line)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(56, 189, 248, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8' }}>
+                  <Users size={22} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--admin-ink)' }}>{activeTeamCount} / {candidateAccounts.length}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--admin-muted)' }}>Campaigns with Strategy Team ON</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Candidate Feature Matrix Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1rem' }}>
+              {candidateAccounts.map((cand) => {
+                const isIntelActive = Boolean(cand.features?.strategicIntelligence);
+                const isTeamActive = Boolean(cand.features?.strategyTeam);
+
+                return (
+                  <div
+                    key={cand.id}
+                    style={{
+                      borderRadius: '16px',
+                      background: 'var(--admin-surface)',
+                      border: '1px solid var(--admin-line)',
+                      padding: '1.2rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.9rem',
+                      boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <img
+                          src={cand.avatar}
+                          alt=""
+                          style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--admin-mint)' }}
+                        />
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--admin-ink)' }}>{cand.name}</div>
+                          <div style={{ fontSize: '0.74rem', color: 'var(--admin-muted)' }}>{cand.role} · {cand.entityName || cand.county}</div>
+                        </div>
+                      </div>
+                      <span className={`role-badge role-${String(cand.role).toLowerCase().replace(/\s+/g, '-')}`}>
+                        {cand.party || 'Independent'}
+                      </span>
+                    </div>
+
+                    <div style={{ padding: '0.75rem', borderRadius: '10px', background: 'var(--admin-hover)', border: '1px solid var(--admin-line)', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--admin-ink)' }}>Strategic Intelligence</div>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--admin-muted)' }}>Real-world live news, sentiment, opponent threat</div>
+                        </div>
                         <button
                           type="button"
-                          className="admin-icon-btn"
-                          title="View account"
-                          aria-label={`View ${u.name}`}
-                          onClick={() => openAccountView(u)}
+                          onClick={() => {
+                            const next = !isIntelActive;
+                            updateUserFeatures(cand.id, { strategicIntelligence: next });
+                            logAuditAction(currentUser, 'FEATURE_TOGGLED', `Strategic Intelligence set to ${next ? 'ON' : 'OFF'} for ${cand.name}`);
+                          }}
+                          style={{
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '999px',
+                            border: 'none',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            background: isIntelActive ? '#10b981' : 'rgba(255,255,255,0.12)',
+                            color: isIntelActive ? '#fff' : 'var(--admin-muted)',
+                            transition: 'all 0.15s ease'
+                          }}
                         >
-                          <Eye strokeWidth={1.75} />
-                        </button>
-                        <button
-                          type="button"
-                          className="admin-icon-btn"
-                          title="Edit account"
-                          aria-label={`Edit ${u.name}`}
-                          onClick={() => openAccountEdit(u)}
-                        >
-                          <Pencil strokeWidth={1.75} />
-                        </button>
-                        <button
-                          type="button"
-                          className="admin-icon-btn is-danger"
-                          title="Delete account"
-                          aria-label={`Delete ${u.name}`}
-                          disabled={u.id === currentUser?.id}
-                          onClick={() => setDeleteTarget(u)}
-                        >
-                          <Trash2 strokeWidth={1.75} />
+                          {isIntelActive ? 'ACTIVE' : 'OFF'}
                         </button>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+                      <div style={{ height: '1px', background: 'var(--admin-line)' }} />
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--admin-ink)' }}>Strategy Team Hub</div>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--admin-muted)' }}>Hierarchies, assignments, roadmap & meetings</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = !isTeamActive;
+                            updateUserFeatures(cand.id, { strategyTeam: next });
+                            logAuditAction(currentUser, 'FEATURE_TOGGLED', `Strategy Team set to ${next ? 'ON' : 'OFF'} for ${cand.name}`);
+                          }}
+                          style={{
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '999px',
+                            border: 'none',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            background: isTeamActive ? '#0284c7' : 'rgba(255,255,255,0.12)',
+                            color: isTeamActive ? '#fff' : 'var(--admin-muted)',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          {isTeamActive ? 'ACTIVE' : 'OFF'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div style={{ fontSize: '0.72rem', color: 'var(--admin-muted)', fontStyle: 'italic' }}>
+                      ↳ Sub-accounts (coordinators and agents in {cand.county || cand.entityName}) inherit these module settings.
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
+
+      {activeTab === 'user_directory' && (() => {
+        const lockedAccounts = users.filter((u) => getAccountLockState(u.email).locked);
+        const activeAccounts = users.filter((u) => !u.isSuspended && u.status !== 'Suspended' && !getAccountLockState(u.email).locked);
+        const candidateAccounts = users.filter((u) => ['Governor', 'Senator', 'MP', 'MCA', 'Aspirant', 'Candidate Admin'].includes(u.role) && !u.isSuspended);
+        const officerAccounts = users.filter((u) => ['Regional Coordinator', 'County Coordinator', 'Constituency Coordinator', 'Ward Coordinator', 'Polling Coordinator', 'Strategy Team', 'Admin'].includes(u.role) && !u.isSuspended);
+        const agentAccounts = users.filter((u) => ['Agent', 'Field Agent'].includes(u.role) && !u.isSuspended);
+        const suspendedAccounts = users.filter((u) => u.isSuspended || u.status === 'Suspended');
+
+        let displayedAccounts = activeAccounts;
+        if (directoryFilter === 'candidates') displayedAccounts = candidateAccounts;
+        else if (directoryFilter === 'officers') displayedAccounts = officerAccounts;
+        else if (directoryFilter === 'agents') displayedAccounts = agentAccounts;
+        else if (directoryFilter === 'locked') displayedAccounts = lockedAccounts;
+        else if (directoryFilter === 'suspended') displayedAccounts = suspendedAccounts;
+
+        return (
+          <div className="admin-panel">
+            <div className="admin-panel-toolbar" style={{ flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div>
+                <h2>User & Agent Directory ({displayedAccounts.length})</h2>
+                <p>Provisioned candidates, campaign coordinators, field agents, and security lockout status.</p>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', background: 'var(--admin-hover)', borderRadius: '10px', padding: '3px', gap: '3px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className={`admin-btn admin-btn-sm ${directoryFilter === 'active' ? 'admin-btn-primary' : 'admin-btn-ghost'}`}
+                    onClick={() => setDirectoryFilter('active')}
+                  >
+                    Active ({activeAccounts.length})
+                  </button>
+                  <button
+                    type="button"
+                    className={`admin-btn admin-btn-sm ${directoryFilter === 'candidates' ? 'admin-btn-primary' : 'admin-btn-ghost'}`}
+                    onClick={() => setDirectoryFilter('candidates')}
+                  >
+                    Candidates ({candidateAccounts.length})
+                  </button>
+                  <button
+                    type="button"
+                    className={`admin-btn admin-btn-sm ${directoryFilter === 'officers' ? 'admin-btn-primary' : 'admin-btn-ghost'}`}
+                    onClick={() => setDirectoryFilter('officers')}
+                  >
+                    Officers ({officerAccounts.length})
+                  </button>
+                  <button
+                    type="button"
+                    className={`admin-btn admin-btn-sm ${directoryFilter === 'agents' ? 'admin-btn-primary' : 'admin-btn-ghost'}`}
+                    onClick={() => setDirectoryFilter('agents')}
+                  >
+                    Agents ({agentAccounts.length})
+                  </button>
+                  <button
+                    type="button"
+                    className={`admin-btn admin-btn-sm ${directoryFilter === 'locked' ? 'admin-btn-primary' : 'admin-btn-ghost'}`}
+                    onClick={() => setDirectoryFilter('locked')}
+                    style={lockedAccounts.length > 0 ? { background: '#eab308', color: '#000', borderColor: '#ca8a04' } : {}}
+                  >
+                    <Lock size={13} style={{ marginRight: 3 }} />
+                    Locked ({lockedAccounts.length})
+                  </button>
+                  <button
+                    type="button"
+                    className={`admin-btn admin-btn-sm ${directoryFilter === 'suspended' ? 'admin-btn-primary' : 'admin-btn-ghost'}`}
+                    onClick={() => setDirectoryFilter('suspended')}
+                    style={directoryFilter === 'suspended' ? { background: '#dc2626' } : { color: '#f87171' }}
+                  >
+                    <ShieldAlert size={13} style={{ marginRight: 3 }} />
+                    Quarantined ({suspendedAccounts.length})
+                  </button>
+                </div>
+                <button type="button" className="admin-btn admin-btn-primary" onClick={() => setTab('add_aspirant')}>
+                  <Plus strokeWidth={1.75} />
+                  Add candidate
+                </button>
+              </div>
+            </div>
+
+            {accountNotice && (
+              <div className="admin-notice">
+                <CheckCircle strokeWidth={1.75} />
+                <span>{accountNotice}</span>
+              </div>
+            )}
+
+            <div className="custom-table-container">
+              <table className="custom-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Email / Phone</th>
+                    <th>Jurisdiction</th>
+                    <th>Features</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayedAccounts.length > 0 ? (
+                    displayedAccounts.map((u) => {
+                      const isUserSuspended = u.isSuspended || u.status === 'Suspended';
+                      const lockState = getAccountLockState(u.email);
+                      const isCandidate = ['Governor', 'Senator', 'MP', 'MCA', 'Aspirant', 'Candidate Admin'].includes(u.role);
+
+                      return (
+                        <tr key={u.id}>
+                          <td style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                            <img src={u.avatar} alt="" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
+                            <div>
+                              <div>{u.name}</div>
+                              {lockState.locked && (
+                                <div style={{ fontSize: '0.7rem', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                                  <Lock size={11} /> {lockState.failureCount} failed sign-in attempts
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td><span className={`role-badge role-${String(u.role).toLowerCase().replace(/\s+/g, '-')}`}>{u.role}</span></td>
+                          <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem' }}>
+                            <div>{u.email || '—'}</div>
+                            {u.phone && <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>{u.phone}</div>}
+                          </td>
+                          <td>{u.entityName || u.county || '—'}</td>
+                          <td>
+                            {isCandidate ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const next = !Boolean(u.features?.strategicIntelligence);
+                                    updateUserFeatures(u.id, { strategicIntelligence: next });
+                                    logAuditAction(currentUser, 'FEATURE_TOGGLED', `Strategic Intelligence set to ${next ? 'ON' : 'OFF'} for ${u.name}`);
+                                  }}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 600,
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    border: '1px solid',
+                                    cursor: 'pointer',
+                                    background: u.features?.strategicIntelligence ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)',
+                                    color: u.features?.strategicIntelligence ? '#10b981' : 'var(--admin-muted)',
+                                    borderColor: u.features?.strategicIntelligence ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.1)'
+                                  }}
+                                  title="Toggle Strategic Intelligence"
+                                >
+                                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: u.features?.strategicIntelligence ? '#10b981' : '#64748b' }} />
+                                  Intel: {u.features?.strategicIntelligence ? 'ON' : 'OFF'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const next = !Boolean(u.features?.strategyTeam);
+                                    updateUserFeatures(u.id, { strategyTeam: next });
+                                    logAuditAction(currentUser, 'FEATURE_TOGGLED', `Strategy Team set to ${next ? 'ON' : 'OFF'} for ${u.name}`);
+                                  }}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 600,
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    border: '1px solid',
+                                    cursor: 'pointer',
+                                    background: u.features?.strategyTeam ? 'rgba(56,189,248,0.15)' : 'rgba(255,255,255,0.05)',
+                                    color: u.features?.strategyTeam ? '#38bdf8' : 'var(--admin-muted)',
+                                    borderColor: u.features?.strategyTeam ? 'rgba(56,189,248,0.4)' : 'rgba(255,255,255,0.1)'
+                                  }}
+                                  title="Toggle Strategy Team Module"
+                                >
+                                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: u.features?.strategyTeam ? '#38bdf8' : '#64748b' }} />
+                                  Team: {u.features?.strategyTeam ? 'ON' : 'OFF'}
+                                </button>
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '0.72rem', color: 'var(--admin-muted)' }}>Inherited from ticket</span>
+                            )}
+                          </td>
+                          <td>
+                            {lockState.locked ? (
+                              <span style={{ fontSize: '0.72rem', fontWeight: '800', padding: '0.2rem 0.5rem', borderRadius: '4px', background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <Lock size={11} /> LOCKED OUT
+                              </span>
+                            ) : isUserSuspended ? (
+                              <span style={{ fontSize: '0.72rem', fontWeight: '700', padding: '0.2rem 0.5rem', borderRadius: '4px', background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}>
+                                SUSPENDED
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '0.72rem', fontWeight: '700', padding: '0.2rem 0.5rem', borderRadius: '4px', background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
+                                ACTIVE
+                              </span>
+                            )}
+                          </td>
+                          <td>
+                            <div className="admin-row-actions">
+                              {lockState.locked && (
+                                <button
+                                  type="button"
+                                  className="admin-btn admin-btn-sm"
+                                  style={{ padding: '0.2rem 0.6rem', fontSize: '0.75rem', background: '#eab308', color: '#000', border: 'none', fontWeight: 700 }}
+                                  title="Unlock account access"
+                                  onClick={() => {
+                                    unlockAccount(u.email);
+                                    logAuditAction(currentUser, 'ACCOUNT_UNLOCKED', `Admin unlocked account ${u.email}`);
+                                    setAccountNotice(`Unlocked login access for ${u.name}`);
+                                    setTimeout(() => setAccountNotice(''), 3500);
+                                  }}
+                                >
+                                  <Key size={12} style={{ marginRight: 4 }} /> Unlock
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                className="admin-icon-btn"
+                                title="View account"
+                                aria-label={`View ${u.name}`}
+                                onClick={() => openAccountView(u)}
+                              >
+                                <Eye strokeWidth={1.75} />
+                              </button>
+                              <button
+                                type="button"
+                                className="admin-icon-btn"
+                                title="Edit account"
+                                aria-label={`Edit ${u.name}`}
+                                onClick={() => openAccountEdit(u)}
+                              >
+                                <Pencil strokeWidth={1.75} />
+                              </button>
+                              {isUserSuspended ? (
+                                <button
+                                  type="button"
+                                  className="admin-btn admin-btn-ghost admin-btn-sm"
+                                  style={{ color: '#10b981', border: '1px solid rgba(16,185,129,0.35)', padding: '0.2rem 0.6rem' }}
+                                  title="Reinstate account"
+                                  aria-label={`Reinstate ${u.name}`}
+                                  onClick={() => {
+                                    reinstateUser(u.id);
+                                    logAuditAction(currentUser, 'ACCOUNT_REINSTATED', `Reinstated user ${u.name} (${u.email || u.phone})`);
+                                    setAccountNotice(`Account for ${u.name} has been reinstated to Active status.`);
+                                    setTimeout(() => setAccountNotice(''), 4000);
+                                  }}
+                                >
+                                  <RotateCcw size={13} style={{ marginRight: 4 }} />
+                                  Reinstate
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="admin-icon-btn is-warning"
+                                  style={{ color: '#f59e0b' }}
+                                  title="Suspend account"
+                                  aria-label={`Suspend ${u.name}`}
+                                  disabled={u.id === currentUser?.id}
+                                  onClick={() => setSuspendTarget(u)}
+                                >
+                                  <ShieldAlert strokeWidth={1.75} />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                        No accounts match this filter.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
 
       {accountModal && (
         <div className="admin-modal-overlay" onClick={() => { setAccountModal(null); setEditDraft(null); }}>
@@ -844,21 +1284,63 @@ export const AdminDashboard = ({
                   <div><span>Phone</span><strong>{accountModal.user.phone || '—'}</strong></div>
                   <div><span>Jurisdiction</span><strong>{accountModal.user.entityName || '—'}</strong></div>
                   <div><span>Party</span><strong>{accountModal.user.party || '—'}</strong></div>
+                  <div>
+                    <span>Security status</span>
+                    {getAccountLockState(accountModal.user.email).locked ? (
+                      <strong style={{ color: '#BB0A21' }}>
+                        {getAccountLockState(accountModal.user.email).permanent ? 'Permanently Locked' : 'Temporarily Locked'}
+                      </strong>
+                    ) : (
+                      <strong style={{ color: '#006B3F' }}>Active / Normal</strong>
+                    )}
+                  </div>
                 </div>
                 <div className="admin-modal-actions">
+                  {getAccountLockState(accountModal.user.email).locked && (
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-primary"
+                      onClick={() => {
+                        unlockAccount(accountModal.user.email);
+                        logAuditAction(currentUser, 'ACCOUNT_UNLOCKED', `Admin unlocked account access for ${accountModal.user.email}`);
+                        setAccountNotice(`Unlocked access for ${accountModal.user.name}`);
+                        setTimeout(() => setAccountNotice(''), 3500);
+                      }}
+                    >
+                      Restore Access (Unlock)
+                    </button>
+                  )}
                   <button type="button" className="admin-btn admin-btn-ghost" onClick={() => openAccountEdit(accountModal.user)}>
                     <Pencil strokeWidth={1.75} />
                     Edit
                   </button>
-                  <button
-                    type="button"
-                    className="admin-btn admin-btn-danger"
-                    disabled={accountModal.user.id === currentUser?.id}
-                    onClick={() => setDeleteTarget(accountModal.user)}
-                  >
-                    <Trash2 strokeWidth={1.75} />
-                    Delete
-                  </button>
+                  {accountModal.user.isSuspended || accountModal.user.status === 'Suspended' ? (
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-secondary"
+                      style={{ color: '#10b981', borderColor: 'rgba(16,185,129,0.4)' }}
+                      onClick={() => {
+                        reinstateUser(accountModal.user.id);
+                        logAuditAction(currentUser, 'ACCOUNT_REINSTATED', `Reinstated user ${accountModal.user.name}`);
+                        setAccountNotice(`Account for ${accountModal.user.name} has been reinstated.`);
+                        setTimeout(() => setAccountNotice(''), 3500);
+                        setAccountModal(null);
+                      }}
+                    >
+                      <RotateCcw strokeWidth={1.75} />
+                      Reinstate
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-danger"
+                      disabled={accountModal.user.id === currentUser?.id}
+                      onClick={() => setSuspendTarget(accountModal.user)}
+                    >
+                      <ShieldAlert strokeWidth={1.75} />
+                      Suspend
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
@@ -924,6 +1406,44 @@ export const AdminDashboard = ({
                     />
                   </div>
                 </div>
+
+                {['Governor', 'Senator', 'MP', 'MCA', 'Aspirant', 'Candidate Admin'].includes(editDraft?.role) && (
+                  <div style={{ padding: '0.85rem 1rem', borderRadius: '12px', background: 'var(--admin-hover)', border: '1px solid var(--admin-line)', marginTop: '0.5rem' }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--admin-ink)', marginBottom: '0.2rem' }}>
+                      Campaign Intelligence Modules & Access Control
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--admin-muted)', marginBottom: '0.75rem' }}>
+                      Enabling these features for this candidate ticket automatically unlocks the modules for all subordinate coordinators and field agents in their campaign jurisdiction.
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.65rem' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, color: 'var(--admin-ink)' }}>
+                        <input
+                          type="checkbox"
+                          checked={Boolean(editDraft?.features?.strategicIntelligence)}
+                          onChange={(e) => setEditDraft((d) => ({
+                            ...d,
+                            features: { ...(d?.features || {}), strategicIntelligence: e.target.checked }
+                          }))}
+                          style={{ width: '17px', height: '17px', accentColor: 'var(--admin-green)' }}
+                        />
+                        <span>Strategic Intelligence (Campaign Strategy)</span>
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, color: 'var(--admin-ink)' }}>
+                        <input
+                          type="checkbox"
+                          checked={Boolean(editDraft?.features?.strategyTeam)}
+                          onChange={(e) => setEditDraft((d) => ({
+                            ...d,
+                            features: { ...(d?.features || {}), strategyTeam: e.target.checked }
+                          }))}
+                          style={{ width: '17px', height: '17px', accentColor: '#0284c7' }}
+                        />
+                        <span>Strategy Team Organization</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+
                 <div className="admin-modal-actions">
                   <button type="button" className="admin-btn admin-btn-ghost" onClick={() => { setAccountModal(null); setEditDraft(null); }}>
                     Cancel
@@ -939,28 +1459,36 @@ export const AdminDashboard = ({
         </div>
       )}
 
-      {deleteTarget && (
-        <div className="admin-modal-overlay" onClick={() => setDeleteTarget(null)}>
+      {suspendTarget && (
+        <div className="admin-modal-overlay" onClick={() => setSuspendTarget(null)}>
           <div className="admin-modal admin-modal-sm" onClick={(e) => e.stopPropagation()}>
             <div className="admin-modal-head">
               <div>
-                <h3>Delete account</h3>
-                <p>This removes access for {deleteTarget.name}.</p>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#f59e0b' }}>
+                  <ShieldAlert size={20} />
+                  Quarantine / Suspend Account
+                </h3>
+                <p>Restrict access for {suspendTarget.name} while preserving tally and audit logs.</p>
               </div>
-              <button type="button" className="admin-icon-btn" aria-label="Close" onClick={() => setDeleteTarget(null)}>
+              <button type="button" className="admin-icon-btn" aria-label="Close" onClick={() => setSuspendTarget(null)}>
                 <X strokeWidth={1.75} />
               </button>
             </div>
             <p className="admin-modal-copy">
-              Confirm deletion of <strong>{deleteTarget.email}</strong>. This cannot be undone in this session.
+              Suspending <strong>{suspendTarget.email || suspendTarget.phone}</strong> immediately revokes active sessions and prevents further portal sign-ins. All historical tally returns and audit logs remain preserved.
             </p>
             <div className="admin-modal-actions">
-              <button type="button" className="admin-btn admin-btn-ghost" onClick={() => setDeleteTarget(null)}>
+              <button type="button" className="admin-btn admin-btn-ghost" onClick={() => setSuspendTarget(null)}>
                 Cancel
               </button>
-              <button type="button" className="admin-btn admin-btn-danger" onClick={handleDeleteAccount}>
-                <Trash2 strokeWidth={1.75} />
-                Delete
+              <button
+                type="button"
+                className="admin-btn admin-btn-danger"
+                style={{ background: '#d97706', borderColor: '#b45309' }}
+                onClick={handleConfirmSuspend}
+              >
+                <ShieldAlert strokeWidth={1.75} />
+                Suspend Account
               </button>
             </div>
           </div>

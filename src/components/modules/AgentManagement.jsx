@@ -20,7 +20,9 @@ import {
   ChevronsLeft,
   ChevronsRight,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  Lock,
+  Key
 } from 'lucide-react';
 import '../dashboards/DashboardShared.css';
 import './AgentManagement.css';
@@ -29,7 +31,7 @@ const PAGE_SIZE = 20;
 const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
 
 export const AgentManagement = ({ onClose }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, getAccountLockState, unlockAccount } = useAuth();
   const { agents, geography, assignAgentToPollingStation, updateAgentStatus, getScopedAgents } = useData();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -213,6 +215,7 @@ export const AgentManagement = ({ onClose }) => {
           <option value="On Duty">On Duty</option>
           <option value="Inactive">Inactive</option>
           <option value="Offline">Offline</option>
+          <option value="Suspended">Suspended (Quarantined)</option>
         </select>
       </article>
 
@@ -270,6 +273,7 @@ export const AgentManagement = ({ onClose }) => {
                         <option value="On Duty">On Duty</option>
                         <option value="Inactive">Inactive</option>
                         <option value="Offline">Offline</option>
+                        <option value="Suspended">Suspended</option>
                       </select>
                     </td>
                     <td>
@@ -292,6 +296,17 @@ export const AgentManagement = ({ onClose }) => {
                     </td>
                     <td>
                       <div className="agm-row-actions">
+                        {ag.email && getAccountLockState?.(ag.email)?.locked && (
+                          <button
+                            type="button"
+                            className="admin-btn admin-btn-sm"
+                            style={{ background: '#eab308', color: '#000', fontWeight: 700, padding: '0.2rem 0.55rem', border: 'none' }}
+                            onClick={() => unlockAccount(ag.email)}
+                            title="Unlock agent sign-in lockout"
+                          >
+                            <Key size={12} style={{ marginRight: 3 }} /> Unlock
+                          </button>
+                        )}
                         <button type="button" className="admin-btn admin-btn-ghost agm-action-btn" onClick={() => handleOpenAssignModal(ag)}>
                           <MapPin strokeWidth={1.75} />
                           Assign

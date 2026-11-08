@@ -1,20 +1,55 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { ThemeSwitcher } from '../common/ThemeSwitcher';
-import { ArrowRight, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { ArrowRight, AlertCircle, Eye, EyeOff, ShieldAlert, Lock } from 'lucide-react';
+import { formatRetry } from '../../utils/loginThrottle';
 import './LoginPage.css';
 
 const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
 
-export const LoginModal = () => {
-  const { login } = useAuth();
+export const LoginModal = ({ isAdminConsole = false }) => {
+  const { login, logoutReason, clearLogoutReason, getAccountLockState } = useAuth();
   const { geography } = useData();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lockCountdown, setLockCountdown] = useState(0);
+  const [isPermanentLock, setIsPermanentLock] = useState(false);
+
+  // Check lock status for current email
+  useEffect(() => {
+    if (!email) {
+      setLockCountdown(0);
+      setIsPermanentLock(false);
+      return;
+    }
+    const state = getAccountLockState(email);
+    if (state.locked) {
+      setIsPermanentLock(!!state.permanent);
+      setLockCountdown(state.retryInMs ? Math.ceil(state.retryInMs / 1000) : 0);
+    } else {
+      setLockCountdown(0);
+      setIsPermanentLock(false);
+    }
+  }, [email, getAccountLockState]);
+
+  // Live countdown timer ticker for active temporary lock
+  useEffect(() => {
+    if (lockCountdown <= 0) return;
+    const interval = setInterval(() => {
+      setLockCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockCountdown]);
 
   const registerStats = useMemo(() => {
     const counties = geography?.counties || [];
@@ -37,18 +72,25 @@ export const LoginModal = () => {
     };
   }, [geography]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      const res = login(email, password);
+    try {
+      const res = await login(email, password);
       if (!res.success) {
         setError(res.error);
+        if (res.locked) {
+          setIsPermanentLock(!!res.permanent);
+          if (res.retryInMs) setLockCountdown(Math.ceil(res.retryInMs / 1000));
+        }
       }
+    } catch {
+      setError('An unexpected error occurred during sign in.');
+    } finally {
       setIsSubmitting(false);
-    }, 280);
+    }
   };
 
   return (
@@ -56,12 +98,23 @@ export const LoginModal = () => {
       <div className="auth-frame">
         <aside className="auth-brand">
           <p className="auth-brand-kicker">
-            Authorised officer access — polling operations, field reporting, and election-day results.
+            {isAdminConsole
+              ? 'Authorised system governance — infrastructure telemetry, cryptographic audit logs, and account oversight.'
+              : 'Authorised officer access — polling operations, field reporting, and election-day results.'}
           </p>
 
           <h1>
-            Election
-            <span>Management</span>
+            {isAdminConsole ? (
+              <>
+                Operations
+                <span>Console</span>
+              </>
+            ) : (
+              <>
+                Election
+                <span>Management</span>
+              </>
+            )}
           </h1>
 
           <div className="auth-device">
@@ -114,7 +167,28 @@ export const LoginModal = () => {
           <form className="auth-form" onSubmit={handleSubmit}>
             <h2>Sign In</h2>
 
-            {error && (
+            {logoutReason === 'inactivity' && (
+              <div className="auth-alert" role="status" style={{ background: 'rgba(230, 159, 0, 0.15)', borderColor: '#E69F00', color: '#E69F00' }}>
+                <AlertCircle strokeWidth={1.75} />
+                <span>You were signed out after 15 minutes of inactivity for operational security.</span>
+              </div>
+            )}
+
+            {isPermanentLock && (
+              <div className="auth-alert" role="alert" style={{ background: 'rgba(187, 10, 33, 0.15)', borderColor: '#BB0A21', color: '#ff6b6b' }}>
+                <Lock strokeWidth={1.75} />
+                <span>Account locked after repeated failed sign-in attempts. Please contact a system administrator to restore access.</span>
+              </div>
+            )}
+
+            {!isPermanentLock && lockCountdown > 0 && (
+              <div className="auth-alert" role="alert" style={{ background: 'rgba(230, 159, 0, 0.15)', borderColor: '#E69F00', color: '#E69F00' }}>
+                <ShieldAlert strokeWidth={1.75} />
+                <span>Too many attempts. Sign in locked for <strong>{formatRetry(lockCountdown * 1000)}</strong>.</span>
+              </div>
+            )}
+
+            {error && !isPermanentLock && lockCountdown <= 0 && (
               <div className="auth-alert" role="alert">
                 <AlertCircle strokeWidth={1.75} />
                 <span>{error}</span>
@@ -129,7 +203,10 @@ export const LoginModal = () => {
               autoComplete="username"
               placeholder="Official email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (logoutReason) clearLogoutReason();
+              }}
               required
             />
 
@@ -144,6 +221,7 @@ export const LoginModal = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isPermanentLock || lockCountdown > 0}
               />
               <button
                 type="button"
@@ -155,8 +233,18 @@ export const LoginModal = () => {
               </button>
             </div>
 
-            <button type="submit" className="auth-submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Signing in…' : 'Sign In'}
+            <button
+              type="submit"
+              className="auth-submit"
+              disabled={isSubmitting || isPermanentLock || lockCountdown > 0}
+            >
+              {isSubmitting
+                ? 'Signing in…'
+                : isPermanentLock
+                ? 'Account Locked'
+                : lockCountdown > 0
+                ? `Locked (${formatRetry(lockCountdown * 1000)})`
+                : 'Sign In'}
               <ArrowRight strokeWidth={1.75} />
             </button>
           </form>

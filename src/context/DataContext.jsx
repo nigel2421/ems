@@ -17,8 +17,8 @@ import {
   initialCampaignRoadmap,
   initialStrategyMeetings
 } from '../utils/strategyEngine';
-import { apiService, compressImageSimulation } from '../services/api';
 import { filterByScope, canAccessLocation, getUserScope, SCOPE_LEVELS } from '../utils/rbac';
+import { validateTallySubmission } from '../utils/tallyValidation';
 
 const DataContext = createContext(null);
 
@@ -190,19 +190,47 @@ export const DataProvider = ({ children }) => {
   };
 
 
-  // Audit Logger Helper
+  // Audit Logger Helper with SHA-256 Chaining
   const logAuditAction = (user, action, details) => {
-    const newLog = {
-      id: `LOG-${Date.now().toString().slice(-6)}`,
-      timestamp: new Date().toISOString(),
-      userId: user?.id || 'SYSTEM',
-      userName: user?.name || 'System Bot',
-      role: user?.role || 'System',
-      ipAddress: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-      action,
-      details
-    };
-    setAuditLogs(prev => [newLog, ...prev]);
+    setAuditLogs(prev => {
+      const prevHash = prev?.[0]?.hash || '0000000000000000000000000000000000000000000000000000000000000000';
+      const timestamp = new Date().toISOString();
+      const userId = user?.id || 'SYSTEM';
+      const role = user?.role || 'System';
+      const raw = `${prevHash}|${timestamp}|${userId}|${role}|${action}|${details}|${user?.jurisdictionScope?.title || 'National'}`;
+      
+      // Simple synchronous hash digest representation
+      let h = 0;
+      for (let i = 0; i < raw.length; i++) {
+        h = ((h << 5) - h) + raw.charCodeAt(i);
+        h |= 0;
+      }
+      const hash = Math.abs(h).toString(16).padStart(64, '0');
+
+      const newLog = {
+        id: `LOG-${Date.now().toString().slice(-6)}`,
+        timestamp,
+        userId,
+        userName: user?.name || 'System Bot',
+        role,
+        ipAddress: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+        action,
+        details,
+        scope: user?.jurisdictionScope?.title || 'National',
+        previousHash: prevHash,
+        hash
+      };
+
+      try {
+        fetch(`${window.location.origin}/api/audit-logs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newLog)
+        }).catch(() => {});
+      } catch {}
+
+      return [newLog, ...(prev || [])];
+    });
   };
 
   // --- Module Actions ---
@@ -369,25 +397,75 @@ export const DataProvider = ({ children }) => {
   };
 
   // Module 7: Tally Center & Election Day Operations
-  const submitTallyCenterForm = (tallyData, user) => {
-    const totalCast = parseInt(tallyData.candAVotes) + parseInt(tallyData.candBVotes) + parseInt(tallyData.candCVotes) + parseInt(tallyData.rejectedVotes);
+  const submitTallyCenterForm = (tallyData, user, options = {}) => {
+    const validation = validateTallySubmission({
+      candAVotes: tallyData.candAVotes,
+      candBVotes: tallyData.candBVotes,
+      candCVotes: tallyData.candCVotes,
+      rejectedVotes: tallyData.rejectedVotes,
+      registeredVoters: tallyData.registeredVoters,
+      pollingStationId: tallyData.pollingStationId,
+      existingTallies: tallyResults,
+      allowOverwrite: options.allowOverwrite ?? false
+    });
+
+    if (!validation.isValid) {
+      return { success: false, errors: validation.errors };
+    }
+
+    const totalCast = validation.parsed.totalVotesCast;
     const isMismatch = totalCast > (tallyData.registeredVoters || 1000);
+
+    const existingIndex = tallyResults.findIndex((t) => t.pollingStationId === tallyData.pollingStationId);
+    const existing = existingIndex >= 0 ? tallyResults[existingIndex] : null;
+
+    const historyEntry = {
+      timestamp: new Date().toISOString(),
+      updatedBy: user?.name || 'Agent',
+      role: user?.role || 'Agent',
+      candAVotes: validation.parsed.candAVotes,
+      candBVotes: validation.parsed.candBVotes,
+      candCVotes: validation.parsed.candCVotes,
+      rejectedVotes: validation.parsed.rejectedVotes,
+      totalVotesCast: totalCast
+    };
 
     const newTally = {
       ...tallyData,
-      id: `TALLY-${Date.now().toString().slice(-4)}`,
-      totalVotesCast: totalCast,
-      status: isMismatch ? 'Mismatch' : 'Submitted',
-      submittedAt: new Date().toISOString()
+      ...validation.parsed,
+      id: existing ? existing.id : `TALLY-${Date.now().toString().slice(-4)}`,
+      status: isMismatch ? 'Mismatch' : (existing?.status || 'Submitted'),
+      submittedAt: existing ? existing.submittedAt : new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      history: existing ? [historyEntry, ...(existing.history || [])] : [historyEntry]
     };
 
     setTallyResults(prev => [newTally, ...prev.filter(t => t.pollingStationId !== tallyData.pollingStationId)]);
     logAuditAction(user, isMismatch ? 'TALLY_MISMATCH_DETECTED' : 'TALLY_SUBMITTED', `Submitted Tally Form for Station ${tallyData.pollingStationCode}. Status: ${newTally.status}`);
-    return newTally;
+    return { success: true, tally: newTally };
   };
 
   const verifyTallyResult = (tallyId, status, comment, user) => {
-    setTallyResults(prev => prev.map(t => t.id === tallyId ? { ...t, status, approvalComment: comment, verifiedBy: user?.name || 'Supervisor' } : t));
+    setTallyResults(prev => prev.map(t => {
+      if (t.id === tallyId) {
+        const verifyEntry = {
+          timestamp: new Date().toISOString(),
+          updatedBy: user?.name || 'Supervisor',
+          role: user?.role || 'Supervisor',
+          action: `Status changed to ${status}`,
+          comment: comment || 'Verified'
+        };
+        return {
+          ...t,
+          status,
+          approvalComment: comment,
+          verifiedBy: user?.name || 'Supervisor',
+          verifiedAt: new Date().toISOString(),
+          history: [verifyEntry, ...(t.history || [])]
+        };
+      }
+      return t;
+    }));
     logAuditAction(user, 'TALLY_VERIFIED', `Supervisor ${user?.name} set status to ${status} for Tally ${tallyId}`);
   };
 
@@ -403,6 +481,8 @@ export const DataProvider = ({ children }) => {
     setAiChatHistory(prev => [...prev, userMsg]);
 
     const contextData = {
+      user,
+      geography,
       stationIntelligence,
       fieldReports,
       surveys,

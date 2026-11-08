@@ -1,0 +1,800 @@
+{
+  "MOMBASA-MVITA-KADERBHOY OLD TOWN DISPENSARY": {
+    "lat": -4.058106,
+    "lng": 39.675653,
+    "formattedAddress": "Mji Wa Kale, Mvita, Mvita, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "KADERBHOY OLD TOWN DISPENSARY": {
+    "lat": -4.058106,
+    "lng": 39.675653,
+    "formattedAddress": "Mji Wa Kale, Mvita, Mvita, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-FORT JESUS MUSEUM": {
+    "lat": -4.062659,
+    "lng": 39.67973,
+    "formattedAddress": "Fort Jesus Museum, P. O. Box 82412, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "FORT JESUS MUSEUM": {
+    "lat": -4.062659,
+    "lng": 39.67973,
+    "formattedAddress": "Fort Jesus Museum, P. O. Box 82412, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-COAST GIRLS SECONDARY SCHOOL": {
+    "lat": -4.06247,
+    "lng": 39.675556,
+    "formattedAddress": "Old Kilindini Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "COAST GIRLS SECONDARY SCHOOL": {
+    "lat": -4.06247,
+    "lng": 39.675556,
+    "formattedAddress": "Old Kilindini Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-STAR OF THE SEA PRIMARY SCHOOL": {
+    "lat": -4.068742,
+    "lng": 39.670101,
+    "formattedAddress": "Nyerere Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "STAR OF THE SEA PRIMARY SCHOOL": {
+    "lat": -4.068742,
+    "lng": 39.670101,
+    "formattedAddress": "Nyerere Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-MBARAKI PRIMARY SCHOOL": {
+    "lat": -4.067264,
+    "lng": 39.672296,
+    "formattedAddress": "3, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MBARAKI PRIMARY SCHOOL": {
+    "lat": -4.067264,
+    "lng": 39.672296,
+    "formattedAddress": "3, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-SONARA SOCIAL HALL": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "SONARA SOCIAL HALL": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "MOMBASA-MVITA-ALLIDINA VISRAM HIGH SCHOOL": {
+    "lat": -4.04793,
+    "lng": 39.676314,
+    "formattedAddress": "Abdel Nasser Rd, Mvita, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "ALLIDINA VISRAM HIGH SCHOOL": {
+    "lat": -4.04793,
+    "lng": 39.676314,
+    "formattedAddress": "Abdel Nasser Rd, Mvita, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-HAJAM JAMAAT HALL": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "HAJAM JAMAAT HALL": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "MOMBASA-MVITA-SERANI PRIMARY SCHOOL": {
+    "lat": -4.065353,
+    "lng": 39.673952,
+    "formattedAddress": "Kaunda Ave, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "SERANI PRIMARY SCHOOL": {
+    "lat": -4.065353,
+    "lng": 39.673952,
+    "formattedAddress": "Kaunda Ave, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-MOMBASA PRIMARY SCHOOL": {
+    "lat": -4.072448,
+    "lng": 39.674231,
+    "formattedAddress": "Mombasa Primary School, Mwamba Ave, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA PRIMARY SCHOOL": {
+    "lat": -4.072448,
+    "lng": 39.674231,
+    "formattedAddress": "Mombasa Primary School, Mwamba Ave, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-KENYA SCHOOL OF GOVERNMENT": {
+    "lat": -4.069871,
+    "lng": 39.673484,
+    "formattedAddress": "Kizingo Area, Vanga Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "KENYA SCHOOL OF GOVERNMENT": {
+    "lat": -4.069871,
+    "lng": 39.673484,
+    "formattedAddress": "Kizingo Area, Vanga Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-TIJARA GARDENS": {
+    "lat": -4.054767,
+    "lng": 39.674065,
+    "formattedAddress": "WMWF+3JW, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "TIJARA GARDENS": {
+    "lat": -4.054767,
+    "lng": 39.674065,
+    "formattedAddress": "WMWF+3JW, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-TUDOR VILLAGE HALL": {
+    "lat": -4.034039,
+    "lng": 39.658608,
+    "formattedAddress": "At Marycliff Primary School Grounds, Off Tom Mboya Road, Tudor Mwisho, Marycliff Primary School, Msaada Ave, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "TUDOR VILLAGE HALL": {
+    "lat": -4.034039,
+    "lng": 39.658608,
+    "formattedAddress": "At Marycliff Primary School Grounds, Off Tom Mboya Road, Tudor Mwisho, Marycliff Primary School, Msaada Ave, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-ST. AUGUSTINE PRIMARY SCHOOL": {
+    "lat": -4.031396,
+    "lng": 39.662327,
+    "formattedAddress": "At Mwisho, Tom Mboya Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "ST. AUGUSTINE PRIMARY SCHOOL": {
+    "lat": -4.031396,
+    "lng": 39.662327,
+    "formattedAddress": "At Mwisho, Tom Mboya Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-TUDOR PRIMARY SCHOOL": {
+    "lat": -4.037533,
+    "lng": 39.656284,
+    "formattedAddress": "TUDOR Location ISLAND Division CHANGAMWE Constituency, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "TUDOR PRIMARY SCHOOL": {
+    "lat": -4.037533,
+    "lng": 39.656284,
+    "formattedAddress": "TUDOR Location ISLAND Division CHANGAMWE Constituency, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-R. G. NGALA PRIMARY SCHOOL": {
+    "lat": -4.042196,
+    "lng": 39.664617,
+    "formattedAddress": "XM57+4RH, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "R. G. NGALA PRIMARY SCHOOL": {
+    "lat": -4.042196,
+    "lng": 39.664617,
+    "formattedAddress": "XM57+4RH, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-FAHARI PRIMARY SCHOOL": {
+    "lat": -4.039262,
+    "lng": 39.66386,
+    "formattedAddress": "TUDOR Location ISLAND Division CHANGAMWE Constituency, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "FAHARI PRIMARY SCHOOL": {
+    "lat": -4.039262,
+    "lng": 39.66386,
+    "formattedAddress": "TUDOR Location ISLAND Division CHANGAMWE Constituency, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-SPARKI PRIMARY SCHOOL": {
+    "lat": -4.040064,
+    "lng": 39.662319,
+    "formattedAddress": "Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "SPARKI PRIMARY SCHOOL": {
+    "lat": -4.040064,
+    "lng": 39.662319,
+    "formattedAddress": "Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-BURHANIA PRIMARY SCHOOL": {
+    "lat": -4.04284,
+    "lng": 39.668208,
+    "formattedAddress": "At Buxtan, Off Khamis Road, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "BURHANIA PRIMARY SCHOOL": {
+    "lat": -4.04284,
+    "lng": 39.668208,
+    "formattedAddress": "At Buxtan, Off Khamis Road, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-MUNICIPAL INSPECTORATE OFFICES": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "MUNICIPAL INSPECTORATE OFFICES": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "MOMBASA-MVITA-TUDOR DAY SECONDARY SCHOOL": {
+    "lat": -4.040824,
+    "lng": 39.665674,
+    "formattedAddress": "Manyimbo Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "TUDOR DAY SECONDARY SCHOOL": {
+    "lat": -4.040824,
+    "lng": 39.665674,
+    "formattedAddress": "Manyimbo Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-KPA HALL MAKANDE": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "KPA HALL MAKANDE": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "MOMBASA-MVITA-KHAMISI SECONDARY SCHOOL": {
+    "lat": -4.036665,
+    "lng": 39.665686,
+    "formattedAddress": "Tom Mboya Rd, Mvita, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "KHAMISI SECONDARY SCHOOL": {
+    "lat": -4.036665,
+    "lng": 39.665686,
+    "formattedAddress": "Tom Mboya Rd, Mvita, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-MWEMBE-TAYARI PUBLIC HEALTH CLINIC (PHC)": {
+    "lat": -4.0616,
+    "lng": 39.670931,
+    "formattedAddress": "WMQC+997, Jundani Meru Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MWEMBE-TAYARI PUBLIC HEALTH CLINIC (PHC)": {
+    "lat": -4.0616,
+    "lng": 39.670931,
+    "formattedAddress": "WMQC+997, Jundani Meru Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-KUMBAR PRIMARY SCHOOL": {
+    "lat": -4.051976,
+    "lng": 39.670684,
+    "formattedAddress": "WMXC+673, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "KUMBAR PRIMARY SCHOOL": {
+    "lat": -4.051976,
+    "lng": 39.670684,
+    "formattedAddress": "WMXC+673, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-AL-AMANI SOCIAL HALL - FLORINGI": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "AL-AMANI SOCIAL HALL - FLORINGI": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "MOMBASA-MVITA-SHARIFF NASSIR SECONDARY SCHOOL": {
+    "lat": -4.050641,
+    "lng": 39.671273,
+    "formattedAddress": "WMXC+PGR, Kisauni Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "SHARIFF NASSIR SECONDARY SCHOOL": {
+    "lat": -4.050641,
+    "lng": 39.671273,
+    "formattedAddress": "WMXC+PGR, Kisauni Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-CHANDARIA HALL": {
+    "lat": -4.026059,
+    "lng": 39.693092,
+    "formattedAddress": "Opposite Frare Town Primary, Frare Town Road, XMFV+H6G, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "CHANDARIA HALL": {
+    "lat": -4.026059,
+    "lng": 39.693092,
+    "formattedAddress": "Opposite Frare Town Primary, Frare Town Road, XMFV+H6G, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-KIKOWANI PRIMARY SCHOOL": {
+    "lat": -4.051084,
+    "lng": 39.670191,
+    "formattedAddress": "WMXC+H38, Kisauni Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "KIKOWANI PRIMARY SCHOOL": {
+    "lat": -4.051084,
+    "lng": 39.670191,
+    "formattedAddress": "WMXC+H38, Kisauni Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-TONONOKA SOCIAL HALL": {
+    "lat": -4.049293,
+    "lng": 39.667263,
+    "formattedAddress": "XM28+7WJ, Tononoka Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "TONONOKA SOCIAL HALL": {
+    "lat": -4.049293,
+    "lng": 39.667263,
+    "formattedAddress": "XM28+7WJ, Tononoka Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-TONONOKA NURSERY SCHOOL": {
+    "lat": -4.047397,
+    "lng": 39.669233,
+    "formattedAddress": "Tononoka, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "TONONOKA NURSERY SCHOOL": {
+    "lat": -4.047397,
+    "lng": 39.669233,
+    "formattedAddress": "Tononoka, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "MOMBASA-MVITA-MUNICIPAL STADIUM": {
+    "lat": -4.044887,
+    "lng": 39.666248,
+    "formattedAddress": "XM48+2FX, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MUNICIPAL STADIUM": {
+    "lat": -4.044887,
+    "lng": 39.666248,
+    "formattedAddress": "XM48+2FX, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-CENTRAL GIRLS PRIMARY SCHOOL": {
+    "lat": -4.047188,
+    "lng": 39.668156,
+    "formattedAddress": "Tana St, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "CENTRAL GIRLS PRIMARY SCHOOL": {
+    "lat": -4.047188,
+    "lng": 39.668156,
+    "formattedAddress": "Tana St, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-BUXTON ESTATE HALL": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "BUXTON ESTATE HALL": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "MOMBASA-MVITA-PUBLIC WORKS OFFICES": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "PUBLIC WORKS OFFICES": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "MOMBASA-MVITA-MAKANDE KPA NURSERY SCHOOL": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "MAKANDE KPA NURSERY SCHOOL": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "MOMBASA-MVITA-MAKUPA PRIMARY SCHOOL": {
+    "lat": -4.045433,
+    "lng": 39.656183,
+    "formattedAddress": "XM34+RFF, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MAKUPA PRIMARY SCHOOL": {
+    "lat": -4.045433,
+    "lng": 39.656183,
+    "formattedAddress": "XM34+RFF, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-MAKANDE PRIMARY SCHOOL": {
+    "lat": -4.039321,
+    "lng": 39.654236,
+    "formattedAddress": "XM63+7MH, Makande Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MAKANDE PRIMARY SCHOOL": {
+    "lat": -4.039321,
+    "lng": 39.654236,
+    "formattedAddress": "XM63+7MH, Makande Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-SHIMANZI KPA NURSERY SCHOOL": {
+    "lat": -4.043017,
+    "lng": 39.649236,
+    "formattedAddress": "Shimanzi, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "SHIMANZI KPA NURSERY SCHOOL": {
+    "lat": -4.043017,
+    "lng": 39.649236,
+    "formattedAddress": "Shimanzi, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "MOMBASA-MVITA-KPA HALL HIGH LEVEL": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "KPA HALL HIGH LEVEL": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "MOMBASA-MVITA-LITTLE THEATRE CLUB": {
+    "lat": -4.066706,
+    "lng": 39.66472,
+    "formattedAddress": "Majengo Mnazi Mmoja Mvita, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "LITTLE THEATRE CLUB": {
+    "lat": -4.066706,
+    "lng": 39.66472,
+    "formattedAddress": "Majengo Mnazi Mmoja Mvita, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-SACRED HEART PRIMARY SCHOOL": {
+    "lat": -4.064693,
+    "lng": 39.661414,
+    "formattedAddress": "WMP6+7FX, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "SACRED HEART PRIMARY SCHOOL": {
+    "lat": -4.064693,
+    "lng": 39.661414,
+    "formattedAddress": "WMP6+7FX, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-KPA SOCIAL HALL": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "KPA SOCIAL HALL": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "MOMBASA-MVITA-BANDARI COLLEGE": {
+    "lat": -4.063901,
+    "lng": 39.655182,
+    "formattedAddress": "Mikanjuni Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "BANDARI COLLEGE": {
+    "lat": -4.063901,
+    "lng": 39.655182,
+    "formattedAddress": "Mikanjuni Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-GANJONI MUNICIPAL CLINIC": {
+    "lat": -4.064581,
+    "lng": 39.666014,
+    "formattedAddress": "WMP8+5C6, Mnazi Moja Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "GANJONI MUNICIPAL CLINIC": {
+    "lat": -4.064581,
+    "lng": 39.666014,
+    "formattedAddress": "WMP8+5C6, Mnazi Moja Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-MAJENGO PRIMARY SCHOOL": {
+    "lat": -4.051581,
+    "lng": 39.657185,
+    "formattedAddress": "Owen Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MAJENGO PRIMARY SCHOOL": {
+    "lat": -4.051581,
+    "lng": 39.657185,
+    "formattedAddress": "Owen Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-KING'ORANI PRISON (JELA BARIDI)": {
+    "lat": -4.053083,
+    "lng": 39.657658,
+    "formattedAddress": "Shimanzi/Ganjoni, Mvita, Mvita, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "KING'ORANI PRISON (JELA BARIDI)": {
+    "lat": -4.053083,
+    "lng": 39.657658,
+    "formattedAddress": "Shimanzi/Ganjoni, Mvita, Mvita, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-PATEL SAMAJ HALL": {
+    "lat": -4.05878,
+    "lng": 39.665137,
+    "formattedAddress": "WMR8+F3J, Haile Selasie Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "PATEL SAMAJ HALL": {
+    "lat": -4.05878,
+    "lng": 39.665137,
+    "formattedAddress": "WMR8+F3J, Haile Selasie Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-GURU NANAK PRIMARY SCHOOL": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "GURU NANAK PRIMARY SCHOOL": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "MOMBASA-MVITA-KOBLENZ HALL": {
+    "lat": -4.061086,
+    "lng": 39.665362,
+    "formattedAddress": "Opposite Mombasa Uni Plaza, WMQ8+H49, Aga Khan Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "KOBLENZ HALL": {
+    "lat": -4.061086,
+    "lng": 39.665362,
+    "formattedAddress": "Opposite Mombasa Uni Plaza, WMQ8+H49, Aga Khan Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-UHURU GARDENS": {
+    "lat": -4.060931,
+    "lng": 39.66633,
+    "formattedAddress": "Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "UHURU GARDENS": {
+    "lat": -4.060931,
+    "lng": 39.66633,
+    "formattedAddress": "Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MOMBASA-MVITA-LOHANA HALL": {
+    "lat": -4.051799,
+    "lng": 39.664313,
+    "formattedAddress": "WMX7+7PJ, Nakuru Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "LOHANA HALL": {
+    "lat": -4.051799,
+    "lng": 39.664313,
+    "formattedAddress": "WMX7+7PJ, Nakuru Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-LASCO SOCIAL HALL (KPA)": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "LASCO SOCIAL HALL (KPA)": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "MOMBASA-MVITA-MAJENGO VILLAGE HALL": {
+    "lat": -4.048253,
+    "lng": 39.660326,
+    "formattedAddress": "XM26+M4W, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MAJENGO VILLAGE HALL": {
+    "lat": -4.048253,
+    "lng": 39.660326,
+    "formattedAddress": "XM26+M4W, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-SAKINA HALL": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "SAKINA HALL": {
+    "lat": -4.058056,
+    "lng": 39.681389,
+    "formattedAddress": "Mombasa Harbour, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "APPROXIMATE"
+  },
+  "MOMBASA-MVITA-MVITA PRIMARY SCHOOL": {
+    "lat": -4.053644,
+    "lng": 39.660135,
+    "formattedAddress": "8 Narok Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MVITA PRIMARY SCHOOL": {
+    "lat": -4.053644,
+    "lng": 39.660135,
+    "formattedAddress": "8 Narok Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "ROOFTOP"
+  },
+  "MOMBASA-MVITA-MVITA BOYS SECONDARY SCHOOL": {
+    "lat": -4.051961,
+    "lng": 39.659117,
+    "formattedAddress": "Majengo Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  },
+  "MVITA BOYS SECONDARY SCHOOL": {
+    "lat": -4.051961,
+    "lng": 39.659117,
+    "formattedAddress": "Majengo Rd, Mombasa, Kenya",
+    "source": "google_maps",
+    "accuracy": "GEOMETRIC_CENTER"
+  }
+}

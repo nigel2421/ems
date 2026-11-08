@@ -1,0 +1,23 @@
+# CI-EMS Robots Policy
+User-agent: *
+Allow: /ems/
+Allow: /ems/#/map
+Allow: /ems/#/polling-stations
+Allow: /ems/#/tally-center
+Allow: /ems/#/strategy
+Allow: /ems/#/strategy-team
+Allow: /ems/#/agents
+Allow: /ems/#/field-reports
+Allow: /ems/#/surveys
+Allow: /ems/#/mobilization
+Allow: /ems/#/executive-briefing
+Allow: /ems/#/production-readiness
+
+# Disallow internal operational desks and exception queues
+Disallow: /ems/#/ops-queue
+Disallow: /ems/#/war-room
+Disallow: /ems/#/security-ops
+Disallow: /ems/#/evidence-review
+
+# Sitemap Location
+Sitemap: https://ci-ems.ke/ems/sitemap.xml

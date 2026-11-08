@@ -9,8 +9,33 @@ import {
   filterByScope,
   canPerformAction
 } from '../utils/rbac';
+import {
+  getLockState,
+  recordFailure,
+  recordSuccess,
+  adminUnlock,
+  loadThrottleStore,
+  saveThrottleStore,
+  normaliseEmail,
+  THROTTLE_STORAGE_KEY
+} from '../utils/loginThrottle';
+import { isSessionExpired, LAST_ACTIVITY_KEY, LOGOUT_REASON_KEY } from '../utils/sessionPolicy';
 
 const AuthContext = createContext(null);
+
+const LOCKED_TEMP_MESSAGE = 'Too many failed sign-in attempts. Please wait before trying again.';
+const LOCKED_PERMANENT_MESSAGE =
+  'This account has been locked after repeated failed sign-in attempts. Contact your system administrator to restore access.';
+
+// Drop sessions that went idle past the limit (e.g. tab closed and reopened later)
+const sessionIsStale = () => {
+  try {
+    const last = sessionStorage.getItem(LAST_ACTIVITY_KEY);
+    return last !== null && isSessionExpired(Number(last));
+  } catch {
+    return false;
+  }
+};
 
 export { ROLE_HIERARCHY, ROLES };
 
@@ -71,15 +96,45 @@ export const AuthProvider = ({ children }) => {
   });
 
   // Session-bound authentication: Require login on new browser sessions / dev app load
+  const [staleOnLoad] = useState(() => {
+    const stale = sessionIsStale();
+    if (stale) {
+      sessionStorage.removeItem('ems_current_user');
+      sessionStorage.setItem('ems_is_authenticated', 'false');
+      sessionStorage.removeItem(LAST_ACTIVITY_KEY);
+      sessionStorage.setItem(LOGOUT_REASON_KEY, 'inactivity');
+    }
+    return stale;
+  });
+
   const [currentUser, setCurrentUser] = useState(() => {
+    if (staleOnLoad) return null;
     const savedUser = sessionStorage.getItem('ems_current_user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    if (staleOnLoad) return false;
     const savedAuth = sessionStorage.getItem('ems_is_authenticated');
     return savedAuth !== null ? JSON.parse(savedAuth) : false;
   });
+
+  const [logoutReason, setLogoutReason] = useState(() => sessionStorage.getItem(LOGOUT_REASON_KEY));
+
+  const [throttleStore, setThrottleStore] = useState(() => loadThrottleStore());
+
+  useEffect(() => {
+    saveThrottleStore(throttleStore);
+  }, [throttleStore]);
+
+  // Keep lockouts consistent across tabs
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === THROTTLE_STORAGE_KEY) setThrottleStore(loadThrottleStore());
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   const [is2FAVerified, setIs2FAVerified] = useState(true);
 
@@ -109,58 +164,176 @@ export const AuthProvider = ({ children }) => {
     sessionStorage.setItem('ems_is_authenticated', JSON.stringify(isAuthenticated));
   }, [isAuthenticated]);
 
-  const login = (email, password) => {
-    const cleanEmail = email ? email.trim().toLowerCase() : '';
-    const foundUser = users.find(
-      u => u.email.toLowerCase() === cleanEmail && u.password === password
-    );
-
-    const telemetry = getDeviceTelemetry();
-    const logEntry = {
-      id: `LOG-LOGIN-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      timestamp: new Date().toISOString(),
-      email: cleanEmail || 'unknown@user',
-      userName: foundUser ? foundUser.name : (cleanEmail || 'Unknown User'),
-      role: foundUser ? foundUser.role : 'Unauthenticated',
-      ipAddress: telemetry.ipAddress,
-      geoLocation: telemetry.geoLocation,
-      deviceType: telemetry.deviceType,
-      os: telemetry.os,
-      browser: telemetry.browser,
-      status: foundUser ? 'Success' : 'Failure',
-      failureReason: foundUser ? null : 'Invalid email address or password credentials'
+  // Verify session on mount with server cookie
+  useEffect(() => {
+    let active = true;
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (!active) return;
+        if (data && data.authenticated && data.user) {
+          setCurrentUser(data.user);
+          setIsAuthenticated(true);
+          sessionStorage.setItem('ems_current_user', JSON.stringify(data.user));
+          sessionStorage.setItem('ems_is_authenticated', 'true');
+        } else if (data && !data.authenticated) {
+          setCurrentUser(null);
+          setIsAuthenticated(false);
+          sessionStorage.removeItem('ems_current_user');
+          sessionStorage.setItem('ems_is_authenticated', 'false');
+        }
+      })
+      .catch(() => {
+        // Dev server or offline fallback: keep sessionStorage state
+      });
+    return () => {
+      active = false;
     };
+  }, []);
 
-    setLoginActivityLogs(prev => [logEntry, ...prev]);
+  const login = async (email, password) => {
+    const cleanEmail = normaliseEmail(email);
+    const telemetry = getDeviceTelemetry();
 
-    if (foundUser) {
-      setCurrentUser(foundUser);
-      setIsAuthenticated(true);
-      setIs2FAVerified(!foundUser.twoFactorEnabled);
-      sessionStorage.setItem('ems_current_user', JSON.stringify(foundUser));
-      sessionStorage.setItem('ems_is_authenticated', 'true');
-      return { success: true, user: foundUser };
+    // Check if account is suspended in local store
+    const localUser = users.find(u =>
+      (u.email && u.email.toLowerCase() === cleanEmail) ||
+      (u.phone && u.phone.replace(/\s+/g, '').toLowerCase() === cleanEmail.replace(/\s+/g, '').toLowerCase())
+    );
+    if (localUser && (localUser.isSuspended || localUser.status === 'Suspended')) {
+      return {
+        success: false,
+        error: 'Account has been suspended by administration. Contact campaign operations.'
+      };
+    }
+    const freshStore = loadThrottleStore();
+    const lock = getLockState(freshStore, cleanEmail);
+    if (lock.locked) {
+      setLoginActivityLogs(prev => [{
+        id: `LOG-LOGIN-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        timestamp: new Date().toISOString(),
+        email: cleanEmail || 'unknown@user',
+        userName: cleanEmail || 'Unknown User',
+        role: 'Unauthenticated',
+        ipAddress: telemetry.ipAddress,
+        geoLocation: telemetry.geoLocation,
+        deviceType: telemetry.deviceType,
+        os: telemetry.os,
+        browser: telemetry.browser,
+        status: 'Failure',
+        failureReason: lock.permanent ? 'Account locked (administrator unlock required)' : 'Temporarily locked (too many attempts)'
+      }, ...prev]);
+      return {
+        success: false,
+        locked: true,
+        permanent: !!lock.permanent,
+        retryInMs: lock.retryInMs || 0,
+        error: lock.permanent ? LOCKED_PERMANENT_MESSAGE : LOCKED_TEMP_MESSAGE
+      };
     }
 
-    return { success: false, error: 'Invalid email address or password credentials.' };
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email: cleanEmail, password })
+      });
+      const data = await res.json().catch(() => ({}));
+
+      const isSuccess = res.ok && data.success;
+      const authedUser = isSuccess ? data.user : null;
+
+      const logEntry = {
+        id: `LOG-LOGIN-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        timestamp: new Date().toISOString(),
+        email: cleanEmail || 'unknown@user',
+        userName: authedUser ? authedUser.name : (cleanEmail || 'Unknown User'),
+        role: authedUser ? authedUser.role : 'Unauthenticated',
+        ipAddress: telemetry.ipAddress,
+        geoLocation: telemetry.geoLocation,
+        deviceType: telemetry.deviceType,
+        os: telemetry.os,
+        browser: telemetry.browser,
+        status: isSuccess ? 'Success' : 'Failure',
+        failureReason: isSuccess ? null : (data.error || 'Invalid email address or password credentials')
+      };
+
+      setLoginActivityLogs(prev => [logEntry, ...prev]);
+
+      if (isSuccess && authedUser) {
+        const nextStore = recordSuccess(freshStore, cleanEmail);
+        saveThrottleStore(nextStore);
+        setThrottleStore(nextStore);
+        setCurrentUser(authedUser);
+        setIsAuthenticated(true);
+        setIs2FAVerified(!authedUser.twoFactorEnabled);
+        setLogoutReason(null);
+        sessionStorage.removeItem(LOGOUT_REASON_KEY);
+        sessionStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+        sessionStorage.setItem('ems_current_user', JSON.stringify(authedUser));
+        sessionStorage.setItem('ems_is_authenticated', 'true');
+        return { success: true, user: authedUser };
+      }
+
+      if (res.status >= 500) {
+        return { success: false, error: data.error || 'Authentication service is temporarily unavailable. Please verify server connection.' };
+      }
+
+      const nextStore = recordFailure(freshStore, cleanEmail);
+      saveThrottleStore(nextStore);
+      setThrottleStore(nextStore);
+      const after = getLockState(nextStore, cleanEmail);
+      if (after.locked || data.locked) {
+        const perm = after.permanent || data.permanent;
+        const retry = after.retryInMs || data.retryInMs || 0;
+        return {
+          success: false,
+          locked: true,
+          permanent: !!perm,
+          retryInMs: retry,
+          error: perm ? LOCKED_PERMANENT_MESSAGE : LOCKED_TEMP_MESSAGE
+        };
+      }
+
+      return { success: false, error: data.error || 'Invalid email address or password credentials.' };
+    } catch {
+      return { success: false, error: 'Unable to reach the authentication service. Please verify server connection.' };
+    }
   };
 
-  const logout = () => {
+  // logout() may be wired directly to onClick, so only accept string reasons
+  const logout = (reason) => {
+    const why = typeof reason === 'string' ? reason : null;
+    fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
     setIsAuthenticated(false);
     setCurrentUser(null);
+    setLogoutReason(why);
+    if (why) sessionStorage.setItem(LOGOUT_REASON_KEY, why);
+    else sessionStorage.removeItem(LOGOUT_REASON_KEY);
+    sessionStorage.removeItem(LAST_ACTIVITY_KEY);
     sessionStorage.removeItem('ems_current_user');
     sessionStorage.setItem('ems_is_authenticated', 'false');
     localStorage.removeItem('ems_is_authenticated');
     localStorage.removeItem('ems_current_user');
   };
 
-  const switchUser = (userId) => {
-    const found = users.find(u => u.id === userId);
-    if (found) {
-      setCurrentUser(found);
-      setIsAuthenticated(true);
-      setIs2FAVerified(!found.twoFactorEnabled);
-    }
+  const clearLogoutReason = () => {
+    setLogoutReason(null);
+    sessionStorage.removeItem(LOGOUT_REASON_KEY);
+  };
+
+  const getAccountLockState = (email) => getLockState(throttleStore, email);
+
+  const unlockAccount = (email) => {
+    const nextStore = adminUnlock(loadThrottleStore(), email);
+    saveThrottleStore(nextStore);
+    setThrottleStore(nextStore);
+  };
+
+  const switchUser = () => {
+    // Impersonation is disabled for operational security
+    console.warn('[EMS-AUTH] switchUser() is disabled. Authenticate with official credentials.');
   };
 
   const addUser = (newUser) => {
@@ -168,17 +341,70 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUserProfile = (userId, updatedFields) => {
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updatedFields } : u));
+    setUsers(prev => {
+      const updated = prev.map(u => u.id === userId ? { ...u, ...updatedFields } : u);
+      try {
+        localStorage.setItem('ems_users', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
     if (currentUser && currentUser.id === userId) {
       setCurrentUser(prev => ({ ...prev, ...updatedFields }));
     }
   };
 
-  const deleteUser = (userId) => {
-    setUsers(prev => prev.filter(u => u.id !== userId));
+  const updateUserFeatures = (userId, newFeatures) => {
+    setUsers(prev => {
+      const updated = prev.map(u => {
+        if (u.id === userId) {
+          const merged = { ...(u.features || {}), ...newFeatures };
+          return { ...u, features: merged };
+        }
+        return u;
+      });
+      try {
+        localStorage.setItem('ems_users', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
     if (currentUser && currentUser.id === userId) {
-      logout();
+      setCurrentUser(prev => ({
+        ...prev,
+        features: { ...(prev.features || {}), ...newFeatures }
+      }));
     }
+  };
+
+  const getLockedAccounts = () => {
+    return users.filter(u => getAccountLockState(u.email).locked);
+  };
+
+  const suspendUser = (userId, reason = 'Administrative suspension') => {
+    setUsers(prev => prev.map(u => u.id === userId ? {
+      ...u,
+      status: 'Suspended',
+      isSuspended: true,
+      suspendedAt: new Date().toISOString(),
+      suspensionReason: reason
+    } : u));
+    if (currentUser && currentUser.id === userId) {
+      logout('suspended');
+    }
+  };
+
+  const reinstateUser = (userId) => {
+    setUsers(prev => prev.map(u => u.id === userId ? {
+      ...u,
+      status: 'Active',
+      isSuspended: false,
+      suspendedAt: null,
+      suspensionReason: null
+    } : u));
+  };
+
+  const deleteUser = (userId) => {
+    // Deprecated in favor of suspendUser; soft-suspends to preserve audit integrity
+    suspendUser(userId, 'Account archived/quarantined');
   };
 
   const toggle2FAStatus = () => {
@@ -203,18 +429,56 @@ export const AuthProvider = ({ children }) => {
   const checkCanPerformAction = (action) => canPerformAction(currentUser, action);
   const checkCanAccessLocation = (location) => canAccessLocation(currentUser, location);
 
+  const findParentCandidate = (user) => {
+    if (!user) return null;
+    const candidateRoles = ['Governor', 'Senator', 'MP', 'MCA', 'Aspirant', 'Candidate Admin'];
+    if (candidateRoles.includes(user.role)) {
+      return user;
+    }
+    if (user.candidateId) {
+      const match = users.find(u => u.id === user.candidateId);
+      if (match) return match;
+    }
+    if (user.county) {
+      const gov = users.find(u => candidateRoles.includes(u.role) && u.county?.toLowerCase() === user.county?.toLowerCase());
+      if (gov) return gov;
+    }
+    return null;
+  };
+
   const canAccessModule = (moduleName) => {
     if (!currentUser) return false;
     const role = currentUser.role;
     if (role === 'Super Admin' || role === 'Admin') return true;
 
     switch (moduleName) {
+      case 'strategy': {
+        const candidateRoles = ['Governor', 'Senator', 'MP', 'MCA', 'Aspirant', 'Candidate Admin'];
+        if (candidateRoles.includes(role)) {
+          return Boolean(currentUser.features?.strategicIntelligence);
+        }
+        const parentCandidate = findParentCandidate(currentUser);
+        if (parentCandidate) {
+          return Boolean(parentCandidate.features?.strategicIntelligence);
+        }
+        return false;
+      }
+      case 'strategy_team': {
+        const candidateRoles = ['Governor', 'Senator', 'MP', 'MCA', 'Aspirant', 'Candidate Admin'];
+        if (candidateRoles.includes(role)) {
+          return Boolean(currentUser.features?.strategyTeam);
+        }
+        const parentCandidate = findParentCandidate(currentUser);
+        if (parentCandidate) {
+          return Boolean(parentCandidate.features?.strategyTeam);
+        }
+        return false;
+      }
       case 'polling_stations':
       case 'agents':
       case 'surveys':
       case 'field_reports':
       case 'mobilization':
-      case 'strategy':
       case 'tally_center':
         return true;
       case 'ai_assistant':
@@ -239,6 +503,10 @@ export const AuthProvider = ({ children }) => {
         switchUser,
         addUser,
         updateUserProfile,
+        updateUserFeatures,
+        getLockedAccounts,
+        suspendUser,
+        reinstateUser,
         deleteUser,
         is2FAVerified,
         setIs2FAVerified,
@@ -250,6 +518,10 @@ export const AuthProvider = ({ children }) => {
         canAccessLocation: checkCanAccessLocation,
         filterByScope: (items, type) => filterByScope(currentUser, items, type),
         loginActivityLogs,
+        logoutReason,
+        clearLogoutReason,
+        getAccountLockState,
+        unlockAccount,
         ROLE_HIERARCHY
       }}
     >

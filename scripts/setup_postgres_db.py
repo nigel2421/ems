@@ -10,7 +10,7 @@ def get_env_credentials():
         'port': 5432,
         'dbname': 'wemisico_ems',
         'user': 'wemisico_adminuser',
-        'password': 'OPxpBO,dqGrsQ9,#'
+        'password': 'dev-local-only-password'
     }
     if os.path.exists(env_path):
         with open(env_path, 'r', encoding='utf-8') as f:

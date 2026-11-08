@@ -3,7 +3,7 @@
 // Release Provenance & Build Manifest Verification Module
 // ====================================================================
 
-import crypto from 'node:crypto';
+import { sha256Sync } from './sha256Sync.js';
 
 export const CURRENT_RELEASE_MANIFEST = {
   releaseId: 'CIEMS-3.1.4-RC2',
@@ -27,7 +27,7 @@ export const CURRENT_RELEASE_MANIFEST = {
  */
 export const generateReleaseManifestDigest = (manifest = CURRENT_RELEASE_MANIFEST) => {
   const dataString = `${manifest.releaseId}:${manifest.gitCommit}:${manifest.schemaVersion}:${manifest.rlsPolicyVersion}:${manifest.retentionPolicyVersion}`;
-  return crypto.createHash('sha256').update(dataString).digest('hex');
+  return sha256Sync(dataString);
 };
 
 /**

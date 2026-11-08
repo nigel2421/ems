@@ -1,0 +1,49 @@
+# Nginx Configuration for Multi-App Hosting on VPS (158.220.102.37)
+# Place this file in /etc/nginx/sites-available/default or /etc/nginx/conf.d/multi-apps.conf
+
+server {
+    listen 80;
+    server_name 158.220.102.37; # Or your domain name
+
+    # ====================================================================
+    # 1. PRIMARY APP (Deriv & Binance Crypto AI Bot)
+    # Served from root '/'
+    # ====================================================================
+    location / {
+        # If Crypto Bot is served statically:
+        root /var/www/html;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+
+        # OR if Crypto Bot is running on Node/Python port (e.g., 3000):
+        # proxy_pass http://127.0.0.1:3000;
+        # proxy_set_header Host $host;
+        # proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # If Crypto Bot uses /api/ endpoints:
+    # location /api/ {
+    #     proxy_pass http://127.0.0.1:3000/api/;
+    # }
+
+
+    # ====================================================================
+    # 2. ELECTION MANAGEMENT SYSTEM (CI-EMS 3.1)
+    # Served from subpath '/ems/'
+    # ====================================================================
+    location /ems/ {
+        alias /var/www/ems/;
+        index index.html;
+        try_files $uri $uri/ /ems/index.html;
+    }
+
+    # EMS Backend API proxy (server.mjs running via PM2 on port 5000)
+    location /ems/api/ {
+        proxy_pass http://127.0.0.1:5000/ems/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}

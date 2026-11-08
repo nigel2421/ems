@@ -24,7 +24,8 @@ import {
   MapPinned,
   MessageSquare,
   Wallet,
-  UserRound
+  UserRound,
+  ExternalLink
 } from 'lucide-react';
 import './CampaignStrategy.css';
 
@@ -318,14 +319,71 @@ const getStatusVariant = (status) => {
 
 export const CampaignStrategy = ({ onClose }) => {
   const { currentUser } = useAuth();
-  const { campaignPhases, updateCampaignTask } = useData();
+  const { campaignPhases, updateCampaignTask, agents } = useData();
   const [selectedPhaseId, setSelectedPhaseId] = useState(null);
-  const [showIntelModal, setShowIntelModal] = useState(true);
+  const [showIntelModal, setShowIntelModal] = useState(false);
   const [scores, setScores] = useState(defaultScores);
   const [strategyPlan, setStrategyPlan] = useState(null);
   const [intelStep, setIntelStep] = useState(0);
 
+  const defaultCounty = currentUser?.county || 'Mombasa';
+  const [activeCounty, setActiveCounty] = useState(defaultCounty);
+  const [intelligenceData, setIntelligenceData] = useState(null);
+  const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const agentMode = isAgentRole(currentUser?.role);
+
+  // Fetch real-world political news intelligence for active territory
+  useEffect(() => {
+    let isMounted = true;
+    fetch(`/api/intelligence?county=${encodeURIComponent(activeCounty)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!isMounted || !data.success || !data.intelligence) return;
+        const intel = data.intelligence;
+        setIntelligenceData(intel);
+        const updated = {
+          sentiment: intel.sentimentScore || 68,
+          opponentPressure: intel.opponentThreatIndex || 52,
+          messageReach: intel.messageShareOfVoice || 70,
+          turnout: 68,
+          groundGame: 72,
+          agentCoverage: Math.min(100, Math.round(((agents?.length || 10) / 15) * 100)),
+          resourceReadiness: 75,
+          youthEngagement: 70
+        };
+        setScores(updated);
+        setStrategyPlan(generateStrategies(updated));
+      })
+      .catch(() => {});
+    return () => { isMounted = false; };
+  }, [activeCounty, agents]);
+
+  const handleRefreshIntelligence = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetch('/api/intelligence/refresh', { method: 'POST' });
+      const res = await fetch(`/api/intelligence?county=${encodeURIComponent(activeCounty)}`);
+      const data = await res.json();
+      if (data.success && data.intelligence) {
+        const intel = data.intelligence;
+        setIntelligenceData(intel);
+        const updated = {
+          ...scores,
+          sentiment: intel.sentimentScore,
+          opponentPressure: intel.opponentThreatIndex,
+          messageReach: intel.messageShareOfVoice
+        };
+        setScores(updated);
+        setStrategyPlan(generateStrategies(updated));
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const editableFactors = useMemo(
     () => (agentMode ? INTEL_FACTORS.filter((f) => f.agentCanInput) : INTEL_FACTORS),
@@ -374,7 +432,11 @@ export const CampaignStrategy = ({ onClose }) => {
   };
 
   const handleScoreChange = (id, value) => {
-    setScores((prev) => ({ ...prev, [id]: clampPercent(value) }));
+    setScores((prev) => {
+      const next = { ...prev, [id]: clampPercent(value) };
+      setStrategyPlan(generateStrategies(next));
+      return next;
+    });
   };
 
   const handleGenerate = (e) => {
@@ -390,11 +452,11 @@ export const CampaignStrategy = ({ onClose }) => {
         <div className="strategy-hero-copy">
           <div className="strategy-kicker">
             <Target strokeWidth={1.75} />
-            <span>Campaign operations</span>
+            <span>Campaign operations · {activeCounty} Territory</span>
           </div>
           <h1>Strategy phase roadmap</h1>
           <p>
-            Score poll intelligence factors to unlock recommended strategies, then track phase objectives and KPIs.
+            Autonomous background agents ingest live Kenyan political news to drive strategic recommendations, phase objectives, and tactical priorities.
           </p>
         </div>
         <div className="strategy-hero-actions">
@@ -404,7 +466,7 @@ export const CampaignStrategy = ({ onClose }) => {
             onClick={openIntelModal}
           >
             <BrainCircuit strokeWidth={1.75} />
-            Poll intelligence
+            Adjust Ground Factors
           </button>
           <div className="strategy-hero-stat">
             <CircularProgress value={overallProgress} variant="active" diameter={96} />
@@ -415,6 +477,74 @@ export const CampaignStrategy = ({ onClose }) => {
           </div>
         </div>
       </header>
+
+      {/* Autonomous Political Intelligence Briefing Banner */}
+      <section className="strategy-intel-banner">
+        <div className="strategy-intel-banner-top">
+          <div className="strategy-intel-banner-lead">
+            <span className="strategy-intel-badge">
+              <Sparkles strokeWidth={1.75} size={14} />
+              Autonomous Intelligence Feed
+            </span>
+            {currentUser?.role === 'Super Admin' ? (
+              <select
+                className="strategy-county-select"
+                value={activeCounty}
+                onChange={(e) => setActiveCounty(e.target.value)}
+                aria-label="Select County for Political Intelligence"
+              >
+                <option value="Mombasa">Mombasa County (Coast HQ)</option>
+                <option value="Bungoma">Bungoma County (Western HQ)</option>
+                <option value="Nairobi">Nairobi County (Capital HQ)</option>
+                <option value="Kisumu">Kisumu County (Nyanza HQ)</option>
+                <option value="Nakuru">Nakuru County (Rift Valley HQ)</option>
+              </select>
+            ) : (
+              <strong style={{ fontSize: '0.92rem' }}>
+                {activeCounty} County Intelligence
+              </strong>
+            )}
+            <span style={{ fontSize: '0.75rem', color: 'var(--st-muted)' }}>
+              {intelligenceData ? `Updated ${new Date(intelligenceData.updatedAt).toLocaleTimeString()}` : 'Connecting agent...'}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="strategy-evidence-btn"
+              onClick={() => setShowEvidenceModal(true)}
+            >
+              <Radio strokeWidth={1.75} size={14} />
+              News Evidence ({intelligenceData?.evidenceArticles?.length || 0})
+            </button>
+
+            <button
+              type="button"
+              className="strategy-evidence-btn"
+              onClick={handleRefreshIntelligence}
+              disabled={isRefreshing}
+            >
+              <BrainCircuit strokeWidth={1.75} size={14} />
+              {isRefreshing ? 'Scanning Feeds...' : 'Refresh Agent'}
+            </button>
+          </div>
+        </div>
+
+        {intelligenceData?.localIssues && (
+          <div className="strategy-issues-list">
+            <strong style={{ fontSize: '0.75rem', color: 'var(--st-ink)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <Megaphone strokeWidth={1.75} size={13} />
+              Priority Ground Issues:
+            </strong>
+            {intelligenceData.localIssues.map((issue, idx) => (
+              <span key={idx} className="strategy-issue-chip">
+                • {issue}
+              </span>
+            ))}
+          </div>
+        )}
+      </section>
 
       {strategyPlan && (
         <section className="strategy-intel-results">
@@ -744,6 +874,76 @@ export const CampaignStrategy = ({ onClose }) => {
                 })}
               </div>
             </section>
+          </div>
+        </div>
+      )}
+
+      {showEvidenceModal && (
+        <div className="strategy-modal-overlay" onClick={() => setShowEvidenceModal(false)}>
+          <div
+            className="strategy-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="strategy-evidence-title"
+            style={{ maxWidth: '640px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="strategy-modal-head">
+              <div className="strategy-modal-title-row">
+                <div className="strategy-intel-mark" style={{ background: 'rgba(2, 132, 199, 0.15)', color: '#0284c7' }}>
+                  <Radio strokeWidth={1.75} />
+                </div>
+                <div>
+                  <span className="strategy-status strategy-status-active">
+                    Real-World Evidence Feed
+                  </span>
+                  <h2 id="strategy-evidence-title">{activeCounty} Political Evidence Bulletins</h2>
+                  <p>
+                    {intelligenceData?.evidenceArticles?.length || 0} cited mainstream news stories backing current strategy scores
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="strategy-icon-btn"
+                aria-label="Close evidence modal"
+                onClick={() => setShowEvidenceModal(false)}
+              >
+                <X strokeWidth={1.75} />
+              </button>
+            </div>
+
+            <div style={{ maxHeight: '60vh', overflowY: 'auto', padding: '1rem 0' }}>
+              {(intelligenceData?.evidenceArticles || []).map((art, idx) => (
+                <div key={idx} className="strategy-evidence-article">
+                  <h4>{art.title}</h4>
+                  <p>{art.snippet}</p>
+                  <div className="strategy-evidence-meta">
+                    <span>📰 <strong>{art.source}</strong> · {new Date(art.publishedAt).toLocaleDateString()}</span>
+                    {art.url && art.url !== '#' && (
+                      <a
+                        href={art.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#0284c7', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}
+                      >
+                        Read Article <ExternalLink strokeWidth={1.75} size={12} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="strategy-intel-actions">
+              <button
+                type="button"
+                className="strategy-btn-primary"
+                onClick={() => setShowEvidenceModal(false)}
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}

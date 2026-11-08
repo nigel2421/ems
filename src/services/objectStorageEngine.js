@@ -3,7 +3,7 @@
 // Production S3-Compatible Object Storage & Immutability Engine
 // ====================================================================
 
-import crypto from 'node:crypto';
+import { sha256Sync } from '../utils/sha256Sync.js';
 import {
   getLegallyApprovedRetentionPolicy,
   calculateStatutoryRetentionDate
@@ -20,7 +20,7 @@ export const STORAGE_BUCKETS = {
  */
 export const calculatePayloadHash = (payload) => {
   const data = typeof payload === 'string' ? payload : JSON.stringify(payload || '');
-  return crypto.createHash('sha256').update(data).digest('hex');
+  return sha256Sync(data);
 };
 
 /**

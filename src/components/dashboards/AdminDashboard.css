@@ -8,12 +8,14 @@
   --admin-green-soft: #E8F5EE;
   --admin-sage: #A7C4B5;
   --admin-mint: #D8F3E4;
-  --admin-ink: #1A1F1C;
-  --admin-muted: #6B756F;
-  --admin-line: #E6EBE8;
-  --admin-surface: #FFFFFF;
-  --admin-canvas: #F3F6F4;
-  --admin-radius: 22px;
+  --admin-ink: #0f172a;
+  --admin-muted: #64748b;
+  --admin-line: #e2e8f0;
+  --admin-surface: #ffffff;
+  --admin-canvas: #f8fafc;
+  --admin-card-border: rgba(0, 0, 0, 0.08);
+  --admin-hover: rgba(0, 0, 0, 0.04);
+  --admin-radius: 20px;
   --admin-font: 'Inter', 'Segoe UI', system-ui, sans-serif;
 
   display: grid;
@@ -24,6 +26,102 @@
   font-family: var(--admin-font);
   color: var(--admin-ink);
   background: var(--admin-canvas);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ====================================================================
+   DUAL THEME SUPPORT: DARK COMMAND CENTER MODE
+   ==================================================================== */
+:root[data-theme="dark"] .admin-layout,
+html.dark .admin-layout,
+:root[data-theme="dark"] .admin-shell,
+html.dark .admin-shell,
+[data-theme="dark"] .admin-layout,
+.admin-layout.dark {
+  --admin-green: #10b981;
+  --admin-green-deep: #064e3b;
+  --admin-green-mid: #059669;
+  --admin-green-soft: rgba(16, 185, 129, 0.16);
+  --admin-sage: #6ee7b7;
+  --admin-mint: rgba(16, 185, 129, 0.28);
+  --admin-ink: #f8fafc;
+  --admin-muted: #94a3b8;
+  --admin-line: rgba(255, 255, 255, 0.1);
+  --admin-surface: #0f172a;
+  --admin-canvas: #0b1120;
+  --admin-card-border: rgba(255, 255, 255, 0.08);
+  --admin-hover: rgba(255, 255, 255, 0.05);
+}
+
+:root[data-theme="dark"] .admin-btn-ghost,
+html.dark .admin-btn-ghost,
+.admin-layout.dark .admin-btn-ghost {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+}
+
+:root[data-theme="dark"] .admin-btn-ghost:hover,
+html.dark .admin-btn-ghost:hover,
+.admin-layout.dark .admin-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+:root[data-theme="dark"] .form-input,
+:root[data-theme="dark"] .form-select,
+html.dark .form-input,
+html.dark .form-select,
+.admin-layout.dark .form-input,
+.admin-layout.dark .form-select {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #f8fafc;
+}
+
+:root[data-theme="dark"] .custom-table th,
+html.dark .custom-table th,
+.admin-layout.dark .custom-table th {
+  background: #1e293b;
+  color: #94a3b8;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+:root[data-theme="dark"] .custom-table td,
+html.dark .custom-table td,
+.admin-layout.dark .custom-table td {
+  border-color: rgba(255, 255, 255, 0.07);
+  color: #f1f5f9;
+}
+
+:root[data-theme="dark"] .custom-table tr:hover td,
+html.dark .custom-table tr:hover td,
+.admin-layout.dark .custom-table tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+:root[data-theme="dark"] .admin-modal,
+html.dark .admin-modal,
+.admin-layout.dark .admin-modal {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+}
+
+:root[data-theme="dark"] .admin-role-btn,
+html.dark .admin-role-btn,
+.admin-layout.dark .admin-role-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+}
+
+:root[data-theme="dark"] .admin-role-btn.is-active,
+html.dark .admin-role-btn.is-active,
+.admin-layout.dark .admin-role-btn.is-active {
+  background: var(--admin-green);
+  border-color: var(--admin-green);
+  color: #fff;
 }
 
 .app-container.is-admin-shell {

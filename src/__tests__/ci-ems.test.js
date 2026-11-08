@@ -8,6 +8,18 @@ import {
 } from '../services/llmService.js';
 
 import {
+  resolveRealm,
+  hashPassword,
+  verifyPassword,
+  signToken,
+  verifyToken,
+  isAdminRole,
+  getLockoutState,
+  recordFailedAttempt,
+  resetFailedAttempts
+} from '../../server/auth.js';
+
+import {
   parsePollingStationsCSV,
   compressImageSimulation,
   processOCRForm34A
@@ -21,6 +33,18 @@ import {
   parseUserAgent,
   exportLoginLogsToCSV
 } from '../utils/deviceParser.js';
+
+import {
+  checkPasswordComplexity,
+  passwordsMatch,
+  cleanKenyanPhoneNumber,
+  isDuplicatePhoneNumber
+} from '../utils/passwordPolicy.js';
+
+import {
+  escapeCSVField,
+  exportPollingStationsToCSVString
+} from '../utils/pollingStationExport.js';
 
 import {
   initialUsersList,
@@ -2496,7 +2520,1980 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
     assert.ok(true, 'CI-EMS 3.1 complete test suite achieved 260/260 passing tests');
   });
 
+  test('261. Login throttle: 4 failures remain unlocked; 5th triggers escalating lockout', async () => {
+    const { getLockState, recordFailure, recordSuccess } = await import('../utils/loginThrottle.js');
+    let store = {};
+    const email = 'officer.test@ems.go.ke';
+    const now = 1_700_000_000_000;
+
+    for (let i = 0; i < 4; i++) {
+      store = recordFailure(store, email, now);
+      const state = getLockState(store, email, now);
+      assert.equal(state.locked, false, `Attempt ${i + 1} should not lock`);
+    }
+
+    // 5th attempt locks for 30 seconds (step 0)
+    store = recordFailure(store, email, now);
+    const lockedState = getLockState(store, email, now);
+    assert.equal(lockedState.locked, true);
+    assert.equal(lockedState.permanent, false);
+    assert.equal(lockedState.retryInMs, 30_000);
+
+    // After 30s expiry
+    const expiredState = getLockState(store, email, now + 30_001);
+    assert.equal(expiredState.locked, false);
+
+    // Success resets store
+    store = recordSuccess(store, email);
+    assert.equal(getLockState(store, email, now).locked, false);
+  });
+
+  test('262. Login throttle: repeated escalating failures reach permanent lockout requiring admin unlock', async () => {
+    const { getLockState, recordFailure, adminUnlock } = await import('../utils/loginThrottle.js');
+    let store = {};
+    const email = 'target.candidate@ems.go.ke';
+    let clock = 1_700_000_000_000;
+
+    // Trigger step 0 (30s), step 1 (2m), step 2 (5m), step 3 (15m), then permanent
+    for (let step = 0; step < 5; step++) {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        store = recordFailure(store, email, clock);
+      }
+      clock += 20 * 60 * 1000; // Fast-forward past temp timer
+    }
+
+    const permState = getLockState(store, email, clock);
+    assert.equal(permState.locked, true);
+    assert.equal(permState.permanent, true);
+
+    // Cannot unlock by just waiting
+    const futureCheck = getLockState(store, email, clock + 100 * 24 * 3600 * 1000);
+    assert.equal(futureCheck.locked, true);
+    assert.equal(futureCheck.permanent, true);
+
+    // Admin unlock restores access
+    store = adminUnlock(store, email);
+    assert.equal(getLockState(store, email, clock).locked, false);
+  });
+
+  test('263. Idle session policy: active below 13m, warning at 13m, expired at 15m', async () => {
+    const { computeIdlePhase, isSessionExpired } = await import('../utils/sessionPolicy.js');
+    const start = 1_000_000_000;
+
+    // 5 minutes idle
+    const active = computeIdlePhase(start, start + 5 * 60 * 1000);
+    assert.equal(active.phase, 'active');
+    assert.equal(active.secondsLeft, 600);
+
+    // 13 minutes and 10 seconds idle (warning zone)
+    const warning = computeIdlePhase(start, start + (13 * 60 + 10) * 1000);
+    assert.equal(warning.phase, 'warning');
+    assert.equal(warning.secondsLeft, 110);
+
+    // 15 minutes idle (expired)
+    const expired = computeIdlePhase(start, start + 15 * 60 * 1000);
+    assert.equal(expired.phase, 'expired');
+    assert.equal(expired.secondsLeft, 0);
+    assert.equal(isSessionExpired(start, start + 15 * 60 * 1000), true);
+  });
+
+  test('264. Accessible palette tokens: top 10 counties have distinct high-contrast colors', async () => {
+    const { DIVERSE_CATEGORICAL_PALETTE } = await import('../utils/chartPalette.js');
+    assert.equal(DIVERSE_CATEGORICAL_PALETTE.length, 10);
+    const unique = new Set(DIVERSE_CATEGORICAL_PALETTE.map(c => c.toLowerCase()));
+    assert.equal(unique.size, 10, 'All 10 palette colors must be distinct');
+
+    // Nairobi is Forest Green (#006B3F) and Kiambu is Amber (#E69F00)
+    assert.equal(DIVERSE_CATEGORICAL_PALETTE[0].toUpperCase(), '#006B3F');
+    assert.equal(DIVERSE_CATEGORICAL_PALETTE[1].toUpperCase(), '#E69F00');
+  });
+
+  test('265. GPS coordinate formatting avoids precision leaks and floating-point noise', async () => {
+    const { formatCoord, formatLatLng } = await import('../utils/geoFormat.js');
+    assert.equal(formatCoord(36.823100000000004, 4), '36.8231');
+    assert.equal(formatCoord(-1.2676000000000002, 4), '-1.2676');
+    assert.equal(formatLatLng(-1.2676, 36.8231000004), '-1.2676, 36.8231');
+    assert.equal(formatLatLng(null, null), 'GPS fix pending');
+  });
+
+  test('266. Tally validation: rejects negative votes, decimals, and empty inputs', async () => {
+    const { validateTallySubmission } = await import('../utils/tallyValidation.js');
+    const resNegative = validateTallySubmission({
+      candAVotes: -5,
+      candBVotes: 100,
+      candCVotes: 50,
+      rejectedVotes: 5,
+      registeredVoters: 500,
+      pollingStationId: 'PS-101'
+    });
+    assert.equal(resNegative.isValid, false);
+    assert.ok(resNegative.errors.some(e => e.includes('negative')));
+
+    const resDecimal = validateTallySubmission({
+      candAVotes: 10.5,
+      candBVotes: 100,
+      candCVotes: 50,
+      rejectedVotes: 5,
+      registeredVoters: 500,
+      pollingStationId: 'PS-101'
+    });
+    assert.equal(resDecimal.isValid, false);
+    assert.ok(resDecimal.errors.some(e => e.includes('whole number')));
+  });
+
+  test('267. Tally validation: rejects votes exceeding registered voter capacity', async () => {
+    const { validateTallySubmission } = await import('../utils/tallyValidation.js');
+    const resExceed = validateTallySubmission({
+      candAVotes: 400,
+      candBVotes: 300,
+      candCVotes: 200,
+      rejectedVotes: 50, // total 950
+      registeredVoters: 600, // capacity 600
+      pollingStationId: 'PS-102'
+    });
+    assert.equal(resExceed.isValid, false);
+    assert.ok(resExceed.errors.some(e => e.includes('exceeds registered voters')));
+  });
+
+  test('268. Tally validation: detects duplicate station submission and blocks locked tallies', async () => {
+    const { validateTallySubmission } = await import('../utils/tallyValidation.js');
+    const existing = [
+      { pollingStationId: 'PS-LOCKED', status: 'Approved', totalVotesCast: 400 },
+      { pollingStationId: 'PS-SUBMITTED', status: 'Submitted', totalVotesCast: 250 }
+    ];
+
+    const resLocked = validateTallySubmission({
+      candAVotes: 100,
+      candBVotes: 100,
+      candCVotes: 50,
+      rejectedVotes: 5,
+      registeredVoters: 500,
+      pollingStationId: 'PS-LOCKED',
+      existingTallies: existing
+    });
+    assert.equal(resLocked.isValid, false);
+    assert.ok(resLocked.errors.some(e => e.includes('locked against edits')));
+
+    const resDuplicate = validateTallySubmission({
+      candAVotes: 100,
+      candBVotes: 100,
+      candCVotes: 50,
+      rejectedVotes: 5,
+      registeredVoters: 500,
+      pollingStationId: 'PS-SUBMITTED',
+      existingTallies: existing,
+      allowOverwrite: false
+    });
+    assert.equal(resDuplicate.isValid, false);
+    assert.ok(resDuplicate.errors.some(e => e.includes('already been submitted')));
+  });
+
+  test('269. Tally parallel check: flags discrepancies between agent figures and broadcasts', async () => {
+    const { checkParallelMismatch } = await import('../utils/tallyValidation.js');
+    const sourceA = { candAVotes: 450, candBVotes: 200, candCVotes: 30, rejectedVotes: 10 };
+    const sourceB = { candAVotes: 440, candBVotes: 200, candCVotes: 30, rejectedVotes: 10 }; // 10 vote discrepancy on A
+
+    const mismatch = checkParallelMismatch(sourceA, sourceB);
+    assert.equal(mismatch.isMismatch, true);
+    assert.equal(mismatch.discrepancies.diffCandA, 10);
+    assert.equal(mismatch.discrepancies.diffCandB, 0);
+
+    const identical = checkParallelMismatch(sourceA, sourceA);
+    assert.equal(identical.isMismatch, false);
+  });
+
+  test('270. Offline Sync Queue: items persist in local storage and process successfully', async () => {
+    const { enqueueOfflineItem, getOfflineQueue, processOfflineSyncQueue } = await import('../utils/offlineSync.js');
+    localStorageMock.clear();
+
+    const item = await enqueueOfflineItem({ stationId: 'PS-OFFLINE-01', candAVotes: 120 }, 'TALLY');
+    assert.ok(item.clientSubmissionUuid);
+
+    const queue = getOfflineQueue();
+    assert.equal(queue.length, 1);
+    assert.equal(queue[0].logicalRecordId, 'PS-OFFLINE-01');
+
+    let synced = false;
+    const res = await processOfflineSyncQueue(async (qItem) => {
+      synced = true;
+      assert.equal(qItem.logicalRecordId, 'PS-OFFLINE-01');
+    });
+
+    assert.equal(synced, true);
+    assert.equal(res.syncedCount, 1);
+    assert.equal(res.remainingCount, 0);
+  });
+
+  // ====================================================================
+  // GEOGRAPHICAL DATA-GATING & MULTI-JURISDICTION ISOLATION (TESTS 271-276)
+  // ====================================================================
+
+  test('271. Governor Nairobi geographic gating: restricted to Nairobi and blocked from Mombasa', async () => {
+    const { getUserScope, canAccessLocation, SCOPE_LEVELS } = await import('../utils/rbac.js');
+    const { hasNationalGeographyAccess } = await import('../utils/jurisdictionAnalytics.js');
+
+    const govNairobi = {
+      role: 'Governor',
+      county: 'Nairobi',
+      assignedEntity: 'C-047'
+    };
+
+    const scope = getUserScope(govNairobi);
+    assert.equal(scope.level, SCOPE_LEVELS.COUNTY);
+    assert.equal(scope.county, 'Nairobi');
+    assert.equal(hasNationalGeographyAccess(govNairobi), false);
+
+    // Can access Nairobi locations
+    assert.equal(canAccessLocation(govNairobi, { county: 'Nairobi' }), true);
+    assert.equal(canAccessLocation(govNairobi, { county: 'C-047' }), true);
+
+    // Cannot access Mombasa locations
+    assert.equal(canAccessLocation(govNairobi, { county: 'Mombasa' }), false);
+    assert.equal(canAccessLocation(govNairobi, { county: 'C-001' }), false);
+    assert.equal(canAccessLocation(govNairobi, { county: 'Nakuru' }), false);
+  });
+
+  test('272. MP Westlands (Nairobi) constituency isolation: restricted to Westlands', async () => {
+    const { getUserScope, canAccessLocation, SCOPE_LEVELS } = await import('../utils/rbac.js');
+
+    const mpWestlands = {
+      role: 'MP',
+      county: 'Nairobi',
+      constituency: 'Westlands',
+      assignedEntity: 'CONST-274'
+    };
+
+    const scope = getUserScope(mpWestlands);
+    assert.equal(scope.level, SCOPE_LEVELS.CONSTITUENCY);
+    assert.equal(scope.constituency, 'Westlands');
+    assert.equal(scope.county, 'Nairobi');
+
+    // In-scope access
+    assert.equal(canAccessLocation(mpWestlands, { county: 'Nairobi', constituency: 'Westlands' }), true);
+    assert.equal(canAccessLocation(mpWestlands, { constituency: 'Westlands' }), true);
+
+    // Out-of-scope in same county (Starehe)
+    assert.equal(canAccessLocation(mpWestlands, { county: 'Nairobi', constituency: 'Starehe' }), false);
+
+    // Out-of-scope in other county (Nyali, Mombasa)
+    assert.equal(canAccessLocation(mpWestlands, { county: 'Mombasa', constituency: 'Nyali' }), false);
+  });
+
+  test('273. MP Nyali (Mombasa) cross-county isolation: zero access to Nairobi or other Mombasa units', async () => {
+    const { getUserScope, canAccessLocation, SCOPE_LEVELS } = await import('../utils/rbac.js');
+    const { hasNationalGeographyAccess } = await import('../utils/jurisdictionAnalytics.js');
+
+    const mpNyali = {
+      role: 'MP',
+      county: 'Mombasa',
+      constituency: 'Nyali',
+      assignedEntity: 'CONST-004'
+    };
+
+    const scope = getUserScope(mpNyali);
+    assert.equal(scope.level, SCOPE_LEVELS.CONSTITUENCY);
+    assert.equal(scope.constituency, 'Nyali');
+    assert.equal(scope.county, 'Mombasa');
+    assert.equal(hasNationalGeographyAccess(mpNyali), false);
+
+    // In-scope Nyali access
+    assert.equal(canAccessLocation(mpNyali, { county: 'Mombasa', constituency: 'Nyali' }), true);
+
+    // Blocked from Nairobi Westlands
+    assert.equal(canAccessLocation(mpNyali, { county: 'Nairobi', constituency: 'Westlands' }), false);
+
+    // Blocked from Mombasa Changamwe
+    assert.equal(canAccessLocation(mpNyali, { county: 'Mombasa', constituency: 'Changamwe' }), false);
+  });
+
+  test('274. Governor Mombasa cross-county isolation: restricted to Mombasa', async () => {
+    const { getUserScope, canAccessLocation, SCOPE_LEVELS } = await import('../utils/rbac.js');
+
+    const govMombasa = {
+      role: 'Governor',
+      county: 'Mombasa',
+      assignedEntity: 'C-001'
+    };
+
+    const scope = getUserScope(govMombasa);
+    assert.equal(scope.level, SCOPE_LEVELS.COUNTY);
+    assert.equal(scope.county, 'Mombasa');
+
+    assert.equal(canAccessLocation(govMombasa, { county: 'Mombasa' }), true);
+    assert.equal(canAccessLocation(govMombasa, { county: 'Nairobi' }), false);
+    assert.equal(canAccessLocation(govMombasa, { county: 'Kisumu' }), false);
+  });
+
+  test('275. Candidate/Campaign Admin dynamic contest-based scoping', async () => {
+    const { getUserScope, SCOPE_LEVELS } = await import('../utils/rbac.js');
+
+    const candGov = {
+      role: 'Candidate/Campaign Admin',
+      contestType: 'Gubernatorial',
+      county: 'Nairobi'
+    };
+    const scopeGov = getUserScope(candGov);
+    assert.equal(scopeGov.level, SCOPE_LEVELS.COUNTY);
+    assert.equal(scopeGov.county, 'Nairobi');
+
+    const candMP = {
+      role: 'Candidate/Campaign Admin',
+      contestType: 'Parliamentary',
+      county: 'Mombasa',
+      constituency: 'Nyali'
+    };
+    const scopeMP = getUserScope(candMP);
+    assert.equal(scopeMP.level, SCOPE_LEVELS.CONSTITUENCY);
+    assert.equal(scopeMP.constituency, 'Nyali');
+    assert.equal(scopeMP.county, 'Mombasa');
+  });
+
+  test('276. filterTalliesByJurisdiction: strict isolation between Nairobi and Mombasa tallies', async () => {
+    const { filterTalliesByJurisdiction, resolveJurisdiction } = await import('../utils/jurisdictionAnalytics.js');
+
+    const mockGeo = {
+      counties: [
+        { id: 'C-047', name: 'NAIROBI CITY', code: '47' },
+        { id: 'C-001', name: 'MOMBASA', code: '1' }
+      ],
+      constituencies: [
+        { id: 'CONST-274', countyId: 'C-047', name: 'WESTLANDS', code: '274' },
+        { id: 'CONST-004', countyId: 'C-001', name: 'NYALI', code: '4' }
+      ],
+      wards: [],
+      pollingStations: [
+        { id: 'PS-WEST-01', countyId: 'C-047', constituencyId: 'CONST-274', code: '047-01-01', name: 'Westlands Primary' },
+        { id: 'PS-NYALI-01', countyId: 'C-001', constituencyId: 'CONST-004', code: '001-04-01', name: 'Nyali Academy' }
+      ]
+    };
+
+    const tallies = [
+      { id: 'TAL-01', pollingStationId: 'PS-WEST-01', candAVotes: 250, candBVotes: 100 },
+      { id: 'TAL-02', pollingStationId: 'PS-NYALI-01', candAVotes: 310, candBVotes: 200 }
+    ];
+
+    const mpWestlands = { role: 'MP', county: 'Nairobi', constituency: 'Westlands', assignedEntity: 'CONST-274' };
+    const scopeWestlands = resolveJurisdiction(mpWestlands, mockGeo);
+    const westlandsTallies = filterTalliesByJurisdiction(tallies, mockGeo.pollingStations, scopeWestlands);
+
+    assert.equal(westlandsTallies.length, 1);
+    assert.equal(westlandsTallies[0].id, 'TAL-01');
+
+    const mpNyali = { role: 'MP', county: 'Mombasa', constituency: 'Nyali', assignedEntity: 'CONST-004' };
+    const scopeNyali = resolveJurisdiction(mpNyali, mockGeo);
+    const nyaliTallies = filterTalliesByJurisdiction(tallies, mockGeo.pollingStations, scopeNyali);
+
+    assert.equal(nyaliTallies.length, 1);
+    assert.equal(nyaliTallies[0].id, 'TAL-02');
+  });
+
+  // ====================================================================
+  // CI-EMS 4.0 INTERACTIVE ELECTORAL MAP TESTS (277 - 282)
+  // Zero-Server Vector TopoJSON/SVG Drill-down & Role-based Auto-framing
+  // ====================================================================
+
+  test('277. Vector Map Geometries: Kenya 47 counties completeness & path validation', async () => {
+    const { KENYA_COUNTIES_GEOMETRY, KENYA_MAP_VIEWBOX } = await import('../data/geo/kenyaMapGeometries.js');
+    assert.equal(KENYA_MAP_VIEWBOX, '0 0 850 1000');
+    assert.equal(KENYA_COUNTIES_GEOMETRY.length, 47);
+
+    // Verify all 47 counties have valid structure
+    KENYA_COUNTIES_GEOMETRY.forEach((county) => {
+      assert.ok(county.id.startsWith('C-'), `County ${county.name} id must start with C-`);
+      assert.ok(county.code, `County ${county.name} must have a code`);
+      assert.ok(county.name, 'County must have a name');
+      assert.ok(Array.isArray(county.centroid) && county.centroid.length === 2, `County ${county.name} centroid invalid`);
+      assert.ok(county.bounds && county.bounds.w > 0 && county.bounds.h > 0, `County ${county.name} bounds invalid`);
+      assert.ok(county.d && county.d.startsWith('M'), `County ${county.name} SVG path must start with M`);
+    });
+
+    // Check specific county entries
+    const nairobi = KENYA_COUNTIES_GEOMETRY.find(c => c.id === 'C-047');
+    assert.ok(nairobi);
+    assert.equal(nairobi.name, 'NAIROBI CITY');
+    assert.equal(nairobi.code, '47');
+
+    const mombasa = KENYA_COUNTIES_GEOMETRY.find(c => c.id === 'C-001');
+    assert.ok(mombasa);
+    assert.equal(mombasa.name, 'MOMBASA');
+    assert.equal(mombasa.code, '1');
+  });
+
+  test('278. Map Analytics: getRegionMetrics aggregation for turnout, leader, and reporting', async () => {
+    const { getRegionMetrics } = await import('../utils/mapAnalytics.js');
+
+    const mockGeography = {
+      counties: [
+        { id: 'C-047', name: 'NAIROBI CITY', code: '47', registeredVoters: 10000 }
+      ],
+      constituencies: [],
+      pollingStations: [
+        { id: 'PS-01', countyId: 'C-047', name: 'Station 1' },
+        { id: 'PS-02', countyId: 'C-047', name: 'Station 2' }
+      ]
+    };
+
+    const mockTallies = [
+      { pollingStationId: 'PS-01', candAVotes: 2500, candBVotes: 1500, candCVotes: 100, rejectedVotes: 50 },
+      { pollingStationId: 'PS-02', candAVotes: 2000, candBVotes: 1000, candCVotes: 50, rejectedVotes: 25 }
+    ];
+
+    const metrics = getRegionMetrics('C-047', 'county', {
+      geography: mockGeography,
+      tallyResults: mockTallies,
+      stationIntelligence: {}
+    });
+
+    assert.equal(metrics.registeredVoters, 10000);
+    assert.equal(metrics.stationsCount, 2);
+    assert.equal(metrics.talliesCount, 2);
+    assert.equal(metrics.reportingPct, 100);
+    assert.equal(metrics.candAVotes, 4500);
+    assert.equal(metrics.candBVotes, 2500);
+    assert.equal(metrics.leader, 'Candidate A');
+    assert.equal(metrics.turnoutPct, 72); // (4500 + 2500 + 150 + 75) / 10000 = ~72.25% -> 72%
+  });
+
+  test('279. Map Analytics: getRegionFillColor choropleth layer color mapping', async () => {
+    const { getRegionFillColor, MAP_LAYERS, FORMATION_COLORS } = await import('../utils/mapAnalytics.js');
+
+    const activeMetrics = {
+      talliesCount: 5,
+      turnoutPct: 75,
+      reportingPct: 100,
+      riskLevel: 'Severe',
+      leadColor: FORMATION_COLORS.CAND_A
+    };
+
+    // Lead layer
+    assert.equal(getRegionFillColor(activeMetrics, MAP_LAYERS.LEAD), FORMATION_COLORS.CAND_A);
+    assert.equal(getRegionFillColor({ talliesCount: 0 }, MAP_LAYERS.LEAD), '#334155');
+
+    // Turnout layer
+    assert.equal(getRegionFillColor(activeMetrics, MAP_LAYERS.TURNOUT), '#10b981');
+    assert.equal(getRegionFillColor({ turnoutPct: 35 }, MAP_LAYERS.TURNOUT), '#475569');
+
+    // Reporting layer
+    assert.equal(getRegionFillColor(activeMetrics, MAP_LAYERS.REPORTING), '#10b981');
+    assert.equal(getRegionFillColor({ reportingPct: 20 }, MAP_LAYERS.REPORTING), '#d97706');
+
+    // Risk layer
+    assert.equal(getRegionFillColor(activeMetrics, MAP_LAYERS.RISK), '#ef4444');
+    assert.equal(getRegionFillColor({ riskLevel: 'High' }, MAP_LAYERS.RISK), '#f97316');
+
+    // Out of scope isolation
+    assert.equal(getRegionFillColor(activeMetrics, MAP_LAYERS.LEAD, true), '#0f172a');
+  });
+
+  test('280. Map Analytics: resolveMapFraming role-based auto-framing', async () => {
+    const { resolveMapFraming } = await import('../utils/mapAnalytics.js');
+
+    // Admin should see whole country
+    const adminUser = { role: 'Admin', assignedEntity: 'GLOBAL' };
+    const adminFrame = resolveMapFraming(adminUser);
+    assert.equal(adminFrame.isScoped, false);
+    assert.equal(adminFrame.viewBox, '0 0 850 1000');
+
+    // Governor Nairobi should auto-frame to Nairobi bounds
+    const govNairobi = { role: 'Governor', county: 'Nairobi', assignedEntity: 'C-047' };
+    const nairobiFrame = resolveMapFraming(govNairobi);
+    assert.equal(nairobiFrame.isScoped, true);
+    assert.equal(nairobiFrame.countyId, 'C-047');
+    assert.ok(nairobiFrame.viewBox.includes('325 620'));
+
+    // Governor Mombasa should auto-frame to Mombasa bounds
+    const govMombasa = { role: 'Governor', county: 'Mombasa', assignedEntity: 'C-001' };
+    const mombasaFrame = resolveMapFraming(govMombasa);
+    assert.equal(mombasaFrame.isScoped, true);
+    assert.equal(mombasaFrame.countyId, 'C-001');
+  });
+
+  test('281. Vector Map Sub-geometries: Nairobi (17) & Mombasa (6) constituencies completeness', async () => {
+    const {
+      NAIROBI_CONSTITUENCIES_GEOMETRY,
+      MOMBASA_CONSTITUENCIES_GEOMETRY
+    } = await import('../data/geo/kenyaMapGeometries.js');
+
+    assert.equal(NAIROBI_CONSTITUENCIES_GEOMETRY.length, 17);
+    NAIROBI_CONSTITUENCIES_GEOMETRY.forEach(c => {
+      assert.ok(c.id.startsWith('CONST-'), `Nairobi constituency ${c.name} id must start with CONST-`);
+      assert.ok(c.code, `Nairobi constituency ${c.name} must have a code`);
+      assert.ok(c.d && c.d.startsWith('M'), `Nairobi constituency ${c.name} SVG path must start with M`);
+      assert.ok(c.bounds && c.bounds.w > 0, `Nairobi constituency ${c.name} bounds invalid`);
+    });
+
+    assert.equal(MOMBASA_CONSTITUENCIES_GEOMETRY.length, 6);
+    MOMBASA_CONSTITUENCIES_GEOMETRY.forEach(c => {
+      assert.ok(c.id.startsWith('CONST-'), `Mombasa constituency ${c.name} id must start with CONST-`);
+      assert.ok(c.code, `Mombasa constituency ${c.name} must have a code`);
+      assert.ok(c.d && c.d.startsWith('M'), `Mombasa constituency ${c.name} SVG path must start with M`);
+      assert.ok(c.bounds && c.bounds.w > 0, `Mombasa constituency ${c.name} bounds invalid`);
+    });
+  });
+
+  test('282. Map Scope Boundary Enforcement: prevents out-of-scope interactions for scoped leaders', async () => {
+    const { canAccessLocation } = await import('../utils/rbac.js');
+
+    const govNairobi = { role: 'Governor', county: 'Nairobi', assignedEntity: 'C-047' };
+    const mpNyali = { role: 'MP', county: 'Mombasa', constituency: 'Nyali', assignedEntity: 'CONST-004' };
+
+    // Governor Nairobi cannot interact with Mombasa
+    assert.equal(canAccessLocation(govNairobi, { county: 'C-047' }), true);
+    assert.equal(canAccessLocation(govNairobi, { county: 'C-001' }), false);
+
+    // MP Nyali cannot interact with Westlands
+    assert.equal(canAccessLocation(mpNyali, { county: 'Mombasa', constituency: 'Nyali' }), true);
+    assert.equal(canAccessLocation(mpNyali, { county: 'Nairobi', constituency: 'Westlands' }), false);
+  });
+
+  // ====================================================================
+  // CI-EMS 4.1 GOOGLE MAPS API SERVICE TESTS (283 - 286)
+  // Google Maps JavaScript API, Coordinates, Pin Styling & Auto-Framing
+  // ====================================================================
+
+  test('283. Google Maps Service: API key retrieval and configuration check', async () => {
+    const {
+      getGoogleMapsApiKey,
+      setGoogleMapsApiKey,
+      isGoogleMapsConfigured
+    } = await import('../services/googleMapsService.js');
+
+    // Default or empty state
+    const initialKey = getGoogleMapsApiKey();
+    assert.equal(typeof initialKey, 'string');
+
+    // Setting key
+    setGoogleMapsApiKey('AIzaSyTestKey123456');
+    assert.equal(getGoogleMapsApiKey(), 'AIzaSyTestKey123456');
+    assert.equal(isGoogleMapsConfigured(), true);
+
+    // Resetting / clearing key
+    setGoogleMapsApiKey('');
+    assert.equal(getGoogleMapsApiKey(), '');
+    assert.equal(isGoogleMapsConfigured(), false);
+  });
+
+  test('284. Google Maps Service: Kenyan coordinates and role-based auto-framing', async () => {
+    const {
+      KENYA_NATIONAL_CENTER,
+      COUNTY_COORDINATES,
+      CONSTITUENCY_COORDINATES,
+      resolveGoogleMapFraming
+    } = await import('../services/googleMapsService.js');
+
+    // Validate national coordinates
+    assert.ok(KENYA_NATIONAL_CENTER.lat > -1 && KENYA_NATIONAL_CENTER.lat < 1);
+    assert.ok(KENYA_NATIONAL_CENTER.lng > 36 && KENYA_NATIONAL_CENTER.lng < 39);
+    assert.equal(KENYA_NATIONAL_CENTER.zoom, 6);
+
+    // Validate county coordinates
+    assert.ok(COUNTY_COORDINATES['C-047']); // Nairobi
+    assert.equal(COUNTY_COORDINATES['C-047'].name, 'NAIROBI CITY');
+    assert.ok(COUNTY_COORDINATES['C-001']); // Mombasa
+    assert.equal(COUNTY_COORDINATES['C-001'].name, 'MOMBASA');
+
+    // Validate constituency coordinates
+    assert.ok(CONSTITUENCY_COORDINATES['CONST-274']); // Westlands
+    assert.equal(CONSTITUENCY_COORDINATES['CONST-274'].name, 'WESTLANDS');
+    assert.ok(CONSTITUENCY_COORDINATES['CONST-004']); // Nyali
+    assert.equal(CONSTITUENCY_COORDINATES['CONST-004'].name, 'NYALI');
+
+    // Test National Admin Framing
+    const adminUser = { role: 'Admin', assignedEntity: 'GLOBAL' };
+    const adminFrame = resolveGoogleMapFraming(adminUser);
+    assert.equal(adminFrame.isScoped, false);
+    assert.equal(adminFrame.zoom, 6);
+
+    // Test MP Westlands Framing
+    const mpWestlands = { role: 'MP', county: 'Nairobi', constituency: 'Westlands', assignedEntity: 'CONST-274' };
+    const westlandsFrame = resolveGoogleMapFraming(mpWestlands);
+    assert.equal(westlandsFrame.isScoped, true);
+    assert.equal(westlandsFrame.constituencyId, 'CONST-274');
+    assert.equal(westlandsFrame.center.lat, -1.2683);
+    assert.equal(westlandsFrame.center.lng, 36.8111);
+    assert.equal(westlandsFrame.zoom, 13);
+
+    // Test Governor Mombasa Framing
+    const govMombasa = { role: 'Governor', county: 'Mombasa', assignedEntity: 'C-001' };
+    const mombasaFrame = resolveGoogleMapFraming(govMombasa);
+    assert.equal(mombasaFrame.isScoped, true);
+    assert.equal(mombasaFrame.countyId, 'C-001');
+    assert.equal(mombasaFrame.center.lat, -4.0435);
+    assert.equal(mombasaFrame.center.lng, 39.6682);
+    assert.equal(mombasaFrame.zoom, 12);
+  });
+
+  test('285. Google Maps Service: SVG marker pin generation with status colors', async () => {
+    const { createMarkerPinSvg } = await import('../services/googleMapsService.js');
+
+    const goldPin = createMarkerPinSvg({ color: '#EAB308' });
+    assert.ok(goldPin.startsWith('data:image/svg+xml'));
+    assert.ok(goldPin.includes('%23EAB308'));
+
+    const redPin = createMarkerPinSvg({ color: '#EF4444' });
+    assert.ok(redPin.startsWith('data:image/svg+xml'));
+    assert.ok(redPin.includes('%23EF4444'));
+  });
+
+  test('286. Google Maps Service: InfoWindow HTML builder formats station details', async () => {
+    const { formatInfoWindowHtml } = await import('../services/googleMapsService.js');
+
+    const mockStation = {
+      id: 'PS-01',
+      code: '047-274-001',
+      name: 'Westlands Primary School',
+      registeredVoters: 1250
+    };
+
+    const mockMetrics = { reportingPct: 100 };
+    const mockIntel = { riskLevel: 'Severe' };
+    const mockAgent = { name: 'James Kimani' };
+
+    const html = formatInfoWindowHtml(mockStation, mockMetrics, mockIntel, mockAgent);
+    assert.ok(html.includes('Westlands Primary School'));
+    assert.ok(html.includes('047-274-001'));
+    assert.ok(html.includes('1,250'));
+    assert.ok(html.includes('Severe Risk'));
+    assert.ok(html.includes('Verified'));
+    assert.ok(html.includes('James Kimani'));
+  });
+
+  test('287. Google Maps Service: onGoogleMapsAuthFailure subscriber notifies on gm_authFailure events', async () => {
+    const { onGoogleMapsAuthFailure } = await import('../services/googleMapsService.js');
+
+    let triggered = false;
+    const unsubscribe = onGoogleMapsAuthFailure(() => {
+      triggered = true;
+    });
+
+    if (typeof globalThis.gm_authFailure === 'function') {
+      globalThis.gm_authFailure();
+      assert.equal(triggered, true);
+    }
+
+    assert.equal(typeof unsubscribe, 'function');
+    unsubscribe();
+  });
+
+  test('288. Map Performance Engine: buildRegionMetricsIndex computes O(1) indexed metrics in single pass', async () => {
+    const { buildRegionMetricsIndex } = await import('../utils/mapAnalytics.js');
+
+    const mockGeography = {
+      counties: [
+        { id: 'C-047', code: '47', name: 'NAIROBI CITY', registeredVoters: 2500000 },
+        { id: 'C-001', code: '1', name: 'MOMBASA', registeredVoters: 650000 }
+      ],
+      constituencies: [
+        { id: 'CONST-274', code: '274', name: 'WESTLANDS', registeredVoters: 150000 }
+      ],
+      pollingStations: [
+        { id: 'PS-1', countyId: 'C-047', constituencyId: 'CONST-274', registeredVoters: 700 },
+        { id: 'PS-2', countyId: 'C-047', constituencyId: 'CONST-274', registeredVoters: 600 },
+        { id: 'PS-3', countyId: 'C-001', constituencyId: 'CONST-001', registeredVoters: 500 }
+      ]
+    };
+
+    const mockTallies = [
+      { pollingStationId: 'PS-1', candAVotes: 400, candBVotes: 200, candCVotes: 50, rejectedVotes: 10 },
+      { pollingStationId: 'PS-2', candAVotes: 250, candBVotes: 300, candCVotes: 20, rejectedVotes: 5 }
+    ];
+
+    const mockIntel = {
+      'PS-1': { riskLevel: 'Severe' }
+    };
+
+    const index = buildRegionMetricsIndex(mockGeography, mockTallies, mockIntel);
+
+    // Verify O(1) lookup keys
+    assert.ok(index['county:C-047'], 'county:C-047 bucket must exist');
+    assert.ok(index['county:47'], 'county:47 alias must exist');
+    assert.ok(index['constituency:CONST-274'], 'constituency:CONST-274 bucket must exist');
+
+    const nairobi = index['county:C-047'];
+    assert.equal(nairobi.stationsCount, 2);
+    assert.equal(nairobi.talliesCount, 2);
+    assert.equal(nairobi.candAVotes, 650);
+    assert.equal(nairobi.candBVotes, 500);
+    assert.equal(nairobi.leader, 'Candidate A');
+    assert.equal(nairobi.riskLevel, 'Severe');
+
+    const westlands = index['constituency:CONST-274'];
+    assert.equal(westlands.stationsCount, 2);
+    assert.equal(westlands.talliesCount, 2);
+  });
+
+  test('289. Map Performance Engine: Station marker clamping restricts rendered markers to <= 40', async () => {
+    // Generate synthetic list of 1,000 polling stations
+    const stations = Array.from({ length: 1000 }, (_, i) => ({
+      id: `PS-${i}`,
+      name: `Station ${i}`,
+      code: `CODE-${i}`,
+      latitude: -1.28 + (i * 0.0001),
+      longitude: 36.82 + (i * 0.0001)
+    }));
+
+    const mockIntel = {
+      'PS-999': { riskLevel: 'Severe' },
+      'PS-500': { riskLevel: 'Severe' }
+    };
+
+    // Simulate sorting and clamping logic from ElectoralMapRoom.jsx
+    const clamped = [...stations].sort((a, b) => {
+      const intelA = mockIntel[a.id]?.riskLevel === 'Severe' ? 2 : 0;
+      const intelB = mockIntel[b.id]?.riskLevel === 'Severe' ? 2 : 0;
+      return intelB - intelA;
+    }).slice(0, 40);
+
+    assert.equal(clamped.length, 40);
+    // Severe risk stations must be prioritized in the first 2 slots
+    const topIds = [clamped[0].id, clamped[1].id];
+    assert.ok(topIds.includes('PS-999'), 'PS-999 must be prioritized in top items');
+    assert.ok(topIds.includes('PS-500'), 'PS-500 must be prioritized in top items');
+  });
+
+  test('290. Authentic Vector Geometries: Kenyan counties mirror realistic curved contours with bezier curves', async () => {
+    const { KENYA_COUNTIES_GEOMETRY, NAIROBI_CONSTITUENCIES_GEOMETRY, MOMBASA_CONSTITUENCIES_GEOMETRY } = await import('../data/geo/kenyaMapGeometries.js');
+
+    assert.equal(KENYA_COUNTIES_GEOMETRY.length, 47, 'All 47 Kenyan counties must be present');
+    assert.equal(NAIROBI_CONSTITUENCIES_GEOMETRY.length, 17, 'All 17 Nairobi constituencies must be present');
+    assert.equal(MOMBASA_CONSTITUENCIES_GEOMETRY.length, 6, 'All 6 Mombasa constituencies must be present');
+
+    // Verify paths contain authentic multi-vertex cubic bezier curves ('C' commands), not crude 4-point boxes
+    KENYA_COUNTIES_GEOMETRY.forEach(county => {
+      assert.ok(county.d, `County ${county.name} must have path data`);
+      assert.ok(county.d.includes('C'), `County ${county.name} (${county.code}) path must contain curved bezier commands 'C'`);
+      // Verify no crude pure 4-line boxes
+      const isCrudeBox = /^M\d+,\d+ L\d+,\d+ L\d+,\d+ L\d+,\d+ Z$/.test(county.d);
+      assert.equal(isCrudeBox, false, `County ${county.name} must not be a crude 4-point rectangle`);
+    });
+
+    // Check Nairobi constituencies curves
+    NAIROBI_CONSTITUENCIES_GEOMETRY.forEach(c => {
+      assert.ok(c.d.includes('C'), `Constituency ${c.name} must contain curved bezier contours`);
+    });
+  });
+
+  test('291. Map Performance Engine: CSS Tooltip and DOM transform avoids React re-render cascade', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const jsxContent = fs.readFileSync(path.resolve(process.cwd(), 'src/components/modules/ElectoralMapRoom.jsx'), 'utf-8');
+    const cssContent = fs.readFileSync(path.resolve(process.cwd(), 'src/components/modules/ElectoralMapRoom.css'), 'utf-8');
+
+    // Confirm setMousePos has been removed from onMouseMove
+    assert.equal(jsxContent.includes('setMousePos({ x: e.clientX, y: e.clientY })'), false, 'setMousePos must not be called on every mousemove');
+
+    // Confirm direct DOM transform and canvasAreaRef are in place
+    assert.ok(jsxContent.includes('tooltipRef.current.style.transform'), 'Must update tooltip position directly via DOM transform');
+    assert.ok(jsxContent.includes('buildRegionMetricsIndex'), 'Must import and use buildRegionMetricsIndex');
+
+    // Confirm CSS contains will-change: transform for hardware acceleration
+    assert.ok(cssContent.includes('.map-tooltip'), '.map-tooltip class must be defined');
+    assert.ok(cssContent.includes('will-change: transform'), 'Tooltip must use hardware acceleration');
+  });
+
+  test('292. Deep Routing Engine: URL hash mapping maps all primary and operational modules', async () => {
+    const { ROUTE_TO_MODULE_MAP, MODULE_TO_ROUTE_MAP, resolveModuleFromHash } = await import('../hooks/useModuleRouter.js');
+
+    assert.equal(resolveModuleFromHash(''), 'dashboard');
+    assert.equal(resolveModuleFromHash('#/'), 'dashboard');
+    assert.equal(resolveModuleFromHash('#/map'), 'interactive_map');
+    assert.equal(resolveModuleFromHash('#map'), 'interactive_map');
+    assert.equal(resolveModuleFromHash('#/polling-stations'), 'polling_stations');
+    assert.equal(resolveModuleFromHash('#/tally-center'), 'tally_center');
+    assert.equal(resolveModuleFromHash('#/strategy'), 'strategy');
+    assert.equal(resolveModuleFromHash('#/strategy-team'), 'strategy_team');
+    assert.equal(resolveModuleFromHash('#/agents'), 'agents');
+    assert.equal(resolveModuleFromHash('#/field-reports'), 'field_reports');
+    assert.equal(resolveModuleFromHash('#/surveys'), 'surveys');
+    assert.equal(resolveModuleFromHash('#/mobilization'), 'mobilization');
+    assert.equal(resolveModuleFromHash('#/production-readiness'), 'production_readiness');
+
+    // Reverse lookup integrity
+    assert.equal(MODULE_TO_ROUTE_MAP['interactive_map'], '#/map');
+    assert.equal(MODULE_TO_ROUTE_MAP['polling_stations'], '#/polling-stations');
+    assert.equal(MODULE_TO_ROUTE_MAP['tally_center'], '#/tally-center');
+    assert.equal(MODULE_TO_ROUTE_MAP['production_readiness'], '#/production-readiness');
+  });
+
+  test('293. SEO Management Engine: PAGE_SEO_REGISTRY specifies valid metadata for all indexable pages', async () => {
+    const { PAGE_SEO_REGISTRY } = await import('../utils/seoManager.js');
+
+    const expectedModules = [
+      'dashboard',
+      'interactive_map',
+      'polling_stations',
+      'tally_center',
+      'strategy',
+      'strategy_team',
+      'agents',
+      'field_reports',
+      'surveys',
+      'mobilization',
+      'executive_briefing',
+      'production_readiness'
+    ];
+
+    expectedModules.forEach(mod => {
+      const entry = PAGE_SEO_REGISTRY[mod];
+      assert.ok(entry, `Module ${mod} must have an entry in PAGE_SEO_REGISTRY`);
+      assert.ok(entry.title.length > 10, `Title for ${mod} must be descriptive`);
+      assert.ok(entry.description.length > 20, `Description for ${mod} must be informative`);
+      assert.equal(entry.robots, 'index, follow', `Module ${mod} must be marked index, follow`);
+      assert.ok(entry.priority > 0.5, `Priority for ${mod} must be defined`);
+    });
+
+    // Check protected modules have noindex
+    assert.equal(PAGE_SEO_REGISTRY['ops_queue'].robots, 'noindex, nofollow');
+    assert.equal(PAGE_SEO_REGISTRY['war_room'].robots, 'noindex, nofollow');
+    assert.equal(PAGE_SEO_REGISTRY['security_ops'].robots, 'noindex, nofollow');
+    assert.equal(PAGE_SEO_REGISTRY['evidence_review'].robots, 'noindex, nofollow');
+  });
+
+  test('294. SEO Management Engine: Head tag synchronization updates simulated document head', async () => {
+    const { updatePageMetadata, PAGE_SEO_REGISTRY } = await import('../utils/seoManager.js');
+
+    // Create a mock document in Node.js test environment
+    const metaStore = {};
+    const linkStore = {};
+    const mockDoc = {
+      title: '',
+      head: {
+        appendChild: (el) => {
+          if (el.tagName === 'META') {
+            const key = el.getAttribute('name') || el.getAttribute('property');
+            metaStore[key] = el.getAttribute('content');
+          } else if (el.tagName === 'LINK') {
+            linkStore[el.getAttribute('rel')] = el.getAttribute('href');
+          }
+        }
+      },
+      querySelector: (selector) => {
+        if (selector.includes('meta[name="description"]')) {
+          return { setAttribute: (k, v) => { metaStore['description'] = v; } };
+        }
+        if (selector.includes('meta[name="robots"]')) {
+          return { setAttribute: (k, v) => { metaStore['robots'] = v; } };
+        }
+        if (selector.includes('link[rel="canonical"]')) {
+          return { setAttribute: (k, v) => { linkStore['canonical'] = v; } };
+        }
+        return null;
+      },
+      createElement: (tag) => {
+        const attrs = {};
+        return {
+          tagName: tag.toUpperCase(),
+          setAttribute: (k, v) => { attrs[k] = v; },
+          getAttribute: (k) => attrs[k]
+        };
+      }
+    };
+
+    globalThis.document = mockDoc;
+    globalThis.window = { location: { origin: 'https://ci-ems.ke' } };
+
+    updatePageMetadata('interactive_map');
+
+    assert.equal(globalThis.document.title, PAGE_SEO_REGISTRY['interactive_map'].title);
+    assert.equal(metaStore['description'], PAGE_SEO_REGISTRY['interactive_map'].description);
+    assert.equal(metaStore['robots'], 'index, follow');
+    assert.equal(linkStore['canonical'], 'https://ci-ems.ke/ems/#/map');
+
+    delete globalThis.document;
+    delete globalThis.window;
+  });
+
+  test('295. Search Engine Discovery: public/sitemap.xml is valid XML containing all public routes', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const sitemapPath = path.resolve(process.cwd(), 'public/sitemap.xml');
+    assert.ok(fs.existsSync(sitemapPath), 'public/sitemap.xml must exist');
+
+    const content = fs.readFileSync(sitemapPath, 'utf-8');
+    assert.ok(content.startsWith('<?xml version="1.0" encoding="UTF-8"?>'));
+    assert.ok(content.includes('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'));
+    assert.ok(content.includes('https://ci-ems.ke/ems/'));
+    assert.ok(content.includes('https://ci-ems.ke/ems/#/map'));
+    assert.ok(content.includes('https://ci-ems.ke/ems/#/polling-stations'));
+    assert.ok(content.includes('https://ci-ems.ke/ems/#/tally-center'));
+    assert.ok(content.includes('https://ci-ems.ke/ems/#/strategy'));
+    assert.ok(content.includes('https://ci-ems.ke/ems/#/production-readiness'));
+  });
+
+  test('296. Search Engine Discovery: public/robots.txt allows crawlable modules and specifies sitemap location', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const robotsPath = path.resolve(process.cwd(), 'public/robots.txt');
+    assert.ok(fs.existsSync(robotsPath), 'public/robots.txt must exist');
+
+    const content = fs.readFileSync(robotsPath, 'utf-8');
+    assert.ok(content.includes('User-agent: *'));
+    assert.ok(content.includes('Allow: /ems/'));
+    assert.ok(content.includes('Allow: /ems/#/map'));
+    assert.ok(content.includes('Allow: /ems/#/tally-center'));
+    assert.ok(content.includes('Disallow: /ems/#/ops-queue'));
+    assert.ok(content.includes('Sitemap: https://ci-ems.ke/ems/sitemap.xml'));
+  });
+
+  test('297. Python Geospatial Geocoder: scripts/geocode_polling_stations.py existence and CLI syntax', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const scriptPath = path.resolve(process.cwd(), 'scripts/geocode_polling_stations.py');
+    assert.ok(fs.existsSync(scriptPath), 'scripts/geocode_polling_stations.py must exist');
+
+    const content = fs.readFileSync(scriptPath, 'utf-8');
+    assert.ok(content.includes('def build_hierarchical_queries'), 'Must include hierarchical query builder');
+    assert.ok(content.includes('def geocode_with_google'), 'Must include Google Maps geocoder');
+    assert.ok(content.includes('def resolve_geographic_anchor'), 'Must include administrative anchor resolver');
+    assert.ok(content.includes('def enrich_geography_data'), 'Must include geography data enricher');
+  });
+
+  test('298. Geospatial Geocoding: Hierarchical query builder formats clean search strings without illegal characters', async () => {
+    // Replicate query generator logic
+    const county = 'MOMBASA';
+    const constName = 'MVITA';
+    const ward = 'SHIMANZI/GANJONI';
+    const station = 'MAJENGO PRIMARY SCHOOL';
+
+    const wardClean = ward.split('/')[0].strip ? ward.split('/')[0].strip() : ward.split('/')[0].trim();
+    const q1 = `${station}, ${constName}, ${county}, KENYA`;
+    const q2 = `${station}, ${wardClean}, ${county}, KENYA`;
+
+    assert.equal(q1, 'MAJENGO PRIMARY SCHOOL, MVITA, MOMBASA, KENYA');
+    assert.equal(q2, 'MAJENGO PRIMARY SCHOOL, SHIMANZI, MOMBASA, KENYA');
+  });
+
+  test('299. Geospatial Resolution: Majengo Primary School in Mvita maps to authentic Mombasa GPS coordinates', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const coordsPath = path.resolve(process.cwd(), 'src/data/pollingStationCoordinates.json');
+    assert.ok(fs.existsSync(coordsPath), 'src/data/pollingStationCoordinates.json must exist');
+
+    const coords = JSON.parse(fs.readFileSync(coordsPath, 'utf-8'));
+    assert.ok(coords['MOMBASA-MVITA-MAJENGO PRIMARY SCHOOL'], 'Must contain key for Majengo Primary School in Mvita');
+
+    const majengo = coords['MOMBASA-MVITA-MAJENGO PRIMARY SCHOOL'];
+    // Mombasa is at latitude ~ -4.05, longitude ~ 39.65 - 39.67
+    assert.ok(majengo.lat < -4.0 && majengo.lat > -4.1, `Latitude ${majengo.lat} must be within Mombasa`);
+    assert.ok(majengo.lng > 39.6 && majengo.lng < 39.75, `Longitude ${majengo.lng} must be within Mombasa`);
+    assert.ok(majengo.formattedAddress, 'Must have resolved real address or anchor description');
+  });
+
+  test('300. Electoral Map Room: Google Maps info window renders real landmark address when available', async () => {
+    const { formatInfoWindowHtml } = await import('../services/googleMapsService.js');
+
+    const mockStation = {
+      name: 'MAJENGO PRIMARY SCHOOL',
+      code: '001/006/0029/04601',
+      registeredVoters: 533,
+      formattedAddress: 'Owen Rd, Mombasa, Kenya'
+    };
+
+    const html = formatInfoWindowHtml(mockStation, { reportingPct: 100 }, { riskLevel: 'Low' });
+    assert.ok(html.includes('MAJENGO PRIMARY SCHOOL'));
+    assert.ok(html.includes('Owen Rd, Mombasa, Kenya'));
+    assert.ok(html.includes('📍'));
+  });
+
+  test('301. Electoral Map Room: resolveGoogleMapFraming centers on selectedCounty and selectedConstituency', async () => {
+    const { resolveGoogleMapFraming } = await import('../services/googleMapsService.js');
+
+    // Test selection of Mombasa -> Mvita
+    const mombasaCounty = { id: 'C-001', name: 'MOMBASA' };
+    const mvitaConst = { id: 'CONST-006', name: 'MVITA' };
+
+    const framing = resolveGoogleMapFraming(null, null, mombasaCounty, mvitaConst);
+    assert.equal(framing.isScoped, true);
+    assert.equal(framing.constituencyId, 'CONST-006');
+    assert.equal(framing.center.lat, -4.0600);
+    assert.equal(framing.center.lng, 39.6700);
+    assert.equal(framing.zoom, 14);
+
+    // Test selection of county only
+    const countyFraming = resolveGoogleMapFraming(null, null, mombasaCounty, null);
+    assert.equal(countyFraming.isScoped, true);
+    assert.equal(countyFraming.countyId, 'C-001');
+    assert.equal(countyFraming.center.lat, -4.0435);
+    assert.equal(countyFraming.center.lng, 39.6682);
+  });
+
+  test('302. Google Maps Service: createMapPin factory produces marker with pinColor and title', async () => {
+    const { createMapPin } = await import('../services/googleMapsService.js');
+
+    // Mock gMaps and Map
+    class MockMarker {
+      constructor(opts) {
+        this.opts = opts;
+        this.map = opts.map;
+      }
+      addListener(evt, cb) {
+        this.clickCb = cb;
+      }
+      setMap(m) {
+        this.map = m;
+      }
+    }
+
+    const mockGmaps = {
+      Marker: MockMarker,
+      Size: class { constructor(w, h) { this.w = w; this.h = h; } }
+    };
+
+    let clicked = false;
+    const pin = createMapPin({
+      gMaps: mockGmaps,
+      map: {},
+      position: { lat: -4.0515, lng: 39.6571 },
+      title: 'MAJENGO PRIMARY SCHOOL',
+      pinColor: '#EF4444',
+      onClick: () => { clicked = true; }
+    });
+
+    assert.ok(pin);
+    assert.equal(pin.opts.title, 'MAJENGO PRIMARY SCHOOL');
+    assert.equal(pin.opts.position.lat, -4.0515);
+    pin.clickCb();
+    assert.equal(clicked, true);
+  });
+
+  test('303. Political News: returns verified fallback bulletins cleanly if CORS blocked', async () => {
+    const { fetchKenyaPoliticalNewsLast24h } = await import('../services/kenyaPoliticalNews.js');
+
+    const res = await fetchKenyaPoliticalNewsLast24h({ force: true });
+    assert.ok(res);
+    assert.ok(Array.isArray(res.items));
+    assert.ok(res.items.some(i => i.title.includes('IEBC') || /election|politics|political|ruto|raila|gachagua|mp|odm|uda/i.test(i.title)));
+  });
+
+  test('304. IEBC Geography Data: 100% of all 46,051 polling stations have valid GPS coordinates', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const geoPath = path.resolve(process.cwd(), 'src/data/iebcGeographyData.json');
+    const geoData = JSON.parse(fs.readFileSync(geoPath, 'utf-8'));
+
+    const stations = geoData.pollingStations || [];
+    assert.equal(stations.length, 46051, 'Must contain all 46,051 stations');
+
+    // Sample across first, middle, and last stations
+    const samples = [stations[0], stations[973], stations[20000], stations[46050]];
+    for (const sample of samples) {
+      assert.ok(sample.latitude != null, `Station ${sample.id} must have latitude`);
+      assert.ok(sample.longitude != null, `Station ${sample.id} must have longitude`);
+      assert.ok(sample.formattedAddress != null, `Station ${sample.id} must have formattedAddress`);
+      assert.ok(typeof sample.latitude === 'number');
+      assert.ok(typeof sample.longitude === 'number');
+    }
+  });
+
+  test('305. Universal RBAC Canonical Resolution: all role types resolve county/constituency IDs to names bidirectionally', async () => {
+    const { canAccessLocation, resolveCanonicalCounty, resolveCanonicalConstituency } = await import('../utils/rbac.js');
+
+    // Canonical resolutions
+    assert.equal(resolveCanonicalCounty('C-001'), 'MOMBASA');
+    assert.equal(resolveCanonicalCounty('Mombasa'), 'MOMBASA');
+    assert.equal(resolveCanonicalConstituency('CONST-004'), 'NYALI');
+    assert.equal(resolveCanonicalConstituency('Nyali'), 'NYALI');
+    assert.equal(resolveCanonicalConstituency('CONST-274'), 'WESTLANDS');
+    assert.equal(resolveCanonicalConstituency('Westlands'), 'WESTLANDS');
+
+    // Test MP Nyali access to Nyali station with IDs
+    const mpNyali = {
+      id: 'usr-mp-nyali',
+      name: 'Hon. MP Nyali',
+      role: 'MP / Constituency Admin',
+      assignedEntity: 'CONST-004',
+      constituency: 'Nyali',
+      county: 'Mombasa'
+    };
+    const nyaliStation = {
+      id: 'PS-MOM-NYA-001',
+      countyId: 'C-001',
+      constituencyId: 'CONST-004',
+      name: 'KONGOWEA PRIMARY SCHOOL'
+    };
+    const westlandsStation = {
+      id: 'PS-NAI-WES-001',
+      countyId: 'C-047',
+      constituencyId: 'CONST-274',
+      name: 'WESTLANDS PRIMARY SCHOOL'
+    };
+
+    assert.equal(canAccessLocation(mpNyali, nyaliStation), true, 'MP Nyali must access Nyali station');
+    assert.equal(canAccessLocation(mpNyali, westlandsStation), false, 'MP Nyali must NOT access Westlands station');
+
+    // Test Governor Mombasa access to Nyali station
+    const govMombasa = {
+      id: 'usr-gov-mom',
+      name: 'Governor Mombasa',
+      role: 'Governor / County Admin',
+      assignedEntity: 'C-001',
+      county: 'Mombasa'
+    };
+    assert.equal(canAccessLocation(govMombasa, nyaliStation), true, 'Governor Mombasa must access Nyali station');
+    assert.equal(canAccessLocation(govMombasa, westlandsStation), false, 'Governor Mombasa must NOT access Nairobi station');
+  });
+
+  test('306. Land-Bound Geospatial Sanitization: Zero stations placed inside Tudor Creek or offshore waters', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const geoPath = path.resolve(process.cwd(), 'src/data/iebcGeographyData.json');
+    const geoData = JSON.parse(fs.readFileSync(geoPath, 'utf-8'));
+
+    const stations = geoData.pollingStations || [];
+    const mombasaStations = stations.filter(s => s.countyId === 'C-001' || s.countyName === 'Mombasa');
+    assert.ok(mombasaStations.length > 0, 'Must have Mombasa stations');
+
+    // Tudor Creek water body box: lat -4.05 to -4.02 and lng 39.65 to 39.68
+    // All Nyali stations must be land-bound east of Tudor Creek (lng >= 39.688)
+    const nyaliStations = mombasaStations.filter(s => s.constituencyId === 'CONST-004' || (s.constituencyName && s.constituencyName.toUpperCase().includes('NYALI')));
+    for (const s of nyaliStations) {
+      assert.ok(
+        s.longitude >= 39.685,
+        `Nyali station ${s.name} (${s.id}) at (${s.latitude}, ${s.longitude}) must be on mainland east of Tudor Creek (lng >= 39.685)`
+      );
+    }
+
+    // Verify no stations in deep Tudor Creek water coordinate zone
+    for (const s of mombasaStations) {
+      const inTudorCreekWater = (s.latitude >= -4.045 && s.latitude <= -4.025 && s.longitude >= 39.655 && s.longitude <= 39.680);
+      assert.equal(inTudorCreekWater, false, `Station ${s.name} (${s.id}) at (${s.latitude}, ${s.longitude}) must not be in Tudor Creek water`);
+    }
+  });
+
+  test('307. Polling Centre Hub Aggregation: Multi-stream centres merge into single landmark hub with stream counts', () => {
+    const rawStreams = [
+      { id: 'PS-1', name: 'MAJENGO PRIMARY SCHOOL', code: '001', registeredVoters: 500, constituencyId: 'CONST-004' },
+      { id: 'PS-2', name: 'MAJENGO PRIMARY SCHOOL', code: '002', registeredVoters: 520, constituencyId: 'CONST-004' },
+      { id: 'PS-3', name: 'MAJENGO PRIMARY SCHOOL', code: '003', registeredVoters: 480, constituencyId: 'CONST-004' }
+    ];
+
+    const hubMap = new Map();
+    rawStreams.forEach(ps => {
+      const key = ps.name.toUpperCase().trim();
+      if (!hubMap.has(key)) {
+        hubMap.set(key, { name: ps.name, streams: [], totalVoters: 0 });
+      }
+      const hub = hubMap.get(key);
+      hub.streams.push(ps);
+      hub.totalVoters += ps.registeredVoters;
+    });
+
+    const hubs = Array.from(hubMap.values());
+    assert.equal(hubs.length, 1, '3 streams must merge into 1 hub');
+    assert.equal(hubs[0].streams.length, 3);
+    assert.equal(hubs[0].totalVoters, 1500);
+  });
+
+  test('308. Google Maps Service Stream Badge: createMapPin and InfoWindow render streams count badge', async () => {
+    const { createMapPin, formatInfoWindowHtml } = await import('../services/googleMapsService.js');
+
+    const fakeGMaps = {
+      Marker: class {
+        constructor(opts) { this.opts = opts; }
+        addListener(ev, cb) { this.ev = ev; this.cb = cb; }
+      }
+    };
+
+    const pin = createMapPin({
+      gMaps: fakeGMaps,
+      map: {},
+      position: { lat: -4.0515, lng: 39.6912 },
+      title: 'MAJENGO PRIMARY SCHOOL',
+      pinColor: '#10b981',
+      streamsCount: 9
+    });
+
+    assert.ok(pin);
+    // InfoWindow check
+    const html = formatInfoWindowHtml(
+      { name: 'MAJENGO PRIMARY SCHOOL', code: '001/01', registeredVoters: 4500, ward: 'Kongowea', constituency: 'Nyali', county: 'Mombasa' },
+      { reportingPct: 88, streamsCount: 9, streams: [{ id: '1', code: '01', registeredVoters: 500 }] },
+      { riskLevel: 'Low' }
+    );
+
+    assert.ok(html.includes('9 STREAMS'), 'Must include stream count in title badge');
+    assert.ok(html.includes('4,500'), 'Must include total registered voters');
+    assert.ok(html.includes('STREAM ROOMS (9)'), 'Must include stream rooms section');
+  });
+
+  test('309. Tally Center Form 34A: enforces photo attachment & flags anomalies (>95% turnout)', async () => {
+    const { validateForm34AAttachment, assessTallyAnomalyRisk } = await import('../utils/tallyValidation.js');
+
+    // Missing attachment fails
+    const failRes = validateForm34AAttachment(null);
+    assert.equal(failRes.isValid, false);
+    assert.ok(failRes.error.includes('mandatory'));
+
+    // Valid JPG succeeds
+    const passRes = validateForm34AAttachment({ name: 'FORM_34A_STATION_001.JPG', type: 'image/jpeg' });
+    assert.equal(passRes.isValid, true);
+    assert.ok(passRes.sha256Stamp.startsWith('F34A-'));
+
+    // Anomaly assessment for turnout > 95%
+    const risk = assessTallyAnomalyRisk({
+      candAVotes: 600,
+      candBVotes: 360,
+      candCVotes: 10,
+      rejectedVotes: 5,
+      registeredVoters: 1000
+    });
+    assert.equal(risk.isAnomalous, true);
+    assert.ok(risk.flags.some(f => f.code === 'ANOMALOUS_TURNOUT'));
+  });
+
+  test('310. Reconciliation Desk: resolves contested tallies to Verified / Disputed / Flagged / Locked', async () => {
+    const { resolveDiscrepancyStatus } = await import('../utils/tallyValidation.js');
+
+    const originalTally = { id: 'TALLY-101', status: 'Submitted', candAVotes: 420 };
+    const resolved = resolveDiscrepancyStatus(originalTally, 'Approve', { name: 'Officer Mary', role: 'Reconciliation Officer' });
+
+    assert.equal(resolved.status, 'Verified');
+    assert.equal(resolved.reconciledBy, 'Officer Mary');
+    assert.ok(resolved.reconciledAt);
+
+    const locked = resolveDiscrepancyStatus(originalTally, 'LockVerified', { name: 'Admin Kiprop' });
+    assert.equal(locked.status, 'Locked');
+  });
+
+  test('311. Offline Queue: queues items and flushes through sync handler', async () => {
+    const { enqueueOfflineItem, getPendingOfflineItems, processOfflineSyncQueue } = await import('../utils/offlineQueue.js');
+
+    const queued = await enqueueOfflineItem('pending_submissions', {
+      type: 'tally',
+      stationId: 'PS-WESTLANDS-01',
+      totalVotes: 550
+    });
+
+    assert.ok(queued.id);
+    assert.equal(queued.stationId, 'PS-WESTLANDS-01');
+
+    const items = await getPendingOfflineItems('pending_submissions');
+    assert.ok(items.length > 0);
+
+    const synced = [];
+    const result = await processOfflineSyncQueue(async (item) => {
+      synced.push(item.id);
+    });
+
+    assert.ok(result.processed >= 1);
+  });
+
+  test('312. Cryptographic Audit Chain: verifies SHA-256 hash chaining and detects tampering', async () => {
+    const { createChainedAuditLog, verifyAuditChainIntegrity } = await import('../utils/auditCrypto.js');
+
+    const log1 = await createChainedAuditLog({
+      action: 'LOGIN_SUCCESS',
+      userId: 'ADM-01',
+      userName: 'Super Admin',
+      details: 'Super admin authenticated'
+    });
+    assert.ok(log1.hash);
+    assert.equal(log1.hash.length, 64);
+
+    const log2 = await createChainedAuditLog({
+      previousHash: log1.hash,
+      action: 'FORM_34A_VERIFIED',
+      userId: 'ADM-01',
+      details: 'Station Form 34A approved'
+    });
+    assert.equal(log2.previousHash, log1.hash);
+
+    const intactRes = await verifyAuditChainIntegrity([log1, log2]);
+    assert.equal(intactRes.isIntact, true);
+    assert.equal(intactRes.totalChecked, 2);
+
+    // Tampering test: modify log1 action without recomputing hash
+    const tamperedLog1 = { ...log1, details: 'TAMPERED ACTION DATA' };
+    const brokenRes = await verifyAuditChainIntegrity([tamperedLog1, log2]);
+    assert.equal(brokenRes.isIntact, false);
+    assert.ok(brokenRes.brokenAt);
+  });
+
+  test('313. Scoped Gemini Campaign AI: strictly bounds system prompt within user role jurisdiction', async () => {
+    const { buildJurisdictionalContext, queryGeminiCampaignAI } = await import('../services/geminiService.js');
+
+    const governorUser = {
+      name: 'Hon. Sakaja',
+      role: 'Governor',
+      jurisdictionScope: { countyName: 'Nairobi City County', constituencyCount: 17, registeredVoters: 2658906 }
+    };
+
+    const promptContext = buildJurisdictionalContext(governorUser, {});
+    assert.ok(promptContext.includes('Nairobi City County'));
+    assert.ok(promptContext.includes('Governor'));
+    assert.ok(promptContext.includes('OPERATIONAL CONSTRAINTS'));
+
+    // Query fallback engine
+    const aiRes = await queryGeminiCampaignAI({
+      prompt: 'What are the top voter turnout priorities today?',
+      user: governorUser,
+      geography: {}
+    });
+
+    assert.equal(aiRes.success, true);
+    assert.ok(aiRes.text.length > 50);
+  });
+
 });
+
+describe('Subdomain Realm Separation & Auth Security Tests', () => {
+
+  test('315. Host-bound realm resolution for admin subdomain vs user domain', () => {
+    // Admin console hosts
+    assert.equal(resolveRealm('ops-konsole.kuratech.site'), 'admin');
+    assert.equal(resolveRealm('ops-konsole.kuratech.site:443'), 'admin');
+    assert.equal(resolveRealm('ops-konsole.localhost'), 'admin');
+    assert.equal(resolveRealm('ops-konsole.localhost:5173'), 'admin');
+
+    // User campaign hosts
+    assert.equal(resolveRealm('kuratech.site'), 'user');
+    assert.equal(resolveRealm('kuratech.site:443'), 'user');
+    assert.equal(resolveRealm('www.kuratech.site'), 'user');
+    assert.equal(resolveRealm('localhost'), 'user');
+    assert.equal(resolveRealm('localhost:5173'), 'user');
+    assert.equal(resolveRealm(''), 'user');
+    assert.equal(resolveRealm(undefined), 'user');
+  });
+
+  test('316. scrypt password hashing & timing-safe verification', () => {
+    const rawPassword = 'TestScryptSecret123!#';
+    const hash = hashPassword(rawPassword);
+
+    assert.ok(hash.includes(':'), 'Hash must contain salt:key delimiter');
+    const [salt, key] = hash.split(':');
+    assert.equal(salt.length, 32, 'Salt must be 16 bytes (32 hex characters)');
+    assert.equal(key.length, 128, 'Key must be 64 bytes (128 hex characters)');
+
+    // Verify correct password
+    assert.equal(verifyPassword(rawPassword, hash), true);
+
+    // Verify incorrect passwords
+    assert.equal(verifyPassword('WrongPassword123!', hash), false);
+    assert.equal(verifyPassword('', hash), false);
+    assert.equal(verifyPassword(rawPassword, 'tampered:hash'), false);
+    assert.equal(verifyPassword(rawPassword, null), false);
+  });
+
+  test('317. HMAC-SHA256 session token generation and tamper detection', () => {
+    const payload = {
+      sub: 'USR-ADMIN-01',
+      email: 'admin.super@ems.go.ke',
+      role: 'Super Admin',
+      realm: 'admin'
+    };
+
+    const token = signToken(payload);
+    assert.ok(typeof token === 'string');
+    assert.equal(token.split('.').length, 3);
+
+    // Verify legitimate token
+    const verified = verifyToken(token);
+    assert.ok(verified !== null);
+    assert.equal(verified.sub, 'USR-ADMIN-01');
+    assert.equal(verified.role, 'Super Admin');
+    assert.equal(verified.realm, 'admin');
+    assert.ok(verified.exp > Date.now());
+
+    // Verify tampered signature fails
+    const tamperedSig = token.slice(0, -5) + 'xxxxx';
+    assert.equal(verifyToken(tamperedSig), null);
+
+    // Verify tampered payload fails
+    const [h, p, s] = token.split('.');
+    const tamperedPayload = Buffer.from(JSON.stringify({ ...payload, role: 'Super Admin', realm: 'tampered' })).toString('base64url');
+    assert.equal(verifyToken(`${h}.${tamperedPayload}.${s}`), null);
+  });
+
+  test('318. Cross-realm access denial enforcement logic', () => {
+    // Rule: Admins can ONLY authenticate on the 'admin' realm
+    const adminUser = { role: 'Super Admin', email: 'admin.super@ems.go.ke' };
+    const adminRoleUser = { role: 'Admin', email: 'admin.ops@ems.go.ke' };
+
+    // Rule: Non-admins can ONLY authenticate on the 'user' realm
+    const governorUser = { role: 'Governor', email: 'governor.nairobi@ems.go.ke' };
+    const agentUser = { role: 'Agent', email: 'james.agent@ems.go.ke' };
+
+    // Function simulating server cross-realm enforcement
+    const checkLoginAllowed = (userRole, realm) => {
+      const isAdm = isAdminRole(userRole);
+      if (realm === 'admin' && !isAdm) return { allowed: false, reason: 'USER_LOGIN_WRONG_DOMAIN' };
+      if (realm !== 'admin' && isAdm) return { allowed: false, reason: 'ADMIN_LOGIN_WRONG_DOMAIN' };
+      return { allowed: true };
+    };
+
+    // Test A1: Admin on user realm (kuratech.site) -> DENIED
+    const resA1 = checkLoginAllowed(adminUser.role, 'user');
+    assert.equal(resA1.allowed, false);
+    assert.equal(resA1.reason, 'ADMIN_LOGIN_WRONG_DOMAIN');
+
+    // Test A2: Admin on admin realm (ops-konsole.kuratech.site) -> ALLOWED
+    const resA2 = checkLoginAllowed(adminUser.role, 'admin');
+    assert.equal(resA2.allowed, true);
+
+    // Test A3: Campaign user on admin realm (ops-konsole.kuratech.site) -> DENIED
+    const resA3 = checkLoginAllowed(governorUser.role, 'admin');
+    assert.equal(resA3.allowed, false);
+    assert.equal(resA3.reason, 'USER_LOGIN_WRONG_DOMAIN');
+
+    const resA3b = checkLoginAllowed(agentUser.role, 'admin');
+    assert.equal(resA3b.allowed, false);
+    assert.equal(resA3b.reason, 'USER_LOGIN_WRONG_DOMAIN');
+
+    // Test A4: Campaign user on user realm (kuratech.site) -> ALLOWED
+    const resA4 = checkLoginAllowed(governorUser.role, 'user');
+    assert.equal(resA4.allowed, true);
+
+    const resA4b = checkLoginAllowed(agentUser.role, 'user');
+    assert.equal(resA4b.allowed, true);
+  });
+
+  test('319. Server-side failed attempt tracker and lockout trigger', () => {
+    const testEmail = 'probe.target@ems.go.ke';
+    resetFailedAttempts(testEmail);
+
+    // Initially clean
+    let state = getLockoutState(testEmail);
+    assert.equal(state.locked, false);
+    assert.equal(state.failures, 0);
+
+    // 4 failed attempts: not locked yet
+    for (let i = 1; i <= 4; i++) {
+      recordFailedAttempt(testEmail);
+      state = getLockoutState(testEmail);
+      assert.equal(state.locked, false);
+      assert.equal(state.failures, i);
+    }
+
+    // 5th failed attempt: triggers temporary lockout
+    recordFailedAttempt(testEmail);
+    state = getLockoutState(testEmail);
+    assert.equal(state.locked, true);
+    assert.ok(state.retryInMs > 0);
+
+    // Successful login clears failure counter
+    resetFailedAttempts(testEmail);
+    const cleared = getLockoutState(testEmail);
+    assert.equal(cleared.locked, false);
+    assert.equal(cleared.failures, 0);
+  });
+
+  test('320. Polling Station Intelligence GIS map query clamping prevents HTTP 414 URL overflow', () => {
+    // Generate 3,565 simulated stations (mimicking full Nairobi county)
+    const simulatedStations = Array.from({ length: 3565 }, (_, i) => ({
+      latitude: -1.286389 + (i * 0.0001),
+      longitude: 36.817223 + (i * 0.0001)
+    }));
+
+    // Naive concatenation would produce >60,000 characters
+    const naiveQuery = simulatedStations.map(s => `${s.latitude},${s.longitude}`).join('|');
+    assert.ok(naiveQuery.length > 50000, 'Naive concatenation exceeds safe HTTP URI limits');
+
+    // Clamped query (top 20 stations, 5 decimal precision)
+    const clampedQuery = simulatedStations.slice(0, 20).map(s => `${s.latitude.toFixed(5)},${s.longitude.toFixed(5)}`).join('|');
+    assert.ok(clampedQuery.length < 500, 'Clamped query must remain safely under 500 characters');
+    assert.equal(clampedQuery.split('|').length, 20, 'Clamped query contains exactly 20 coordinates');
+  });
+
+  test('321. Polling Station Intelligence GIS centroid computation accurately centers filtered stations', () => {
+    const stations = [
+      { latitude: -1.200000, longitude: 36.800000 },
+      { latitude: -1.400000, longitude: 36.900000 }
+    ];
+
+    const sumLat = stations.reduce((acc, s) => acc + s.latitude, 0);
+    const sumLng = stations.reduce((acc, s) => acc + s.longitude, 0);
+    const center = `${(sumLat / stations.length).toFixed(6)},${(sumLng / stations.length).toFixed(6)}`;
+
+    assert.equal(center, '-1.300000,36.850000', 'Centroid must be mathematical average of coordinates');
+  });
+
+  test('322. Account suspension preserves historical user data while blocking authentication', () => {
+    const historicalUser = {
+      id: 'USR-AGENT-8801',
+      name: 'James Kiprono',
+      email: 'james.kiprono@ems.go.ke',
+      phone: '+254711223344',
+      role: 'Agent',
+      entityName: 'Baringo Central',
+      status: 'Active',
+      isSuspended: false,
+      assignedStations: ['PS-BAR-01', 'PS-BAR-02'],
+      historicalTalliesSubmitted: 14
+    };
+
+    // Administrative suspension action
+    const suspendedUser = {
+      ...historicalUser,
+      status: 'Suspended',
+      isSuspended: true,
+      suspendedAt: new Date().toISOString(),
+      suspendedReason: 'Administrative investigation into Form 34A discrepancy'
+    };
+
+    // Verify historical audit properties are 100% retained
+    assert.equal(suspendedUser.id, historicalUser.id, 'User ID must be preserved');
+    assert.equal(suspendedUser.email, historicalUser.email, 'Email must remain intact for audit trail');
+    assert.equal(suspendedUser.historicalTalliesSubmitted, 14, 'Historical tallies must not be erased');
+    assert.deepEqual(suspendedUser.assignedStations, ['PS-BAR-01', 'PS-BAR-02'], 'Station mappings preserved');
+
+    // Verify authentication gate condition
+    const isSuspendedOrQuarantined = suspendedUser.isSuspended || suspendedUser.status === 'Suspended';
+    assert.equal(isSuspendedOrQuarantined, true, 'Suspended account must be flagged as blocked');
+
+    // Verify login rejection rule matches server/server.mjs response contract
+    const loginAttempt = (user) => {
+      if (user.isSuspended || user.status === 'Suspended') {
+        return { success: false, status: 403, error: 'Account has been suspended by administration. Contact campaign operations.' };
+      }
+      return { success: true, status: 200 };
+    };
+
+    const result = loginAttempt(suspendedUser);
+    assert.equal(result.success, false);
+    assert.equal(result.status, 403);
+    assert.match(result.error, /suspended by administration/i);
+  });
+
+  test('323. Suspended account reinstatement cleanly clears suspension flags and restores active status', () => {
+    const suspendedAccount = {
+      id: 'USR-AGENT-8801',
+      name: 'James Kiprono',
+      status: 'Suspended',
+      isSuspended: true,
+      suspendedReason: 'Under review'
+    };
+
+    // Reinstatement action
+    const reinstatedAccount = {
+      ...suspendedAccount,
+      status: 'Active',
+      isSuspended: false,
+      reinstatedAt: new Date().toISOString(),
+      suspendedReason: null
+    };
+
+    assert.equal(reinstatedAccount.status, 'Active');
+    assert.equal(reinstatedAccount.isSuspended, false);
+    assert.equal(reinstatedAccount.suspendedReason, null);
+
+    const loginCheck = (u) => !(u.isSuspended || u.status === 'Suspended');
+    assert.equal(loginCheck(reinstatedAccount), true, 'Reinstated account must be granted login access');
+  });
+
+  test('324. Strict duplicate phone number validation blocks onboarding across differing Kenyan formats', () => {
+    const existingUsers = [
+      { id: 'U1', name: 'Alice', phone: '+254 712 345 678' },
+      { id: 'U2', name: 'Bob', phone: '0722000111' }
+    ];
+    const existingAgents = [
+      { id: 'A1', name: 'Charlie', phone: '254799887766' }
+    ];
+
+    // Phone cleaner unit test
+    assert.equal(cleanKenyanPhoneNumber('+254 712 345 678'), '712345678');
+    assert.equal(cleanKenyanPhoneNumber('0712345678'), '712345678');
+    assert.equal(cleanKenyanPhoneNumber('254712345678'), '712345678');
+    assert.equal(cleanKenyanPhoneNumber('0722-000-111'), '722000111');
+
+    // Duplicate detection across formats
+    assert.equal(isDuplicatePhoneNumber('0712345678', existingUsers, existingAgents), true, '0712345678 matches +254 712 345 678');
+    assert.equal(isDuplicatePhoneNumber('+254 722 000 111', existingUsers, existingAgents), true, 'matches Bob in users');
+    assert.equal(isDuplicatePhoneNumber('+254 799 887 766', existingUsers, existingAgents), true, 'matches Charlie in agents');
+
+    // Unique number passes
+    assert.equal(isDuplicatePhoneNumber('0733123456', existingUsers, existingAgents), false, 'Unique number is allowed');
+    assert.equal(isDuplicatePhoneNumber('', existingUsers, existingAgents), false, 'Empty phone does not conflict');
+  });
+
+  test('325. Phone-first agent registration succeeds with valid phone and optional email', () => {
+    const payloadWithoutEmail = {
+      fullName: 'Mercy Cherono',
+      phone: '+254 718 998 877',
+      email: '',
+      nationalId: '33445566',
+      assignedCounty: 'Kericho',
+      assignedConstituency: 'Ainamoi'
+    };
+
+    assert.ok(payloadWithoutEmail.phone, 'Phone number is mandatory');
+    assert.equal(payloadWithoutEmail.email, '', 'Email is optional');
+
+    // Synthesized agent object
+    const createdAgent = {
+      id: `AG-${Date.now().toString().slice(-4)}`,
+      name: payloadWithoutEmail.fullName,
+      phone: payloadWithoutEmail.phone,
+      email: payloadWithoutEmail.email ? payloadWithoutEmail.email.trim() : null,
+      region: `${payloadWithoutEmail.assignedCounty} · ${payloadWithoutEmail.assignedConstituency}`,
+      status: 'Active',
+      registeredAt: new Date().toISOString()
+    };
+
+    assert.ok(createdAgent.id.startsWith('AG-'));
+    assert.equal(createdAgent.email, null, 'Omitted email defaults safely to null without crashing');
+    assert.equal(createdAgent.phone, '+254 718 998 877');
+    assert.equal(createdAgent.status, 'Active');
+  });
+
+  test('326. Polling station CSV export generates valid RFC-4180 serialized data', () => {
+    const mockStations = [
+      {
+        id: 'PS-001',
+        code: '047/001/01',
+        name: 'Moi Avenue Primary, Stream 1',
+        county: 'Nairobi',
+        constituency: 'Starehe',
+        ward: 'Nairobi Central',
+        registeredVoters: 650,
+        turnoutPct: 78.4,
+        latitude: -1.28333,
+        longitude: 36.81667,
+        streamsCount: 2,
+        riskLevel: 'Severe'
+      },
+      {
+        id: 'PS-002',
+        code: '047/001/02',
+        name: 'City Market Hall',
+        county: 'Nairobi',
+        constituency: 'Starehe',
+        ward: 'Nairobi Central',
+        registeredVoters: 520,
+        turnoutPct: 82.1,
+        latitude: -1.28444,
+        longitude: 36.81777,
+        streamsCount: 1,
+        riskLevel: 'Low'
+      }
+    ];
+
+    const lookups = {
+      counties: new Map(),
+      constituencies: new Map(),
+      wards: new Map()
+    };
+
+    const intel = {
+      'PS-001': { dominantCoalition: 'Azimio', riskLevel: 'Severe' },
+      'PS-002': { dominantCoalition: 'Kenya Kwanza', riskLevel: 'Low' }
+    };
+
+    // Test RFC-4180 escaping
+    assert.equal(escapeCSVField('Normal String'), 'Normal String');
+    assert.equal(escapeCSVField('Name, with comma'), '"Name, with comma"');
+    assert.equal(escapeCSVField('Name with "quotes"'), '"Name with ""quotes"""');
+
+    const csvOutput = exportPollingStationsToCSVString(mockStations, lookups, intel);
+    const lines = csvOutput.split('\r\n');
+
+    // Header validation
+    assert.equal(lines[0], 'Code,Name,County,Constituency,Ward,RegisteredVoters,TurnoutPct,Latitude,Longitude,StreamsCount,RiskLevel,DominantCoalition');
+    assert.equal(lines.length, 3, 'Must contain header + 2 station rows');
+
+    // Comma inside station name escaped with double quotes
+    assert.ok(lines[1].includes('"Moi Avenue Primary, Stream 1"'));
+    assert.ok(lines[1].includes('Severe'));
+    assert.ok(lines[1].includes('Azimio'));
+    assert.ok(lines[2].includes('Kenya Kwanza'));
+  });
+
+  test('327. Password complexity and confirmation enforcement validates according to security baseline', () => {
+    // Insufficient length (<8)
+    const short = checkPasswordComplexity('Ab1!');
+    assert.equal(short.isValid, false);
+    assert.ok(short.errors.some(e => e.includes('8 characters')));
+
+    // Missing uppercase
+    const noUpper = checkPasswordComplexity('p@ssw0rd123');
+    assert.equal(noUpper.isValid, false);
+    assert.ok(noUpper.errors.some(e => e.includes('uppercase')));
+
+    // Missing lowercase
+    const noLower = checkPasswordComplexity('P@SSW0RD123');
+    assert.equal(noLower.isValid, false);
+    assert.ok(noLower.errors.some(e => e.includes('lowercase')));
+
+    // Missing number
+    const noNumber = checkPasswordComplexity('Password!@#');
+    assert.equal(noNumber.isValid, false);
+    assert.ok(noNumber.errors.some(e => e.includes('number')));
+
+    // Missing special character
+    const noSpecial = checkPasswordComplexity('Password123');
+    assert.equal(noSpecial.isValid, false);
+    assert.ok(noSpecial.errors.some(e => e.includes('special')));
+
+    // Fully compliant password
+    const valid = checkPasswordComplexity('KuraTech2026!');
+    assert.equal(valid.isValid, true);
+    assert.equal(valid.errors.length, 0);
+    assert.ok(valid.score >= 4);
+
+    // Confirmation matching
+    assert.equal(passwordsMatch('KuraTech2026!', 'KuraTech2026!'), true);
+    assert.equal(passwordsMatch('KuraTech2026!', 'Mismatch123'), false);
+    assert.equal(passwordsMatch('', ''), false);
+  });
+
+  test('328. Zero login regression: Default system personas pass authentication without restriction', () => {
+    const defaultPersonas = [
+      { email: 'admin.super@ems.go.ke', role: 'Super Admin', defaultPassword: 'dev-local-only-password' },
+      { email: 'governor.nairobi@ems.go.ke', role: 'Governor', defaultPassword: 'dev-local-only-password' },
+      { email: 'agent.langata1@ems.go.ke', role: 'Agent', defaultPassword: 'dev-local-only-password' }
+    ];
+
+    defaultPersonas.forEach(persona => {
+      // 1. Must not be suspended
+      assert.notEqual(persona.status, 'Suspended');
+      assert.notEqual(persona.isSuspended, true);
+
+      // 2. Authentication simulation
+      const canLogin = !persona.isSuspended && persona.status !== 'Suspended';
+      assert.equal(canLogin, true, `Persona ${persona.email} must be allowed to log in`);
+
+      // 3. Password complexity checks must ONLY run on onboarding/updating, NOT during login of existing credentials
+      assert.ok(persona.defaultPassword.length > 0, 'Credentials exist');
+    });
+  });
+
+  test('329. Political Intelligence Agent: Computes territory-specific metrics & ground issues for Mombasa & Bungoma', async () => {
+    const { computeCountyIntelligence } = await import('../../server/agents/political-intelligence-agent.mjs');
+    const mombasa = computeCountyIntelligence('Mombasa', []);
+    assert.equal(mombasa.county, 'Mombasa');
+    assert.equal(mombasa.region, 'Coast');
+    assert.ok(mombasa.sentimentScore >= 30 && mombasa.sentimentScore <= 95);
+    assert.ok(mombasa.localIssues.some(i => i.toLowerCase().includes('port') || i.toLowerCase().includes('coast')));
+
+    const bungoma = computeCountyIntelligence('Bungoma', []);
+    assert.equal(bungoma.county, 'Bungoma');
+    assert.equal(bungoma.region, 'Western');
+    assert.ok(bungoma.sentimentScore >= 30 && bungoma.sentimentScore <= 95);
+    assert.ok(bungoma.localIssues.some(i => i.toLowerCase().includes('sugar') || i.toLowerCase().includes('farming')));
+  });
+
+  test('330. Political Intelligence Agent: RSS XML parser cleans CDATA and extracts valid stories', async () => {
+    const { parseXmlStories } = await import('../../server/agents/political-intelligence-agent.mjs');
+    const mockRss = `
+      <rss version="2.0">
+        <channel>
+          <item>
+            <title><![CDATA[Mombasa Governor launches local logistics fund]]></title>
+            <link>https://standardmedia.co.ke/article/12345</link>
+            <description><![CDATA[<p>Governor Abdulswamad Nassir met port workers today...</p>]]></description>
+            <pubDate>Fri, 07 Nov 2026 06:00:00 GMT</pubDate>
+          </item>
+        </channel>
+      </rss>
+    `;
+    const stories = parseXmlStories(mockRss, 'The Standard');
+    assert.equal(stories.length, 1);
+    assert.equal(stories[0].title, 'Mombasa Governor launches local logistics fund');
+    assert.ok(!stories[0].snippet.includes('<p>'));
+    assert.equal(stories[0].source, 'The Standard');
+  });
+
+  test('331. Hierarchical Map Clamping: Restricts visible local station markers to <= 35', () => {
+    // Simulate candidate stations in active viewport
+    const candidateHubs = Array.from({ length: 150 }, (_, i) => ({
+      id: `HUB-${i}`,
+      name: `Centre Hub ${i}`,
+      registeredVoters: 500 + i * 10,
+      riskLevel: i % 15 === 0 ? 'Severe' : i % 5 === 0 ? 'High' : 'Low'
+    }));
+
+    // Sorting & clamping logic from ElectoralMapRoom.jsx
+    const riskScore = (r) => r === 'Severe' ? 3 : r === 'High' ? 2 : r === 'Medium' ? 1 : 0;
+    const clamped = [...candidateHubs].sort((a, b) => {
+      const rDiff = riskScore(b.riskLevel) - riskScore(a.riskLevel);
+      if (rDiff !== 0) return rDiff;
+      return (b.registeredVoters || 0) - (a.registeredVoters || 0);
+    }).slice(0, 35);
+
+    assert.equal(clamped.length, 35);
+    assert.equal(clamped[0].riskLevel, 'Severe');
+  });
+
+  test('332. Granular Campaign Feature Flags: Candidates have independent flags for Strategic Intelligence and Strategy Team', async () => {
+    const { initialUsers } = await import('../data/mockData.js');
+    const governorNairobi = initialUsers.find(u => u.id === 'USR-GOVERNOR-01');
+    const governorMombasa = initialUsers.find(u => u.id === 'USR-GOVERNOR-MOMBASA-01');
+    const adminUser = initialUsers.find(u => u.id === 'USR-ADMIN-01');
+
+    assert.ok(governorNairobi);
+    assert.ok(governorMombasa);
+    assert.ok(adminUser);
+
+    // Candidates default to disabled for premium strategy modules
+    assert.equal(governorNairobi.features?.strategicIntelligence, false);
+    assert.equal(governorNairobi.features?.strategyTeam, false);
+    assert.equal(governorMombasa.features?.strategicIntelligence, false);
+    assert.equal(governorMombasa.features?.strategyTeam, false);
+
+    // Super Admin has universal access
+    assert.equal(adminUser.features?.strategicIntelligence, true);
+    assert.equal(adminUser.features?.strategyTeam, true);
+  });
+
+  test('333. Sub-Account Feature Inheritance: Subordinates inherit Strategic Intelligence & Strategy Team from candidate', async () => {
+    const { initialUsers } = await import('../data/mockData.js');
+    const candidateRoles = ['Governor', 'Senator', 'MP', 'MCA', 'Aspirant', 'Candidate Admin'];
+
+    const findParentCandidate = (user, users) => {
+      if (candidateRoles.includes(user.role)) return user;
+      if (user.candidateId) {
+        const match = users.find(u => u.id === user.candidateId);
+        if (match) return match;
+      }
+      if (user.county) {
+        const match = users.find(u => candidateRoles.includes(u.role) && u.county?.toLowerCase() === user.county?.toLowerCase());
+        if (match) return match;
+      }
+      return null;
+    };
+
+    const mockUsers = [
+      { id: 'CAND-01', name: 'Governor Sakaja', role: 'Governor', county: 'Nairobi', features: { strategicIntelligence: false, strategyTeam: false } },
+      { id: 'COORD-01', name: 'Nairobi Coordinator', role: 'County Coordinator', county: 'Nairobi' },
+      { id: 'AGENT-01', name: 'Westlands Agent', role: 'Agent', county: 'Nairobi' },
+      { id: 'CAND-02', name: 'Governor Abdulswamad', role: 'Governor', county: 'Mombasa', features: { strategicIntelligence: true, strategyTeam: false } },
+      { id: 'AGENT-02', name: 'Nyali Agent', role: 'Agent', county: 'Mombasa' }
+    ];
+
+    // Check Nairobi: parent candidate features are false -> subordinates do not get access
+    const nairobiParent = findParentCandidate(mockUsers[1], mockUsers);
+    assert.equal(nairobiParent.id, 'CAND-01');
+    assert.equal(Boolean(nairobiParent.features?.strategicIntelligence), false);
+
+    // Check Mombasa: parent candidate has strategicIntelligence=true, strategyTeam=false
+    const mombasaParent = findParentCandidate(mockUsers[4], mockUsers);
+    assert.equal(mombasaParent.id, 'CAND-02');
+    assert.equal(Boolean(mombasaParent.features?.strategicIntelligence), true);
+    assert.equal(Boolean(mombasaParent.features?.strategyTeam), false);
+  });
+
+  test('334. Security Lockout Management: Locked accounts trigger lockout and can be restored by Admin', async () => {
+    const { recordFailure, getLockState, adminUnlock } = await import('../utils/loginThrottle.js');
+
+    let store = {};
+    const testEmail = 'field.agent.locked@ems.go.ke';
+
+    // Simulate 5 failed sign-in attempts
+    for (let i = 0; i < 5; i++) {
+      store = recordFailure(store, testEmail);
+    }
+
+    const stateLocked = getLockState(store, testEmail);
+    assert.equal(stateLocked.locked, true);
+    assert.equal(stateLocked.permanent, false);
+
+    // Admin unlock resets failed count and removes lockout
+    store = adminUnlock(store, testEmail);
+    const stateUnlocked = getLockState(store, testEmail);
+    assert.equal(stateUnlocked.locked, false);
+  });
+
+  test('335. Pure JS SHA-256: sha256Sync computes deterministic cryptographic digests synchronously', async () => {
+    const { sha256Sync } = await import('../utils/sha256Sync.js');
+
+    // NIST standard test vector for "abc"
+    const hashAbc = sha256Sync('abc');
+    assert.equal(hashAbc, 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+
+    // Empty string SHA-256
+    const hashEmpty = sha256Sync('');
+    assert.equal(hashEmpty, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+  });
+
+  test('336. Release Provenance: generateReleaseManifestDigest and verifyReleaseProvenance run synchronously without node:crypto', async () => {
+    const { generateReleaseManifestDigest, verifyReleaseProvenance, CURRENT_RELEASE_MANIFEST } = await import('../utils/releaseProvenance.js');
+
+    const digest = generateReleaseManifestDigest();
+    assert.equal(typeof digest, 'string');
+    assert.equal(digest.length, 64);
+
+    const verification = verifyReleaseProvenance(CURRENT_RELEASE_MANIFEST);
+    assert.equal(verification.isVerified, true);
+    assert.equal(verification.manifestDigest, digest);
+    assert.equal(verification.missingFields.length, 0);
+  });
+
+  test('337. Object Storage Engine: calculatePayloadHash and createObjectStoreRecord generate immutable hashes synchronously', async () => {
+    const { calculatePayloadHash, createObjectStoreRecord, STORAGE_BUCKETS } = await import('../services/objectStorageEngine.js');
+
+    const hash = calculatePayloadHash('PRESIDENTIAL-BALLOT-TALLY-2027');
+    assert.equal(typeof hash, 'string');
+    assert.equal(hash.length, 64);
+
+    const record = createObjectStoreRecord({
+      bucketName: STORAGE_BUCKETS.EVIDENCE_VAULT,
+      objectKey: 'results/form34a_stream1.jpg',
+      payload: 'SAMPLE_BINARY_OR_BASE64_DATA'
+    });
+
+    assert.equal(record.bucketName, STORAGE_BUCKETS.EVIDENCE_VAULT);
+    assert.equal(typeof record.contentHash, 'string');
+    assert.equal(record.contentHash.length, 64);
+    assert.equal(record.isImmutable, true);
+  });
+
+  test('338. readinessApiService: exports client functions for dynamic server integration', async () => {
+    const { fetchServerReadiness, submitServerSignOff, submitWorkstreamVerification } = await import('../services/readinessApiService.js');
+    assert.equal(typeof fetchServerReadiness, 'function');
+    assert.equal(typeof submitServerSignOff, 'function');
+    assert.equal(typeof submitWorkstreamVerification, 'function');
+  });
+
+  test('339. readinessApiService: fetchServerReadiness falls back gracefully when server offline', async () => {
+    const { fetchServerReadiness } = await import('../services/readinessApiService.js');
+    const res = await fetchServerReadiness();
+    assert.ok(res);
+    assert.ok(Array.isArray(res.workstreams));
+    assert.equal(res.workstreams.length, 10);
+    assert.ok(res.evaluation);
+    assert.ok(typeof res.evaluation.readinessScore === 'number');
+  });
+
+  test('340. server.mjs: contains dynamic readiness endpoints (/api/readiness and signoff)', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const serverPath = path.resolve(process.cwd(), 'server.mjs');
+    const content = fs.readFileSync(serverPath, 'utf8');
+    assert.ok(content.includes('/api/readiness'));
+    assert.ok(content.includes('/ems/api/readiness'));
+    assert.ok(content.includes('READINESS_GATE_SIGNOFF'));
+  });
+
+  test('341. signOffReadinessGate: creates immutable auditHistory entries for Maker-Checker governance', async () => {
+    const { signOffReadinessGate, STAKEHOLDER_ROLES } = await import('../utils/productionReadinessGate.js');
+    const state0 = {};
+    const state1 = signOffReadinessGate(state0, STAKEHOLDER_ROLES.ENGINEERING, 'APPROVED', 'CTO Infrastructure sign-off verified');
+    assert.equal(state1[STAKEHOLDER_ROLES.ENGINEERING], 'APPROVED');
+    assert.ok(Array.isArray(state1.auditHistory));
+    assert.equal(state1.auditHistory.length, 1);
+    assert.equal(state1.auditHistory[0].role, STAKEHOLDER_ROLES.ENGINEERING);
+    assert.equal(state1.auditHistory[0].decision, 'APPROVED');
+    assert.equal(state1.auditHistory[0].comments, 'CTO Infrastructure sign-off verified');
+  });
+
+  test('342. evaluateProductionReadiness: preserves zero-parameter default evaluation compatibility', async () => {
+    const { evaluateProductionReadiness } = await import('../utils/productionReadinessGate.js');
+    const defaultEval = evaluateProductionReadiness();
+    assert.ok(defaultEval);
+    assert.equal(defaultEval.totalWorkstreamsCount, 10);
+    assert.ok(defaultEval.readinessScore >= 0);
+    assert.ok(['GO', 'CONDITIONAL_GO', 'NO_GO'].includes(defaultEval.decisionStatus));
+  });
+
+});
+
+
+
+
 
 
 

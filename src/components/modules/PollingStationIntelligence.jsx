@@ -16,8 +16,12 @@ import {
   ChevronRight,
   ShieldAlert,
   Users,
-  MoreHorizontal
+  MoreHorizontal,
+  Lock,
+  Maximize2,
+  Download
 } from 'lucide-react';
+import { downloadPollingStationsCSV } from '../../utils/pollingStationExport';
 import {
   resolveJurisdiction,
   hasNationalGeographyAccess,
@@ -88,7 +92,7 @@ const resolveLocation = (ps, lookups) => {
   };
 };
 
-const PollingStationIntelligenceInner = () => {
+const PollingStationIntelligenceInner = ({ onOpenModule }) => {
   const { currentUser } = useAuth();
   const { geography, stationIntelligence, updateStationIntelligence, bulkImportPollingStations } = useData();
 
@@ -192,6 +196,20 @@ const PollingStationIntelligenceInner = () => {
     });
   }, [scopedStations, stationIntelligence, searchTerm, selectedRisk, selectedImportance, geoLookups]);
 
+  const outOfScopeSearch = useMemo(() => {
+    if (!searchTerm || searchTerm.trim().length < 3 || isNational) return false;
+    const term = searchTerm.toLowerCase().trim();
+    const globalMatch = (geography?.pollingStations || []).some((ps) =>
+      (ps.name && ps.name.toLowerCase().includes(term)) ||
+      (ps.code && ps.code.toLowerCase().includes(term))
+    );
+    const localMatch = scopedStations.some((ps) =>
+      (ps.name && ps.name.toLowerCase().includes(term)) ||
+      (ps.code && ps.code.toLowerCase().includes(term))
+    );
+    return globalMatch && !localMatch;
+  }, [searchTerm, isNational, geography?.pollingStations, scopedStations]);
+
   const analyticsSummary = useMemo(() => {
     const intelMap = stationIntelligence || {};
     let stronghold = 0;
@@ -246,10 +264,19 @@ const PollingStationIntelligenceInner = () => {
     const longitude = Number(station.longitude ?? station.lng ?? station.lon);
     return { station, latitude, longitude };
   }).filter(({ latitude, longitude }) => Number.isFinite(latitude) && Number.isFinite(longitude) && Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180), [filteredStations]);
-  const mapCenter = mapStations.length
-    ? `${mapStations[0].latitude},${mapStations[0].longitude}`
-    : '-1.286389,36.817223';
-  const mapQuery = mapStations.map(({ latitude, longitude }) => `${latitude},${longitude}`).join('|');
+
+  // Centroid calculation for accurate auto-centering of filtered set
+  const mapCenter = useMemo(() => {
+    if (!mapStations.length) return '-1.286389,36.817223';
+    const sumLat = mapStations.reduce((acc, s) => acc + s.latitude, 0);
+    const sumLng = mapStations.reduce((acc, s) => acc + s.longitude, 0);
+    return `${(sumLat / mapStations.length).toFixed(6)},${(sumLng / mapStations.length).toFixed(6)}`;
+  }, [mapStations]);
+
+  // Clamped to top 20 representative stations with 5 decimal precision to prevent HTTP 414 URL overflow
+  const mapQuery = useMemo(() => {
+    return mapStations.slice(0, 20).map(({ latitude, longitude }) => `${latitude.toFixed(5)},${longitude.toFixed(5)}`).join('|');
+  }, [mapStations]);
 
   const rangeStart = filteredStations.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const rangeEnd = Math.min(page * PAGE_SIZE, filteredStations.length);
@@ -300,6 +327,11 @@ const PollingStationIntelligenceInner = () => {
     } else {
       setImportStatus('Failed to parse CSV. Check the format.');
     }
+  };
+
+  const handleExportCSV = () => {
+    const filename = `polling_stations_${assignment.title ? assignment.title.toLowerCase().replace(/[^a-z0-9]+/g, '_') : 'national'}_${new Date().toISOString().slice(0, 10)}.csv`;
+    downloadPollingStationsCSV(filteredStations, geoLookups, stationIntelligence, filename);
   };
 
   const handleBulkUpdate = (e) => {
@@ -417,10 +449,30 @@ const PollingStationIntelligenceInner = () => {
                     <Sliders strokeWidth={1.75} />
                     Bulk update
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTools(false);
+                      handleExportCSV();
+                    }}
+                  >
+                    <Download strokeWidth={1.75} />
+                    Export CSV
+                  </button>
                 </div>
               )}
             </div>
           )}
+          <button
+            type="button"
+            className="admin-btn admin-btn-ghost psi-export-btn"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', padding: '0.45rem 0.75rem', color: 'var(--text-primary)' }}
+            title="Export filtered stations as CSV"
+            onClick={handleExportCSV}
+          >
+            <Download size={14} />
+            Export CSV
+          </button>
         </div>
       </header>
 
@@ -434,23 +486,42 @@ const PollingStationIntelligenceInner = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <select
-          className="form-select"
-          value={selectedCounty}
-          onChange={(e) => {
-            if (!isNational) return;
-            setSelectedCounty(e.target.value);
-          }}
-          disabled={!isNational}
-          title={isNational ? 'Select county' : `Locked to your ${String(assignment.label || 'assignment').toLowerCase()}`}
-          required
-        >
-          {countyOptions.map((c) => (
-            <option key={c.id} value={c.id}>
-              {isNational ? c.name : scopeLabel}
-            </option>
-          ))}
-        </select>
+        {!isNational ? (
+          <div
+            className="locked-jurisdiction-badge"
+            title={`Locked to your ${String(assignment.label || 'assignment').toLowerCase()}`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              padding: '0.55rem 0.85rem',
+              borderRadius: '8px',
+              background: 'rgba(6, 182, 212, 0.1)',
+              border: '1px solid rgba(6, 182, 212, 0.3)',
+              color: '#06b6d4',
+              fontWeight: '600',
+              fontSize: '0.85rem',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <Lock size={14} />
+            <span>{scopeLabel} 🔒 [Locked]</span>
+          </div>
+        ) : (
+          <select
+            className="form-select"
+            value={selectedCounty}
+            onChange={(e) => setSelectedCounty(e.target.value)}
+            title="Select county"
+            required
+          >
+            {countyOptions.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        )}
         <select className="form-select" value={selectedRisk} onChange={(e) => setSelectedRisk(e.target.value)}>
           <option value="">All risk</option>
           <option value="Low">Low</option>
@@ -465,6 +536,28 @@ const PollingStationIntelligenceInner = () => {
           <option value="Low">Low</option>
         </select>
       </div>
+
+      {outOfScopeSearch && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.65rem',
+            padding: '0.75rem 1rem',
+            marginBottom: '1rem',
+            borderRadius: '8px',
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.35)',
+            color: '#fca5a5',
+            fontSize: '0.825rem'
+          }}
+        >
+          <ShieldAlert style={{ width: '18px', height: '18px', flexShrink: 0, color: '#ef4444' }} />
+          <div>
+            <strong>Access Denied:</strong> Polling stations matching &quot;{searchTerm}&quot; exist outside your assigned jurisdiction ({scopeLabel}). Access to out-of-scope polling station intelligence is strictly prohibited.
+          </div>
+        </div>
+      )}
 
       {activeTab === 'list' && (
         <article className="psi-panel">
@@ -586,10 +679,38 @@ const PollingStationIntelligenceInner = () => {
 
       {activeTab === 'gis' && (
         <article className="psi-panel">
-          <div className="psi-panel-head">
+          <div className="psi-panel-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
-              <h2>Geo Inspector map</h2>
-              <p className="psi-error-copy" style={{ marginTop: '.25rem' }}>{mapStations.length} of {filteredStations.length} filtered stations have coordinates. CSV imports may include latitude and longitude as columns 10 and 11.</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                <h2>Geo Inspector map</h2>
+                {onOpenModule && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenModule('interactive_map', {
+                      countyId: selectedCounty,
+                      countyName: selectedCountyName
+                    })}
+                    className="admin-btn admin-btn-secondary"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      padding: '0.35rem 0.75rem',
+                      fontSize: '0.8rem',
+                      borderRadius: '6px',
+                      cursor: 'pointer'
+                    }}
+                    title="Launch full interactive Satellite & Stream Hubs Map Room"
+                  >
+                    <Maximize2 size={14} />
+                    <span>Open in Electoral Map Room</span>
+                  </button>
+                )}
+              </div>
+              <p className="psi-error-copy" style={{ marginTop: '.25rem' }}>
+                {mapStations.length} of {filteredStations.length} filtered stations have coordinates.
+                {mapStations.length > 20 && ' Showing top 20 station pins in preview.'} CSV imports may include latitude and longitude as columns 10 and 11.
+              </p>
             </div>
             <div className="psi-legend">
               <span><i className="psi-dot low" /> Stronghold / lean</span>
@@ -609,6 +730,9 @@ const PollingStationIntelligenceInner = () => {
             {mapStations.slice(0, 8).map(({ station: ps, latitude, longitude }) => {
               const intel = stationIntelligence?.[ps.id] || { riskLevel: 'Low' };
               const risk = intel.riskLevel || 'Low';
+              const loc = resolveLocation(ps, geoLookups);
+              const displayLoc = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}${loc.ward ? ` · ${loc.ward}` : ''}`;
+
               return (
                 <button
                   key={ps.id}
@@ -621,8 +745,8 @@ const PollingStationIntelligenceInner = () => {
                     <span>{ps.code}</span>
                   </div>
                   <strong>{ps.name}</strong>
-                  <span>
-                    {latitude.toFixed(6)}, {longitude.toFixed(6)}
+                  <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                    {displayLoc}
                   </span>
                   <div className="psi-map-card-foot">
                     <span>{formatCount(ps.registeredVoters || 0)} voters</span>
@@ -848,6 +972,18 @@ const PollingStationIntelligenceInner = () => {
                 </div>
               </div>
 
+              <div style={{ margin: '-0.25rem 0 1rem', padding: '0.65rem 0.85rem', borderRadius: '6px', fontSize: '0.78rem', background: intelForm.riskLevel === 'Severe' ? 'rgba(239,68,68,0.12)' : intelForm.riskLevel === 'High' ? 'rgba(245,158,11,0.12)' : 'rgba(59,130,246,0.08)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <strong style={{ color: intelForm.riskLevel === 'Severe' ? '#ef4444' : intelForm.riskLevel === 'High' ? '#f59e0b' : '#3b82f6' }}>
+                  Risk Matrix Protocol:
+                </strong>
+                <div style={{ marginTop: '0.2rem', opacity: 0.9 }}>
+                  {intelForm.riskLevel === 'Severe' && 'Critical vulnerability. Mandate 2 roving agents, dual Form 34A photo captures, and hourly RTS audit comparison.'}
+                  {intelForm.riskLevel === 'High' && 'Heightened contest. Assign senior agent, confirm ballot box seal numbers pre-opening, and track turnout velocity.'}
+                  {intelForm.riskLevel === 'Medium' && 'Moderate contest. Routine stream agent deployment with standard 2-hour status check-ins.'}
+                  {intelForm.riskLevel === 'Low' && 'Low friction baseline. Normal operational protocols and standard Form 34A upload.'}
+                </div>
+              </div>
+
               <div className="psi-form-grid">
                 <div className="form-group">
                   <label className="form-label">GOTV / nomination priority</label>
@@ -963,8 +1099,8 @@ const PollingStationIntelligenceInner = () => {
   );
 };
 
-export const PollingStationIntelligence = () => (
+export const PollingStationIntelligence = (props) => (
   <PsiErrorBoundary>
-    <PollingStationIntelligenceInner />
+    <PollingStationIntelligenceInner {...props} />
   </PsiErrorBoundary>
 );

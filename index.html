@@ -6,7 +6,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="application-name" content="Kuratech" />
     <meta name="theme-color" content="#0f172a" />
-    <title>Kuratech</title>
+    <meta name="description" content="Kuratech - Official Campaign Intelligence & Election Management System (CI-EMS). Real-time results tabulation, 47-county geospatial intelligence, polling station monitoring, and election day verification." />
+    <meta name="keywords" content="Kenya elections 2027, IEBC, election management system, Kuratech, polling stations, electoral map room, tally center, Form 34A verification" />
+    <meta name="author" content="Kuratech CI-EMS" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://kuratech.site/" />
+    <meta property="og:title" content="Kuratech | Election Management System (CI-EMS)" />
+    <meta property="og:description" content="Central operations command, verified tally transmission, 47-county geospatial intelligence, and polling station capacity." />
+    <meta property="og:image" content="/favicon.svg" />
+    <meta property="og:site_name" content="Kuratech CI-EMS" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://kuratech.site/" />
+    <meta name="twitter:title" content="Kuratech | Election Management System (CI-EMS)" />
+    <meta name="twitter:description" content="Central operations command, verified tally transmission, 47-county geospatial intelligence, and polling station capacity." />
+
+    <!-- Canonical URL & Manifest -->
+    <link rel="canonical" href="https://kuratech.site/" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>Kuratech | Election Management System (CI-EMS)</title>
+    <!-- Register PWA Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
     <!-- FOUC-Proof Theme Initialization Script -->
     <script>
       (function() {
