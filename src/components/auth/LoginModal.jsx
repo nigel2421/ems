@@ -78,7 +78,7 @@ export const LoginModal = ({ isAdminConsole = false }) => {
     setIsSubmitting(true);
 
     try {
-      const res = await login(email, password);
+      const res = await login(email, password, { isAdminConsole });
       if (!res.success) {
         setError(res.error);
         if (res.locked) {

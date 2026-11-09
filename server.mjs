@@ -137,9 +137,15 @@ const parseCookies = (req) => {
   return list;
 };
 
-const extractTokenFromReq = (req) => {
+const extractTokenFromReq = (req, realm = 'user') => {
   const cookies = parseCookies(req);
-  if (cookies.ems_sid) return cookies.ems_sid;
+  if (realm === 'admin') {
+    if (cookies.ems_admin_sid) return cookies.ems_admin_sid;
+    if (cookies.ems_sid) return cookies.ems_sid;
+  } else {
+    if (cookies.ems_sid) return cookies.ems_sid;
+    if (cookies.ems_admin_sid) return cookies.ems_admin_sid;
+  }
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return authHeader.slice(7).trim();
@@ -158,7 +164,7 @@ const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-EMS-Realm');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
@@ -167,7 +173,11 @@ const server = http.createServer((req, res) => {
   }
 
   const hostHeader = req.headers['x-forwarded-host'] || req.headers.host || '';
-  const currentRealm = resolveRealm(hostHeader);
+  const explicitRealm = (req.headers['x-ems-realm'] || '').toLowerCase().trim();
+  const referer = req.headers['referer'] || '';
+  const isRefererAdmin = referer.includes('/admin.html');
+  const hostRealm = resolveRealm(hostHeader);
+  const currentRealm = (hostRealm === 'admin' || explicitRealm === 'admin' || isRefererAdmin) ? 'admin' : 'user';
   const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress || '127.0.0.1';
 
   const url = new URL(req.url, `http://${hostHeader || 'localhost'}`);
@@ -212,8 +222,9 @@ const server = http.createServer((req, res) => {
     req.on('data', chunk => { body += chunk; });
     req.on('end', () => {
       try {
-        const { email, password } = JSON.parse(body || '{}');
+        const { email, password, realm } = JSON.parse(body || '{}');
         const cleanEmail = String(email || '').trim().toLowerCase();
+        const effectiveRealm = (realm === 'admin' || currentRealm === 'admin') ? 'admin' : currentRealm;
 
         // Check server-side lockout
         const lock = getLockoutState(cleanEmail);
@@ -284,7 +295,7 @@ const server = http.createServer((req, res) => {
         const userIsAdmin = isAdminRole(user.role);
 
         // 1. Admin account attempting login on user realm (e.g. kuratech.site) -> DENY
-        if (userIsAdmin && currentRealm !== 'admin') {
+        if (userIsAdmin && effectiveRealm !== 'admin') {
           recordFailedAttempt(cleanEmail);
           appendServerAuditLog({
             userId: user.id,
@@ -303,8 +314,8 @@ const server = http.createServer((req, res) => {
           return;
         }
 
-        // 2. Non-Admin user attempting login on admin console realm (ops-konsole.kuratech.site) -> DENY
-        if (!userIsAdmin && currentRealm === 'admin') {
+        // 2. Non-Admin user attempting login on admin console realm (ops-konsole.kuratech.site or admin.html) -> DENY
+        if (!userIsAdmin && effectiveRealm === 'admin') {
           recordFailedAttempt(cleanEmail);
           appendServerAuditLog({
             userId: user.id,
@@ -329,15 +340,16 @@ const server = http.createServer((req, res) => {
         const token = signToken({
           uid: user.id,
           role: user.role,
-          realm: currentRealm,
+          realm: effectiveRealm,
           name: user.name,
           email: user.email
         });
 
         // Set Host-Only HttpOnly cookie (NO Domain attribute ensures isolation)
         const isSecure = !hostHeader.includes('localhost') && !hostHeader.includes('127.0.0.1');
+        const cookieName = effectiveRealm === 'admin' ? 'ems_admin_sid' : 'ems_sid';
         const cookieFlags = [
-          `ems_sid=${token}`,
+          `${cookieName}=${token}`,
           'HttpOnly',
           'Path=/',
           'SameSite=Strict',
@@ -352,7 +364,7 @@ const server = http.createServer((req, res) => {
           userName: user.name,
           role: user.role,
           action: 'LOGIN_SUCCESS',
-          details: `Authenticated on ${currentRealm} realm (${hostHeader})`,
+          details: `Authenticated on ${effectiveRealm} realm (${hostHeader})`,
           ipAddress: clientIp
         });
 
@@ -360,7 +372,7 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({
           success: true,
           token,
-          realm: currentRealm,
+          realm: effectiveRealm,
           user: sanitizeUser(user)
         }));
       } catch (err) {
@@ -374,8 +386,9 @@ const server = http.createServer((req, res) => {
   // POST /api/auth/logout
   if (req.method === 'POST' && (pathname === '/api/auth/logout' || pathname === '/ems/api/auth/logout')) {
     const isSecure = !hostHeader.includes('localhost') && !hostHeader.includes('127.0.0.1');
+    const cookieName = currentRealm === 'admin' ? 'ems_admin_sid' : 'ems_sid';
     const clearCookie = [
-      'ems_sid=',
+      `${cookieName}=`,
       'HttpOnly',
       'Path=/',
       'SameSite=Strict',
@@ -391,7 +404,7 @@ const server = http.createServer((req, res) => {
 
   // GET /api/auth/me
   if (req.method === 'GET' && (pathname === '/api/auth/me' || pathname === '/ems/api/auth/me')) {
-    const rawToken = extractTokenFromReq(req);
+    const rawToken = extractTokenFromReq(req, currentRealm);
     const decoded = verifyToken(rawToken);
 
     if (!decoded) {
@@ -421,7 +434,7 @@ const server = http.createServer((req, res) => {
   // ADMIN CONSOLE ONLY ROUTES (/api/admin/*)
   // ====================================================================
   if (pathname.startsWith('/api/admin/') || pathname.startsWith('/ems/api/admin/')) {
-    const rawToken = extractTokenFromReq(req);
+    const rawToken = extractTokenFromReq(req, 'admin');
     const decoded = verifyToken(rawToken);
 
     if (!decoded || decoded.realm !== 'admin' || !isAdminRole(decoded.role)) {
@@ -622,7 +635,7 @@ const server = http.createServer((req, res) => {
 
   // Production Readiness Gate: Stakeholder Sign-Off POST /api/readiness/signoff
   if (req.method === 'POST' && (pathname === '/api/readiness/signoff' || pathname === '/ems/api/readiness/signoff')) {
-    const token = extractTokenFromReq(req);
+    const token = extractTokenFromReq(req, 'admin');
     const session = token ? verifyToken(token) : null;
 
     if (!session || !isAdminRole(session.role)) {
@@ -683,7 +696,7 @@ const server = http.createServer((req, res) => {
 
   // Production Readiness Gate: Workstream Verification POST /api/readiness/verify-workstream
   if (req.method === 'POST' && (pathname === '/api/readiness/verify-workstream' || pathname === '/ems/api/readiness/verify-workstream')) {
-    const token = extractTokenFromReq(req);
+    const token = extractTokenFromReq(req, 'admin');
     const session = token ? verifyToken(token) : null;
 
     if (!session || !isAdminRole(session.role)) {

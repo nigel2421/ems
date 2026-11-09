@@ -164,10 +164,24 @@ export const AuthProvider = ({ children }) => {
     sessionStorage.setItem('ems_is_authenticated', JSON.stringify(isAuthenticated));
   }, [isAuthenticated]);
 
+  // Helper to determine if current client is in the Admin Console realm
+  const isInAdminRealm = () => {
+    try {
+      if (typeof window === 'undefined') return false;
+      const path = window.location.pathname || '';
+      const host = window.location.hostname || '';
+      return path.includes('admin.html') || host.startsWith('ops-konsole.');
+    } catch {
+      return false;
+    }
+  };
+
   // Verify session on mount with server cookie
   useEffect(() => {
     let active = true;
-    fetch('/api/auth/me', { credentials: 'include' })
+    const isAdm = isInAdminRealm();
+    const headers = isAdm ? { 'X-EMS-Realm': 'admin' } : {};
+    fetch('/api/auth/me', { credentials: 'include', headers })
       .then(res => (res.ok ? res.json() : null))
       .then(data => {
         if (!active) return;
@@ -191,7 +205,10 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (email, password, options = {}) => {
+    const isTargetingAdmin = Boolean(
+      (options && options.isAdminConsole) || isInAdminRealm()
+    );
     const cleanEmail = normaliseEmail(email);
     const telemetry = getDeviceTelemetry();
 
@@ -233,11 +250,19 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (isTargetingAdmin) {
+        headers['X-EMS-Realm'] = 'admin';
+      }
       const res = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include',
-        body: JSON.stringify({ email: cleanEmail, password })
+        body: JSON.stringify({
+          email: cleanEmail,
+          password,
+          realm: isTargetingAdmin ? 'admin' : undefined
+        })
       });
       const data = await res.json().catch(() => ({}));
 
@@ -305,7 +330,9 @@ export const AuthProvider = ({ children }) => {
   // logout() may be wired directly to onClick, so only accept string reasons
   const logout = (reason) => {
     const why = typeof reason === 'string' ? reason : null;
-    fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+    const isAdm = isInAdminRealm();
+    const headers = isAdm ? { 'X-EMS-Realm': 'admin' } : {};
+    fetch('/api/auth/logout', { method: 'POST', credentials: 'include', headers }).catch(() => {});
     setIsAuthenticated(false);
     setCurrentUser(null);
     setLogoutReason(why);

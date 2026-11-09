@@ -4489,6 +4489,35 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     assert.ok(['GO', 'CONDITIONAL_GO', 'NO_GO'].includes(defaultEval.decisionStatus));
   });
 
+  test('343. server.mjs: resolves admin realm from X-EMS-Realm header or /admin.html referer', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const serverPath = path.resolve(process.cwd(), 'server.mjs');
+    const content = fs.readFileSync(serverPath, 'utf8');
+    assert.ok(content.includes("req.headers['x-ems-realm']"));
+    assert.ok(content.includes("referer.includes('/admin.html')"));
+    assert.ok(content.includes("effectiveRealm"));
+  });
+
+  test('344. server.mjs: isolates admin session cookie using ems_admin_sid', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const serverPath = path.resolve(process.cwd(), 'server.mjs');
+    const content = fs.readFileSync(serverPath, 'utf8');
+    assert.ok(content.includes("cookies.ems_admin_sid"));
+    assert.ok(content.includes("effectiveRealm === 'admin' ? 'ems_admin_sid' : 'ems_sid'"));
+  });
+
+  test('345. AuthContext.jsx: detects admin.html and attaches X-EMS-Realm: admin header', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const authContextPath = path.resolve(process.cwd(), 'src/context/AuthContext.jsx');
+    const content = fs.readFileSync(authContextPath, 'utf8');
+    assert.ok(content.includes("isInAdminRealm"));
+    assert.ok(content.includes("admin.html"));
+    assert.ok(content.includes("'X-EMS-Realm': 'admin'"));
+  });
+
 });
 
 
