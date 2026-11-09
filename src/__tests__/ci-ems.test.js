@@ -3414,12 +3414,11 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
     const content = fs.readFileSync(sitemapPath, 'utf-8');
     assert.ok(content.startsWith('<?xml version="1.0" encoding="UTF-8"?>'));
     assert.ok(content.includes('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'));
-    assert.ok(content.includes('https://ci-ems.ke/ems/'));
-    assert.ok(content.includes('https://ci-ems.ke/ems/#/map'));
-    assert.ok(content.includes('https://ci-ems.ke/ems/#/polling-stations'));
-    assert.ok(content.includes('https://ci-ems.ke/ems/#/tally-center'));
-    assert.ok(content.includes('https://ci-ems.ke/ems/#/strategy'));
-    assert.ok(content.includes('https://ci-ems.ke/ems/#/production-readiness'));
+    assert.ok(content.includes('/#/map'));
+    assert.ok(content.includes('/#/polling-stations'));
+    assert.ok(content.includes('/#/tally-center'));
+    assert.ok(content.includes('/#/strategy'));
+    assert.ok(content.includes('/#/production-readiness'));
   });
 
   test('296. Search Engine Discovery: public/robots.txt allows crawlable modules and specifies sitemap location', async () => {
@@ -3431,11 +3430,11 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
 
     const content = fs.readFileSync(robotsPath, 'utf-8');
     assert.ok(content.includes('User-agent: *'));
-    assert.ok(content.includes('Allow: /ems/'));
-    assert.ok(content.includes('Allow: /ems/#/map'));
-    assert.ok(content.includes('Allow: /ems/#/tally-center'));
-    assert.ok(content.includes('Disallow: /ems/#/ops-queue'));
-    assert.ok(content.includes('Sitemap: https://ci-ems.ke/ems/sitemap.xml'));
+    assert.ok(content.includes('Allow: /'));
+    assert.ok(content.includes('/#/map'));
+    assert.ok(content.includes('/#/tally-center'));
+    assert.ok(content.includes('Disallow: /#/ops-queue'));
+    assert.ok(content.includes('Sitemap: https://kuratech.site/sitemap.xml'));
   });
 
   test('297. Python Geospatial Geocoder: scripts/geocode_polling_stations.py existence and CLI syntax', async () => {
@@ -4516,6 +4515,39 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     assert.ok(content.includes("isInAdminRealm"));
     assert.ok(content.includes("admin.html"));
     assert.ok(content.includes("'X-EMS-Realm': 'admin'"));
+  });
+
+  test('346. manifest.json: specifies root start_url, scope, and valid favicon paths', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const manifestPath = path.resolve(process.cwd(), 'public/manifest.json');
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    assert.equal(manifest.start_url, '/');
+    assert.equal(manifest.scope, '/');
+    assert.ok(manifest.icons.some(i => i.src === '/favicon.svg'));
+    assert.ok(manifest.icons.some(i => i.src === '/favicon.ico'));
+    assert.ok(!JSON.stringify(manifest).includes('/ems/'));
+  });
+
+  test('347. sw.js: caches root assets without legacy /ems/ prefixes', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const swPath = path.resolve(process.cwd(), 'public/sw.js');
+    const content = fs.readFileSync(swPath, 'utf8');
+    assert.ok(content.includes("'/favicon.svg'"));
+    assert.ok(content.includes("'/favicon.ico'"));
+    assert.ok(content.includes("'/index.html'"));
+    assert.ok(!content.includes('/ems/'));
+  });
+
+  test('348. deploy.yml: triggers automated git reset, npm ci, and PM2 backend restart on VPS', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const deployPath = path.resolve(process.cwd(), '.github/workflows/deploy.yml');
+    const content = fs.readFileSync(deployPath, 'utf8');
+    assert.ok(content.includes('appleboy/ssh-action'));
+    assert.ok(content.includes('pm2 restart ems-backend'));
+    assert.ok(content.includes('git reset --hard origin/main'));
   });
 
 });

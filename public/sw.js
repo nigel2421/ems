@@ -1,10 +1,12 @@
 // CI-EMS Offline Service Worker for Field Agent PWA (QA OFF-01..OFF-09)
 const CACHE_NAME = 'ems-pwa-v1';
 const ASSETS_TO_CACHE = [
-  '/ems/',
-  '/ems/index.html',
-  '/ems/favicon.svg',
-  '/ems/manifest.json'
+  '/',
+  '/index.html',
+  '/admin.html',
+  '/favicon.svg',
+  '/favicon.ico',
+  '/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
@@ -32,7 +34,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;
-      return fetch(event.request).catch(() => caches.match('/ems/index.html'));
+      return fetch(event.request).catch(() => caches.match('/index.html'));
     })
   );
 });

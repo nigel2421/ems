@@ -1,23 +1,24 @@
-# CI-EMS Robots Policy
+# Kuratech EMS Robots Policy
 User-agent: *
-Allow: /ems/
-Allow: /ems/#/map
-Allow: /ems/#/polling-stations
-Allow: /ems/#/tally-center
-Allow: /ems/#/strategy
-Allow: /ems/#/strategy-team
-Allow: /ems/#/agents
-Allow: /ems/#/field-reports
-Allow: /ems/#/surveys
-Allow: /ems/#/mobilization
-Allow: /ems/#/executive-briefing
-Allow: /ems/#/production-readiness
+Allow: /
+Allow: /#/map
+Allow: /#/polling-stations
+Allow: /#/tally-center
+Allow: /#/strategy
+Allow: /#/strategy-team
+Allow: /#/agents
+Allow: /#/field-reports
+Allow: /#/surveys
+Allow: /#/mobilization
+Allow: /#/executive-briefing
+Allow: /#/production-readiness
 
-# Disallow internal operational desks and exception queues
-Disallow: /ems/#/ops-queue
-Disallow: /ems/#/war-room
-Disallow: /ems/#/security-ops
-Disallow: /ems/#/evidence-review
+# Disallow internal operational desks, admin console, and exception queues
+Disallow: /admin.html
+Disallow: /#/ops-queue
+Disallow: /#/war-room
+Disallow: /#/security-ops
+Disallow: /#/evidence-review
 
 # Sitemap Location
-Sitemap: https://ci-ems.ke/ems/sitemap.xml
+Sitemap: https://kuratech.site/sitemap.xml

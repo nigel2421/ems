@@ -2,17 +2,22 @@
   "name": "Election Management System (CI-EMS)",
   "short_name": "CI-EMS",
   "description": "Campaign Intelligence & Election Management System",
-  "start_url": "/ems/",
-  "scope": "/ems/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#073322",
   "theme_color": "#006B3F",
   "icons": [
     {
-      "src": "/ems/favicon.svg",
+      "src": "/favicon.svg",
       "sizes": "192x192 512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "32x32",
+      "type": "image/x-icon"
     }
   ]
 }
