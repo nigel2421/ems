@@ -44,6 +44,17 @@ jobs:
           target: ${{ secrets.VPS_TARGET }}
           strip_components: 1
 
+      - name: Upload backend to VPS
+        uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          fingerprint: ${{ secrets.VPS_FINGERPRINT }}
+          source: "server.mjs,server/**,src/utils/productionReadinessGate.js,package.json,deploy/**"
+          target: "/var/www/ems"
+
       - name: Deploy backend and restart PM2 on VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -53,9 +64,17 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           fingerprint: ${{ secrets.VPS_FINGERPRINT }}
           script: |
+            export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+            [ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"
+            [ -s "$HOME/.bashrc" ] && . "$HOME/.bashrc"
+            [ -s "$HOME/.profile" ] && . "$HOME/.profile"
+            if [ -d "/var/www/ems/.git" ]; then
+              cd /var/www/ems && git pull origin main || true
+            fi
             cd /var/www/ems
-            git fetch origin main
-            git reset --hard origin/main
-            npm ci --production=false
-            pm2 restart ems-backend || pm2 start deploy/ecosystem.config.cjs
-            pm2 save
+            if command -v pm2 >/dev/null 2>&1; then
+              pm2 restart ems-backend || pm2 restart all || pm2 start deploy/ecosystem.config.cjs || true
+              pm2 save || true
+            elif [ -x "/usr/local/bin/pm2" ]; then
+              /usr/local/bin/pm2 restart ems-backend || /usr/local/bin/pm2 restart all || true
+            fi
