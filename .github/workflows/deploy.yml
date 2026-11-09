@@ -65,11 +65,6 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           fingerprint: ${{ secrets.VPS_FINGERPRINT }}
           script: |
-            cat << EOF > ${{ secrets.VPS_TARGET }}/deploy-diag.json
-            {
-              "ls_server": "$(ls -la /var/www/kutatech-api/server.mjs 2>&1)",
-              "head_server": $(head -n 20 /var/www/kutatech-api/server.mjs 2>&1 | jq -R -s -c 'split("\n")' 2>/dev/null || echo '[]'),
-              "pid_5000": "$(ss -lptn 'sport = :5000' 2>&1 || netstat -nlp 2>&1 | grep 5000)",
-              "sys_service": "$(systemctl status kutatech-api 2>&1 | head -n 6 | tr '\n' '|')"
-            }
-            EOF
+            sudo systemctl restart kutatech-api || kill -9 $(pgrep -u admin -f '/var/www/kutatech-api/server.mjs') || pkill -u admin -f server.mjs || true
+            sleep 2
+            rm -f ${{ secrets.VPS_TARGET }}/deploy-diag.json || true
