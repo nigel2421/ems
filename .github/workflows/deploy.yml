@@ -68,13 +68,18 @@ jobs:
             [ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"
             [ -s "$HOME/.bashrc" ] && . "$HOME/.bashrc"
             [ -s "$HOME/.profile" ] && . "$HOME/.profile"
-            if [ -d "/var/www/ems/.git" ]; then
-              cd /var/www/ems && git pull origin main || true
-            fi
+
+            mkdir -p /var/www/ems/dist
+            printf '{\n  "user": "%s",\n  "pm2": "%s",\n  "node": "%s"\n}\n' \
+              "$USER" "$(command -v pm2 || echo 'none')" "$(command -v node || echo 'none')" > /var/www/ems/dist/deploy-diag.json
+
             cd /var/www/ems
             if command -v pm2 >/dev/null 2>&1; then
-              pm2 restart ems-backend || pm2 restart all || pm2 start deploy/ecosystem.config.cjs || true
+              pm2 delete all || true
+              pm2 start deploy/ecosystem.config.cjs
               pm2 save || true
             elif [ -x "/usr/local/bin/pm2" ]; then
-              /usr/local/bin/pm2 restart ems-backend || /usr/local/bin/pm2 restart all || true
+              /usr/local/bin/pm2 delete all || true
+              /usr/local/bin/pm2 start deploy/ecosystem.config.cjs
+              /usr/local/bin/pm2 save || true
             fi
