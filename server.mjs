@@ -14,12 +14,19 @@ import {
   resetFailedAttempts,
   adminUnlockUser
 } from './server/auth.js';
-import { loadUsers, saveUsers, findUserByEmail, findUserById, findUserByPhone, updateUserInStore } from './server/users.store.js';
+import { loadUsers, saveUsers, findUserByEmail, findUserById, findUserByPhone, updateUserInStore, ensureBaselineUsers } from './server/users.store.js';
 import { computeCountyIntelligence, runPoliticalIntelligenceSweep } from './server/agents/political-intelligence-agent.mjs';
 import { READINESS_WORKSTREAMS, STAKEHOLDER_ROLES, evaluateProductionReadiness, signOffReadinessGate } from './src/utils/productionReadinessGate.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Ensure baseline accounts are safely merged on startup (preserving any existing VPS accounts)
+try {
+  ensureBaselineUsers();
+} catch (err) {
+  console.error('[Server] Failed to ensure baseline users:', err);
+}
 
 const DB_FILE = path.join(__dirname, 'ems_server_db.json');
 const DB_BACKUP_FILE = path.join(__dirname, 'ems_server_db.json.bak');
@@ -294,27 +301,7 @@ const server = http.createServer((req, res) => {
         // ================================================================
         const userIsAdmin = isAdminRole(user.role);
 
-        // 1. Admin account attempting login on user realm (e.g. kuratech.site) -> DENY
-        if (userIsAdmin && effectiveRealm !== 'admin') {
-          recordFailedAttempt(cleanEmail);
-          appendServerAuditLog({
-            userId: user.id,
-            userName: user.name,
-            role: user.role,
-            action: 'ADMIN_LOGIN_WRONG_DOMAIN',
-            details: `Admin user (${cleanEmail}) attempted login on user domain (${hostHeader}). Entry denied.`,
-            ipAddress: clientIp
-          });
-          // Deliberately return generic error to prevent host enumeration
-          res.writeHead(401, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({
-            success: false,
-            error: 'Invalid email address or password credentials.'
-          }));
-          return;
-        }
-
-        // 2. Non-Admin user attempting login on admin console realm (ops-konsole.kuratech.site or admin.html) -> DENY
+        // Non-Admin user attempting login on admin console realm (ops-konsole.kuratech.site or admin.html) -> DENY
         if (!userIsAdmin && effectiveRealm === 'admin') {
           recordFailedAttempt(cleanEmail);
           appendServerAuditLog({
@@ -340,31 +327,51 @@ const server = http.createServer((req, res) => {
         const token = signToken({
           uid: user.id,
           role: user.role,
-          realm: effectiveRealm,
+          realm: userIsAdmin ? 'admin' : 'user',
           name: user.name,
           email: user.email
         });
 
-        // Set Host-Only HttpOnly cookie (NO Domain attribute ensures isolation)
+        // Set Host-Only HttpOnly cookies (NO Domain attribute ensures isolation)
         const isSecure = !hostHeader.includes('localhost') && !hostHeader.includes('127.0.0.1');
-        const cookieName = effectiveRealm === 'admin' ? 'ems_admin_sid' : 'ems_sid';
-        const cookieFlags = [
-          `${cookieName}=${token}`,
-          'HttpOnly',
-          'Path=/',
-          'SameSite=Strict',
-          'Max-Age=28800',
-          isSecure ? 'Secure' : ''
-        ].filter(Boolean).join('; ');
+        const cookieFlagsList = [];
 
-        res.setHeader('Set-Cookie', cookieFlags);
+        if (userIsAdmin) {
+          cookieFlagsList.push([
+            `ems_admin_sid=${token}`,
+            'HttpOnly',
+            'Path=/',
+            'SameSite=Strict',
+            'Max-Age=28800',
+            isSecure ? 'Secure' : ''
+          ].filter(Boolean).join('; '));
+          cookieFlagsList.push([
+            `ems_sid=${token}`,
+            'HttpOnly',
+            'Path=/',
+            'SameSite=Strict',
+            'Max-Age=28800',
+            isSecure ? 'Secure' : ''
+          ].filter(Boolean).join('; '));
+        } else {
+          cookieFlagsList.push([
+            `ems_sid=${token}`,
+            'HttpOnly',
+            'Path=/',
+            'SameSite=Strict',
+            'Max-Age=28800',
+            isSecure ? 'Secure' : ''
+          ].filter(Boolean).join('; '));
+        }
+
+        res.setHeader('Set-Cookie', cookieFlagsList);
 
         appendServerAuditLog({
           userId: user.id,
           userName: user.name,
           role: user.role,
           action: 'LOGIN_SUCCESS',
-          details: `Authenticated on ${effectiveRealm} realm (${hostHeader})`,
+          details: `Authenticated on ${userIsAdmin ? 'admin' : effectiveRealm} realm (${hostHeader})`,
           ipAddress: clientIp
         });
 
@@ -372,7 +379,8 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({
           success: true,
           token,
-          realm: effectiveRealm,
+          realm: userIsAdmin ? 'admin' : effectiveRealm,
+          redirectTo: userIsAdmin ? '/admin.html' : null,
           user: sanitizeUser(user)
         }));
       } catch (err) {
@@ -413,8 +421,8 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    // Verify token realm matches current host realm
-    if (decoded.realm && decoded.realm !== currentRealm) {
+    // Verify token realm matches current host realm, allowing admin tokens across views
+    if (decoded.realm && decoded.realm !== currentRealm && !(isAdminRole(decoded.role) && decoded.realm === 'admin')) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ authenticated: false, reason: 'REALM_MISMATCH' }));
       return;

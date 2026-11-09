@@ -79,9 +79,20 @@ export const LoginModal = ({ isAdminConsole = false }) => {
 
     try {
       const res = await login(email, password, { isAdminConsole });
-      if (!res.success) {
-        setError(res.error);
-        if (res.locked) {
+      if (res && res.success) {
+        if (res.redirectTo && typeof window !== 'undefined' && !window.location.pathname.endsWith(res.redirectTo)) {
+          window.location.href = res.redirectTo;
+          return;
+        }
+        if ((res.user?.role === 'Super Admin' || res.user?.role === 'Admin') &&
+            typeof window !== 'undefined' &&
+            !window.location.pathname.includes('admin.html')) {
+          window.location.href = '/admin.html';
+          return;
+        }
+      } else if (!res?.success) {
+        setError(res?.error || 'Invalid email address or password credentials.');
+        if (res?.locked) {
           setIsPermanentLock(!!res.permanent);
           if (res.retryInMs) setLockCountdown(Math.ceil(res.retryInMs / 1000));
         }

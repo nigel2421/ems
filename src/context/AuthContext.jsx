@@ -298,7 +298,7 @@ export const AuthProvider = ({ children }) => {
         sessionStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
         sessionStorage.setItem('ems_current_user', JSON.stringify(authedUser));
         sessionStorage.setItem('ems_is_authenticated', 'true');
-        return { success: true, user: authedUser };
+        return { success: true, user: authedUser, redirectTo: data.redirectTo };
       }
 
       if (res.status >= 500) {

@@ -112,23 +112,42 @@ const MainAppContent = () => {
             <p style={{ color: 'var(--text-muted, #94a3b8)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
               Administrative tools and system governance functions are exclusively available on the dedicated Kuratech Operations Console subdomain.
             </p>
-            <a
-              href="https://ops-konsole.kuratech.site"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.65rem 1.25rem',
-                background: '#0284c7',
-                color: '#fff',
-                borderRadius: '8px',
-                fontWeight: 600,
-                textDecoration: 'none',
-                boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)'
-              }}
-            >
-              Open ops-konsole.kuratech.site
-            </a>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <a
+                href="/admin.html"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.65rem 1.25rem',
+                  background: '#10b981',
+                  color: '#fff',
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                }}
+              >
+                Launch Admin Console (/admin.html)
+              </a>
+              <a
+                href="https://ops-konsole.kuratech.site"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.65rem 1.25rem',
+                  background: '#0284c7',
+                  color: '#fff',
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)'
+                }}
+              >
+                Open ops-konsole.kuratech.site
+              </a>
+            </div>
           </div>
         );
       case 'Strategy Team':

@@ -4504,7 +4504,7 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     const serverPath = path.resolve(process.cwd(), 'server.mjs');
     const content = fs.readFileSync(serverPath, 'utf8');
     assert.ok(content.includes("cookies.ems_admin_sid"));
-    assert.ok(content.includes("effectiveRealm === 'admin' ? 'ems_admin_sid' : 'ems_sid'"));
+    assert.ok(content.includes("ems_admin_sid"));
   });
 
   test('345. AuthContext.jsx: detects admin.html and attaches X-EMS-Realm: admin header', async () => {
@@ -4548,6 +4548,47 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     assert.ok(content.includes('Upload backend to VPS'));
     assert.ok(content.includes('appleboy/ssh-action'));
     assert.ok(content.includes('kutatech-api'));
+  });
+
+  test('349. users.store: ensureBaselineUsers safely merges baseline personas without deleting existing VPS accounts', async () => {
+    const { ensureBaselineUsers, findUserByEmail, saveUsers, loadUsers } = await import('../../server/users.store.js');
+    const originalUsers = loadUsers();
+    try {
+      // Simulate existing custom account created on VPS
+      const customVpsUser = {
+        id: 'USR-CUSTOM-VPS-999',
+        name: 'Field Commander Nairobi',
+        role: 'Agent',
+        email: 'custom.vps.agent@kuratech.site',
+        passwordHash: 'dummy:hash123',
+        createdAt: new Date().toISOString()
+      };
+      saveUsers([customVpsUser]);
+
+      // Call ensureBaselineUsers
+      const merged = ensureBaselineUsers();
+      // Ensure custom account was NOT deleted or overwritten
+      const foundCustom = merged.find(u => u.email === 'custom.vps.agent@kuratech.site');
+      assert.ok(foundCustom, 'Existing VPS account was preserved');
+      assert.equal(foundCustom.name, 'Field Commander Nairobi');
+
+      // Ensure baseline admin is present
+      const foundAdmin = findUserByEmail('admin.super@ems.go.ke');
+      assert.ok(foundAdmin, 'Baseline super admin was seeded');
+      assert.equal(foundAdmin.role, 'Super Admin');
+    } finally {
+      // Restore original users
+      saveUsers(originalUsers);
+    }
+  });
+
+  test('350. server.mjs: permits Admin logins on any realm and responds with redirectTo: /admin.html', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const serverPath = path.resolve(process.cwd(), 'server.mjs');
+    const content = fs.readFileSync(serverPath, 'utf8');
+    assert.ok(content.includes("redirectTo: userIsAdmin ? '/admin.html' : null"));
+    assert.ok(content.includes("ensureBaselineUsers"));
   });
 
 });
