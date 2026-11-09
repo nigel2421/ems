@@ -65,19 +65,11 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           fingerprint: ${{ secrets.VPS_FINGERPRINT }}
           script: |
-            export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
-            [ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"
-            [ -s "$HOME/.bashrc" ] && . "$HOME/.bashrc"
-            [ -s "$HOME/.profile" ] && . "$HOME/.profile"
-
-            if systemctl is-active --quiet kutatech-api 2>/dev/null; then
-              sudo systemctl restart kutatech-api || true
-            elif systemctl --user is-active --quiet kutatech-api 2>/dev/null; then
-              systemctl --user restart kutatech-api || true
-            else
-              pkill -f "/var/www/kutatech-api/server.mjs" || true
-              sleep 1
-              cd /var/www/kutatech-api
-              setsid /usr/bin/node /var/www/kutatech-api/server.mjs >> /var/www/kutatech-api/server.log 2>&1 < /dev/null &
-            fi
-            rm -f ${{ secrets.VPS_TARGET }}/deploy-diag.json || true
+            cat << EOF > ${{ secrets.VPS_TARGET }}/deploy-diag.json
+            {
+              "ls_server": "$(ls -la /var/www/kutatech-api/server.mjs 2>&1)",
+              "head_server": $(head -n 20 /var/www/kutatech-api/server.mjs 2>&1 | jq -R -s -c 'split("\n")' 2>/dev/null || echo '[]'),
+              "pid_5000": "$(ss -lptn 'sport = :5000' 2>&1 || netstat -nlp 2>&1 | grep 5000)",
+              "sys_service": "$(systemctl status kutatech-api 2>&1 | head -n 6 | tr '\n' '|')"
+            }
+            EOF
