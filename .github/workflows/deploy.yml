@@ -65,10 +65,15 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           fingerprint: ${{ secrets.VPS_FINGERPRINT }}
           script: |
-            pkill -u "$USER" -f "/var/www/kutatech-api/server.mjs" || true
+            pkill -u "$USER" -f "server.mjs" || true
+            sleep 1
+            cd /var/www/kutatech-api
+            nohup /usr/bin/node server.mjs > server.log 2>&1 &
             sleep 2
-            if ! pgrep -u "$USER" -f "/var/www/kutatech-api/server.mjs" > /dev/null; then
-              cd /var/www/kutatech-api
-              setsid /usr/bin/node /var/www/kutatech-api/server.mjs >> /var/www/kutatech-api/server.log 2>&1 < /dev/null &
-            fi
-            rm -f ${{ secrets.VPS_TARGET }}/deploy-diag.json || true
+            cat << EOF > ${{ secrets.VPS_TARGET }}/deploy-diag.json
+            {
+              "log": $(tail -n 20 server.log 2>&1 | jq -R -s -c 'split("\n")' 2>/dev/null || echo '[]'),
+              "pid_5000": "$(ss -lptn 'sport = :5000' 2>&1 || netstat -nlp 2>&1 | grep 5000 || echo 'none')",
+              "node_ps": "$(ps -eo pid,user,args | grep '[n]ode' | tr '\n' '|')"
+            }
+            EOF
