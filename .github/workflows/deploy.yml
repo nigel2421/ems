@@ -52,10 +52,11 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
           fingerprint: ${{ secrets.VPS_FINGERPRINT }}
-          source: "server.mjs,server/**,src/utils/productionReadinessGate.js,package.json,deploy/**"
-          target: "/var/www/ems"
+          source: "server.mjs,server/**,src/utils/productionReadinessGate.js,package.json"
+          target: "/var/www/kutatech-api"
+          strip_components: 0
 
-      - name: Deploy backend and restart PM2 on VPS
+      - name: Restart backend on VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -69,14 +70,14 @@ jobs:
             [ -s "$HOME/.bashrc" ] && . "$HOME/.bashrc"
             [ -s "$HOME/.profile" ] && . "$HOME/.profile"
 
-            cat << EOF > ${{ secrets.VPS_TARGET }}/deploy-diag.json
-            {
-              "user": "$USER",
-              "cwd": "$(pwd)",
-              "target": "${{ secrets.VPS_TARGET }}",
-              "pm2": "$(command -v pm2 || echo 'none')",
-              "node": "$(command -v node || echo 'none')",
-              "ps_node": $(ps -eo pid,user,args | grep '[n]ode' | awk '{print $0}' | jq -R -s -c 'split("\n")[:-1]' 2>/dev/null || echo '[]'),
-              "pm2_apps": $(pm2 jlist 2>/dev/null || echo '[]')
-            }
-            EOF
+            if systemctl is-active --quiet kutatech-api 2>/dev/null; then
+              sudo systemctl restart kutatech-api || true
+            elif systemctl --user is-active --quiet kutatech-api 2>/dev/null; then
+              systemctl --user restart kutatech-api || true
+            else
+              pkill -f "/var/www/kutatech-api/server.mjs" || true
+              sleep 1
+              cd /var/www/kutatech-api
+              setsid /usr/bin/node /var/www/kutatech-api/server.mjs >> /var/www/kutatech-api/server.log 2>&1 < /dev/null &
+            fi
+            rm -f ${{ secrets.VPS_TARGET }}/deploy-diag.json || true

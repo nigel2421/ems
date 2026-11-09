@@ -4540,14 +4540,14 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     assert.ok(!content.includes('/ems/'));
   });
 
-  test('348. deploy.yml: triggers automated backend SCP upload and PM2 backend restart on VPS', async () => {
+  test('348. deploy.yml: triggers automated backend SCP upload and process restart on VPS', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const deployPath = path.resolve(process.cwd(), '.github/workflows/deploy.yml');
     const content = fs.readFileSync(deployPath, 'utf8');
     assert.ok(content.includes('Upload backend to VPS'));
     assert.ok(content.includes('appleboy/ssh-action'));
-    assert.ok(content.includes('pm2 restart ems-backend'));
+    assert.ok(content.includes('kutatech-api'));
   });
 
 });
