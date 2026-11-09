@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { ThemeSwitcher } from '../common/ThemeSwitcher';
-import { ArrowRight, AlertCircle, Eye, EyeOff, ShieldAlert, Lock } from 'lucide-react';
+import { ArrowRight, AlertCircle, Eye, EyeOff, ShieldAlert, Lock, Map, ShieldCheck, Users, ClipboardCheck } from 'lucide-react';
 import { formatRetry } from '../../utils/loginThrottle';
 import './LoginPage.css';
 
@@ -108,46 +108,39 @@ export const LoginModal = ({ isAdminConsole = false }) => {
     <div className="auth-shell">
       <div className="auth-frame">
         <aside className="auth-brand">
-          <p className="auth-brand-kicker">
-            {isAdminConsole
-              ? 'Authorised system governance — infrastructure telemetry, cryptographic audit logs, and account oversight.'
-              : 'Authorised officer access — polling operations, field reporting, and election-day results.'}
-          </p>
+          <div className="auth-brand-heading">
+            <div className="auth-brand-mark"><Map size={19} /></div>
+            <div><strong>CI-EMS</strong><span>Election operations platform</span></div>
+          </div>
 
-          <h1>
-            {isAdminConsole ? (
-              <>
-                Operations
-                <span>Console</span>
-              </>
-            ) : (
-              <>
-                Election
-                <span>Management</span>
-              </>
-            )}
-          </h1>
+          <div className="auth-brand-copy">
+            <span className="auth-eyebrow">Campaign intelligence · Field operations · Results</span>
+            <h1>One clear view of every election operation.</h1>
+            <p>Coordinate teams, monitor polling readiness and review results through a secure command workspace.</p>
+          </div>
 
-          <div className="auth-device">
-            <div className="auth-device-screen">
-              <div className="auth-device-stat">{formatCount(registerStats.totalVoters)}</div>
-              <div className="auth-device-label">Registered voters</div>
-              <div className="auth-device-bars" aria-hidden="true">
-                {registerStats.bars.map((bar) => (
-                  <i key={bar.id} style={{ height: `${bar.pct}%` }} />
-                ))}
-              </div>
-              <div className="auth-device-rows">
-                <div className="auth-device-metric">
-                  <strong>{formatCount(registerStats.stationCount)}</strong>
-                  <span>Polling stations</span>
-                </div>
-                <div className="auth-device-metric">
-                  <strong>{formatCount(registerStats.countyCount)}</strong>
-                  <span>Counties</span>
-                </div>
-              </div>
+          <div className="auth-preview" aria-label="Election operations overview">
+            <div className="auth-preview-head">
+              <div><span className="auth-live-dot" /><strong>National register</strong></div>
+              <span>Kenya · 47 counties</span>
             </div>
+            <div className="auth-preview-total">
+              <strong>{formatCount(registerStats.totalVoters)}</strong>
+              <span>registered voters</span>
+            </div>
+            <div className="auth-preview-chart" aria-hidden="true">
+              {registerStats.bars.map((bar) => <i key={bar.id} style={{ height: `${bar.pct}%` }} />)}
+            </div>
+            <div className="auth-preview-foot">
+              <span><Map size={14} /> {formatCount(registerStats.stationCount)} polling stations</span>
+              <span><Users size={14} /> {formatCount(registerStats.countyCount)} counties</span>
+            </div>
+          </div>
+
+          <div className="auth-capabilities">
+            <span><ClipboardCheck size={15} /> Field readiness</span>
+            <span><Map size={15} /> Geographic intelligence</span>
+            <span><ShieldCheck size={15} /> Verified results</span>
           </div>
         </aside>
 
@@ -176,7 +169,9 @@ export const LoginModal = ({ isAdminConsole = false }) => {
           </div>
 
           <form className="auth-form" onSubmit={handleSubmit}>
-            <h2>Sign In</h2>
+            <span className="auth-form-kicker">Secure workspace</span>
+            <h2>Welcome back</h2>
+            <p className="auth-form-intro">Sign in with your authorised officer account to continue.</p>
 
             {logoutReason === 'inactivity' && (
               <div className="auth-alert" role="status" style={{ background: 'rgba(230, 159, 0, 0.15)', borderColor: '#E69F00', color: '#E69F00' }}>
