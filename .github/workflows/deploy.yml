@@ -65,6 +65,10 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           fingerprint: ${{ secrets.VPS_FINGERPRINT }}
           script: |
-            sudo systemctl restart kutatech-api || kill -9 $(pgrep -u admin -f '/var/www/kutatech-api/server.mjs') || pkill -u admin -f server.mjs || true
+            pkill -u "$USER" -f "/var/www/kutatech-api/server.mjs" || true
             sleep 2
+            if ! pgrep -u "$USER" -f "/var/www/kutatech-api/server.mjs" > /dev/null; then
+              cd /var/www/kutatech-api
+              setsid /usr/bin/node /var/www/kutatech-api/server.mjs >> /var/www/kutatech-api/server.log 2>&1 < /dev/null &
+            fi
             rm -f ${{ secrets.VPS_TARGET }}/deploy-diag.json || true
