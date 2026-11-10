@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   resolveRealm,
   verifyPassword,
+  hashPassword,
   signToken,
   verifyToken,
   isAdminRole,
@@ -512,12 +513,91 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    // Admin Users Management: GET /api/admin/users
+    // Admin Users Management: GET & POST /api/admin/users
     if (pathname === '/api/admin/users' || pathname === '/ems/api/admin/users') {
       if (req.method === 'GET') {
         const users = loadUsers().map(sanitizeUser);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(users));
+        return;
+      }
+
+      if (req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', () => {
+          try {
+            const { name, email, phone, role, password, county, constituency, ward, party } = JSON.parse(body || '{}');
+
+            const cleanEmail = String(email || '').trim().toLowerCase();
+            const cleanPhone = String(phone || '').replace(/\s+/g, '').toLowerCase();
+
+            if (!cleanEmail || !role || !password) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: false, error: 'Email, role, and password are required.' }));
+              return;
+            }
+
+            if (String(password).length < 8) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: false, error: 'Password must be at least 8 characters in length.' }));
+              return;
+            }
+
+            const existingByEmail = findUserByEmail(cleanEmail);
+            if (existingByEmail) {
+              res.writeHead(409, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: false, error: `Account with email "${cleanEmail}" already exists.` }));
+              return;
+            }
+
+            if (cleanPhone) {
+              const existingByPhone = findUserByPhone(cleanPhone);
+              if (existingByPhone) {
+                res.writeHead(409, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: `Account with phone "${phone}" already exists.` }));
+                return;
+              }
+            }
+
+            const newUser = {
+              id: `USR-${String(role).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3)}-${Date.now().toString().slice(-5)}`,
+              name: String(name || 'Campaign User').trim(),
+              role: String(role).trim(),
+              email: cleanEmail,
+              phone: phone ? String(phone).trim() : null,
+              passwordHash: hashPassword(password),
+              county: county || null,
+              constituency: constituency || null,
+              ward: ward || null,
+              party: party || 'Independent',
+              status: 'Active',
+              isSuspended: false,
+              twoFactorEnabled: false,
+              avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+              createdAt: new Date().toISOString()
+            };
+
+            const currentUsers = loadUsers();
+            currentUsers.unshift(newUser);
+            saveUsers(currentUsers);
+
+            appendServerAuditLog({
+              userId: decoded.uid,
+              userName: decoded.name,
+              role: decoded.role,
+              action: 'ADMIN_CREATE_USER',
+              details: `Admin created user account "${cleanEmail}" with role "${newUser.role}"`,
+              ipAddress: clientIp
+            });
+
+            res.writeHead(201, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, user: sanitizeUser(newUser) }));
+          } catch (err) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: err.message }));
+          }
+        });
         return;
       }
     }

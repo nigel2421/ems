@@ -64,7 +64,7 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError('');
 
@@ -91,7 +91,6 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
       name,
       role: 'Agent',
       email: resolvedEmail,
-      password: password || 'dev-local-only-password',
       phone,
       assignedEntity: pollingStationId || 'PS-1',
       entityName: selectedPs ? `${selectedPs.code} - ${selectedPs.name}` : 'Assigned Polling Station',
@@ -102,7 +101,12 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
       avatar
     };
 
-    addUser(newAgent);
+    const res = await addUser(newAgent, password || 'dev-local-only-password');
+    if (res && res.success === false) {
+      setSubmitError(res.error || 'Failed to register agent on server.');
+      return;
+    }
+
     logAuditAction(currentUser, 'AGENT_REGISTERED', `Added new agent ${name} bound to polling station ${selectedPs?.name || pollingStationId} (Phone: ${phone})`);
     onClose();
   };

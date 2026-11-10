@@ -4615,6 +4615,29 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     assert.ok(content.includes('VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}'));
   });
 
+  test('354. server.mjs: exposes POST /api/admin/users with admin auth check and scrypt hashing', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const serverPath = path.resolve(process.cwd(), 'server.mjs');
+    const content = fs.readFileSync(serverPath, 'utf8');
+    assert.ok(content.includes("pathname === '/api/admin/users'"));
+    assert.ok(content.includes("req.method === 'POST'"));
+    assert.ok(content.includes("hashPassword(password)"));
+    assert.ok(content.includes("saveUsers(currentUsers)"));
+    assert.ok(content.includes("ADMIN_CREATE_USER"));
+  });
+
+  test('355. AuthContext.jsx: implements fetchServerUsers and server-side addUser persistence', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const authPath = path.resolve(process.cwd(), 'src/context/AuthContext.jsx');
+    const content = fs.readFileSync(authPath, 'utf8');
+    assert.ok(content.includes('fetchServerUsers'));
+    assert.ok(content.includes("fetch('/api/admin/users'"));
+    assert.ok(content.includes("method: 'POST'"));
+    assert.ok(content.includes("headers['X-EMS-Realm'] = 'admin'"));
+  });
+
 });
 
 

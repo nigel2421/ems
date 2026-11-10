@@ -190,6 +190,9 @@ export const AuthProvider = ({ children }) => {
           setIsAuthenticated(true);
           sessionStorage.setItem('ems_current_user', JSON.stringify(data.user));
           sessionStorage.setItem('ems_is_authenticated', 'true');
+          if (data.user.role === 'Super Admin' || data.user.role === 'Admin' || isAdm) {
+            fetchServerUsers();
+          }
         } else if (data && !data.authenticated) {
           setCurrentUser(null);
           setIsAuthenticated(false);
@@ -363,8 +366,71 @@ export const AuthProvider = ({ children }) => {
     console.warn('[EMS-AUTH] switchUser() is disabled. Authenticate with official credentials.');
   };
 
-  const addUser = (newUser) => {
+  const fetchServerUsers = async () => {
+    try {
+      const isAdm = isInAdminRealm();
+      const headers = isAdm ? { 'X-EMS-Realm': 'admin' } : {};
+      const res = await fetch('/api/admin/users', { credentials: 'include', headers });
+      if (!res.ok) return [];
+      const serverUsers = await res.json().catch(() => []);
+      if (Array.isArray(serverUsers) && serverUsers.length > 0) {
+        setUsers(prev => {
+          const map = new Map();
+          prev.forEach(u => map.set(u.id || (u.email || '').toLowerCase(), u));
+          serverUsers.forEach(su => {
+            const key = su.id || (su.email || '').toLowerCase();
+            const existing = map.get(key) || {};
+            map.set(key, { ...existing, ...su });
+          });
+          const merged = Array.from(map.values());
+          try {
+            localStorage.setItem('ems_users', JSON.stringify(merged));
+          } catch {}
+          return merged;
+        });
+        return serverUsers;
+      }
+    } catch (err) {
+      console.warn('[AuthContext] Could not fetch server users:', err);
+    }
+    return [];
+  };
+
+  const addUser = async (newUser, password) => {
+    // 1. Attempt server-side persistence first if admin or running with server
+    try {
+      const isAdm = isInAdminRealm();
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      if (isAdm || (currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin')) {
+        headers['X-EMS-Realm'] = 'admin';
+      }
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({
+          ...newUser,
+          password: password || 'AdminSuper2026!'
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success && data.user) {
+        const persistedUser = data.user;
+        setUsers(prev => [persistedUser, ...prev.filter(u => u.email !== persistedUser.email)]);
+        return { success: true, user: persistedUser };
+      }
+      if (!res.ok) {
+        return { success: false, error: data.error || 'Server rejected user creation.' };
+      }
+    } catch (err) {
+      console.warn('[AuthContext] Server user creation failed, falling back locally:', err);
+    }
+
+    // Local fallback for offline/test environments
     setUsers(prev => [newUser, ...prev]);
+    return { success: true, user: newUser };
   };
 
   const updateUserProfile = (userId, updatedFields) => {
@@ -529,6 +595,7 @@ export const AuthProvider = ({ children }) => {
         logout,
         switchUser,
         addUser,
+        fetchServerUsers,
         updateUserProfile,
         updateUserFeatures,
         getLockedAccounts,

@@ -73,6 +73,7 @@ export const AdminDashboard = ({
   const {
     users,
     addUser,
+    fetchServerUsers,
     currentUser,
     updateUserProfile,
     updateUserFeatures,
@@ -96,6 +97,10 @@ export const AdminDashboard = ({
   const [accountNotice, setAccountNotice] = useState('');
   const [directoryFilter, setDirectoryFilter] = useState('active'); // 'active' | 'suspended'
   const [suspendTarget, setSuspendTarget] = useState(null);
+
+  useEffect(() => {
+    fetchServerUsers?.();
+  }, [fetchServerUsers]);
 
   useEffect(() => {
     setActiveTab(controlledTab);
@@ -241,7 +246,7 @@ export const AdminDashboard = ({
     }
   }), [countyChartOptions]);
 
-  const handleCreateAspirant = (e) => {
+  const handleCreateAspirant = async (e) => {
     e.preventDefault();
     setPasswordError('');
 
@@ -274,12 +279,11 @@ export const AdminDashboard = ({
           : 'Ward';
     }
 
-    addUser({
+    const res = await addUser({
       id: `USR-${role.toUpperCase().slice(0, 3)}-${Date.now().toString().slice(-4)}`,
       name,
       role,
       email,
-      password,
       phone: phone || '+254 700 000 000',
       assignedEntity,
       entityName,
@@ -287,7 +291,13 @@ export const AdminDashboard = ({
       twoFactorEnabled: true,
       status: 'Active',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
-    });
+    }, password);
+
+    if (res && res.success === false) {
+      setPasswordError(res.error || 'Failed to create account on server.');
+      return;
+    }
+
     logAuditAction(
       users.find((u) => u.role === 'Admin' || u.role === 'Super Admin') || currentUser,
       'ASPIRANT_ACCOUNT_CREATED',
