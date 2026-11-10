@@ -104,7 +104,15 @@ export const SystemHealthPanel = () => {
 
         const data = await res.json().catch(() => ({}));
         const statusOk = res.status === check.expectedStatus;
-        const detailMsg = statusOk ? check.evaluator(data) : `Returned HTTP ${res.status}`;
+        let detailMsg = statusOk ? check.evaluator(data) : `Returned HTTP ${res.status}`;
+
+        if (!statusOk) {
+          if (res.status === 401 && check.id === 'auth_me') {
+            detailMsg = 'Session unauthenticated or expired. Sign out and log back in on admin.html to refresh server cookie.';
+          } else if (res.status === 403 && check.id === 'admin_users') {
+            detailMsg = 'Access restricted to verified Admins. Log in via admin.html with Super Admin credentials.';
+          }
+        }
 
         if (statusOk) {
           passed++;
@@ -272,6 +280,50 @@ export const SystemHealthPanel = () => {
             </span>
           )}
         </div>
+
+        {testResults.some(r => r.status === 401 || r.status === 403) && (
+          <div
+            style={{
+              padding: '0.85rem 1.15rem',
+              borderRadius: '12px',
+              background: 'rgba(234, 179, 8, 0.12)',
+              border: '1px solid rgba(234, 179, 8, 0.35)',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '1rem',
+              flexWrap: 'wrap'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+              <AlertTriangle size={18} style={{ color: '#eab308', flexShrink: 0 }} />
+              <div>
+                <strong style={{ fontSize: '0.82rem', color: '#eab308', display: 'block' }}>
+                  Live Admin Session Cookie Required for User Directory Checks
+                </strong>
+                <span style={{ fontSize: '0.75rem', color: 'var(--admin-muted)' }}>
+                  HTTP 401 & 403 indicate the browser currently has no active server session cookie (e.g. after a backend update). Sign out and sign back in on admin.html to activate full 200 OK access.
+                </span>
+              </div>
+            </div>
+            <a
+              href="/admin.html"
+              style={{
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                padding: '0.4rem 0.85rem',
+                borderRadius: '8px',
+                background: '#eab308',
+                color: '#000',
+                textDecoration: 'none',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              Refresh Session on admin.html
+            </a>
+          </div>
+        )}
 
         <div className="custom-table-container">
           <table className="custom-table">
