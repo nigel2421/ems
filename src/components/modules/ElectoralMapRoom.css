@@ -484,3 +484,163 @@
   justify-content: center;
   gap: 0.5rem;
 }
+
+/* ====================================================================
+   LIGHT THEME OVERRIDES FOR ELECTORAL MAP ROOM
+   Clean daylight aesthetic with Emerald IEBC accents
+   ==================================================================== */
+:root[data-theme="light"] .map-room-container,
+html:not(.dark) .map-room-container,
+.map-room-container.light {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: rgba(16, 185, 129, 0.35);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.08);
+}
+
+:root[data-theme="light"] .map-room-toolbar,
+html:not(.dark) .map-room-toolbar,
+.map-room-container.light .map-room-toolbar {
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+:root[data-theme="light"] .map-room-title h2,
+html:not(.dark) .map-room-title h2,
+.map-room-container.light .map-room-title h2 {
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .map-room-breadcrumbs,
+html:not(.dark) .map-room-breadcrumbs,
+.map-room-container.light .map-room-breadcrumbs {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .map-filter-select,
+html:not(.dark) .map-filter-select,
+.map-room-container.light .map-filter-select {
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+}
+
+:root[data-theme="light"] .map-filter-select:hover,
+html:not(.dark) .map-filter-select:hover,
+.map-room-container.light .map-filter-select:hover {
+  border-color: #10b981;
+  background: #f1f5f9;
+}
+
+:root[data-theme="light"] .map-mode-selector,
+:root[data-theme="light"] .map-layer-selector,
+html:not(.dark) .map-mode-selector,
+html:not(.dark) .map-layer-selector,
+.map-room-container.light .map-mode-selector,
+.map-room-container.light .map-layer-selector {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+}
+
+:root[data-theme="light"] .map-mode-btn,
+:root[data-theme="light"] .map-layer-btn,
+html:not(.dark) .map-mode-btn,
+html:not(.dark) .map-layer-btn,
+.map-room-container.light .map-mode-btn,
+.map-room-container.light .map-layer-btn {
+  color: #475569;
+}
+
+:root[data-theme="light"] .map-mode-btn:hover,
+:root[data-theme="light"] .map-layer-btn:hover,
+html:not(.dark) .map-mode-btn:hover,
+html:not(.dark) .map-layer-btn:hover,
+.map-room-container.light .map-mode-btn:hover,
+.map-room-container.light .map-layer-btn:hover {
+  color: #0f172a;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme="light"] .map-mode-btn.active,
+:root[data-theme="light"] .map-layer-btn.active,
+html:not(.dark) .map-mode-btn.active,
+html:not(.dark) .map-layer-btn.active,
+.map-room-container.light .map-mode-btn.active,
+.map-room-container.light .map-layer-btn.active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #047857;
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+:root[data-theme="light"] .map-room-drawer,
+html:not(.dark) .map-room-drawer,
+.map-room-container.light .map-room-drawer {
+  background: rgba(255, 255, 255, 0.97);
+  border-left: 1px solid #e2e8f0;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .drawer-header,
+html:not(.dark) .drawer-header,
+.map-room-container.light .drawer-header {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+:root[data-theme="light"] .drawer-title h3,
+html:not(.dark) .drawer-title h3,
+.map-room-container.light .drawer-title h3 {
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .drawer-stat-item,
+html:not(.dark) .drawer-stat-item,
+.map-room-container.light .drawer-stat-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+:root[data-theme="light"] .stat-val,
+html:not(.dark) .stat-val,
+.map-room-container.light .stat-val {
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .map-legend-card,
+html:not(.dark) .map-legend-card,
+.map-room-container.light .map-legend-card {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+:root[data-theme="light"] .map-legend-card h4,
+html:not(.dark) .map-legend-card h4,
+.map-room-container.light .map-legend-card h4 {
+  color: #334155;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+:root[data-theme="light"] .google-maps-setup-card,
+html:not(.dark) .google-maps-setup-card,
+.map-room-container.light .google-maps-setup-card {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+}
+
+:root[data-theme="light"] .google-maps-setup-card h3,
+html:not(.dark) .google-maps-setup-card h3,
+.map-room-container.light .google-maps-setup-card h3 {
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .google-maps-key-input,
+html:not(.dark) .google-maps-key-input,
+.map-room-container.light .google-maps-key-input {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+}

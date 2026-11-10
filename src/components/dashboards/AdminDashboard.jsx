@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
+import { useLanguage } from '../../context/LanguageContext';
 import {
   Users,
   Map,
@@ -91,6 +92,7 @@ export const AdminDashboard = ({
     auditLogs,
     agents: agentDirectory
   } = useData();
+  const { t } = useLanguage();
   const [showAddAgent, setShowAddAgent] = useState(false);
   const [activeTab, setActiveTab] = useState(controlledTab);
   const [accountModal, setAccountModal] = useState(null); // { mode: 'view' | 'edit', user }
@@ -435,37 +437,69 @@ export const AdminDashboard = ({
       {activeTab === 'overview' && (
         <>
           <section className="admin-metric-grid">
-            <article className="admin-metric is-featured">
+            <article
+              className="admin-metric is-featured is-clickable"
+              onClick={onOpenGeographic}
+              title="Open Electoral Map Room"
+              style={{ cursor: 'pointer' }}
+            >
               <div className="admin-metric-top">
-                <span>Registered voters</span>
+                <span>{t('metrics.registered_voters', 'Registered voters')}</span>
                 <div className="admin-metric-icon"><Users strokeWidth={1.75} /></div>
               </div>
               <strong>{formatCount(stats.totalVoters)}</strong>
-              <small>National register total</small>
+              <small style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>{t('metrics.registered_voters_desc', 'National register total')}</span>
+                <ArrowUpRight size={14} style={{ opacity: 0.75 }} />
+              </small>
             </article>
-            <article className="admin-metric">
+            <article
+              className="admin-metric is-clickable"
+              onClick={() => onOpenModule?.('polling_stations') || onOpenGeographic?.()}
+              title="View Polling Station Gazette Directory & Map"
+              style={{ cursor: 'pointer' }}
+            >
               <div className="admin-metric-top">
-                <span>Polling stations</span>
+                <span>{t('metrics.polling_stations', 'Polling stations')}</span>
                 <div className="admin-metric-icon"><Building2 strokeWidth={1.75} /></div>
               </div>
               <strong>{formatCount(stats.stationCount)}</strong>
-              <small>Gazette streams loaded</small>
+              <small style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>{t('metrics.polling_stations_desc', 'Gazette streams loaded')}</span>
+                <ArrowUpRight size={14} style={{ opacity: 0.75 }} />
+              </small>
             </article>
-            <article className="admin-metric">
+            <article
+              className="admin-metric is-clickable"
+              onClick={() => setTab('user_directory')}
+              title="Manage Candidates, Officers & Agents in Accounts Directory"
+              style={{ cursor: 'pointer' }}
+            >
               <div className="admin-metric-top">
-                <span>Active accounts</span>
+                <span>{t('metrics.active_accounts', 'Active accounts')}</span>
                 <div className="admin-metric-icon"><UserCheck strokeWidth={1.75} /></div>
               </div>
               <strong>{formatCount(stats.accountCount)}</strong>
-              <small>Candidates & officers</small>
+              <small style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>{t('metrics.active_accounts_desc', 'Candidates & officers')}</span>
+                <ArrowUpRight size={14} style={{ opacity: 0.75 }} />
+              </small>
             </article>
-            <article className="admin-metric">
+            <article
+              className="admin-metric is-clickable"
+              onClick={() => onOpenModule?.('readiness') || setTab('overview')}
+              title="View Tally Center & Production Readiness Board"
+              style={{ cursor: 'pointer' }}
+            >
               <div className="admin-metric-top">
-                <span>Pending tallies</span>
+                <span>{t('metrics.pending_tallies', 'Pending tallies')}</span>
                 <div className="admin-metric-icon"><ClipboardList strokeWidth={1.75} /></div>
               </div>
               <strong>{formatCount(stats.pendingTallies)}</strong>
-              <small>Awaiting verification</small>
+              <small style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>{t('metrics.pending_tallies_desc', 'Awaiting verification')}</span>
+                <ArrowUpRight size={14} style={{ opacity: 0.75 }} />
+              </small>
             </article>
           </section>
 

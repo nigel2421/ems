@@ -57,6 +57,14 @@
   --font-display: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
   --font-mono: 'IBM Plex Sans', ui-monospace, monospace;
   --icon-size: 16px;
+
+  /* Global Admin / Module Tokens - Light Mode Fallbacks */
+  --admin-surface: #ffffff;
+  --admin-canvas: #f8fafc;
+  --admin-line: #e2e8f0;
+  --admin-hover: rgba(0, 0, 0, 0.04);
+  --admin-ink: #0f172a;
+  --admin-muted: #64748b;
 }
 
 html.dark, [data-theme="dark"] {
@@ -96,6 +104,14 @@ html.dark, [data-theme="dark"] {
   --glass-blur: blur(12px);
   --shadow-main: 0 10px 28px -12px rgba(0, 0, 0, 0.55);
   --shadow-glow: 0 0 16px rgba(46, 154, 91, 0.18);
+
+  /* Global Admin / Module Tokens - Dark Mode */
+  --admin-surface: #0f172a;
+  --admin-canvas: #0b1120;
+  --admin-line: rgba(255, 255, 255, 0.1);
+  --admin-hover: rgba(255, 255, 255, 0.05);
+  --admin-ink: #f8fafc;
+  --admin-muted: #94a3b8;
 }
 
 * {

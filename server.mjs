@@ -18,6 +18,7 @@ import {
 import { loadUsers, saveUsers, findUserByEmail, findUserById, findUserByPhone, updateUserInStore, ensureBaselineUsers } from './server/users.store.js';
 import { BASELINE_PERSONAS } from './server/baseline-personas.js';
 import { computeCountyIntelligence, runPoliticalIntelligenceSweep } from './server/agents/political-intelligence-agent.mjs';
+import { recordAuditLogEntry, queryAuditLogs, getAuditStorageTelemetry } from './server/audit-db.mjs';
 import { READINESS_WORKSTREAMS, STAKEHOLDER_ROLES, evaluateProductionReadiness, signOffReadinessGate } from './src/utils/productionReadinessGate.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -132,6 +133,7 @@ function appendServerAuditLog({ userId, userName, role, action, details, scope, 
   currentDb.updatedAt = new Date().toISOString();
   saveDb(currentDb);
   broadcastEvent('audit_logged', newLog);
+  recordAuditLogEntry(newLog).catch(e => console.error('[AuditDB] Log write error:', e));
   return newLog;
 }
 
@@ -699,6 +701,31 @@ const server = http.createServer((req, res) => {
         }
       });
       return;
+    }
+
+    // Admin SQLite Audit Logs Query & Telemetry: GET /api/admin/audit-logs
+    if (pathname === '/api/admin/audit-logs' || pathname === '/ems/api/admin/audit-logs') {
+      if (req.method === 'GET') {
+        const limit = url.searchParams.get('limit') || 50;
+        const offset = url.searchParams.get('offset') || 0;
+        const action = url.searchParams.get('action') || null;
+
+        Promise.all([
+          queryAuditLogs({ limit, offset, action }),
+          getAuditStorageTelemetry()
+        ]).then(([logs, telemetry]) => {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: true,
+            logs,
+            telemetry
+          }));
+        }).catch(err => {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        });
+        return;
+      }
     }
   }
 

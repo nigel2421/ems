@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { LanguageSwitcher } from '../common/LanguageSwitcher';
+import { ThemeSwitcher } from '../common/ThemeSwitcher';
 import { AddAgentModal } from '../modules/AddAgentModal';
 import {
   Shield,
@@ -381,6 +384,17 @@ export const AdminLayout = ({
             <span>Alerts</span>
             {totalAlerts > 0 && <span className="admin-nav-badge">{totalAlerts}</span>}
           </button>
+        </div>
+
+        <div style={{ padding: '0.65rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.45rem', borderTop: '1px solid var(--border-color, rgba(0, 0, 0, 0.08))', marginTop: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>Language</span>
+            <LanguageSwitcher compact={true} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>Theme</span>
+            <ThemeSwitcher compact={true} />
+          </div>
         </div>
 
         <div className="admin-profile-block">

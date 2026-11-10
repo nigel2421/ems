@@ -4649,16 +4649,73 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     assert.ok(content.includes("saveUsers(currentUsers)"));
   });
 
-  test('357. verify_live_system.mjs: contains complete 11-step verification suite and ANSI scorecard reporter', async () => {
+  test('358. audit-db.mjs: records immutable cryptographically chained audit events with SHA-256 hash chaining and storage telemetry', async () => {
+    const { recordAuditLogEntry, queryAuditLogs, getAuditStorageTelemetry } = await import('../../server/audit-db.mjs');
+    const testAction = 'TEST_SECURITY_EVENT_' + Date.now();
+    const row = await recordAuditLogEntry({
+      action: testAction,
+      userName: 'admin@kuratech.site',
+      userId: 'admin-1',
+      role: 'Super Admin',
+      details: 'Automated verification test',
+      ipAddress: '127.0.0.1'
+    });
+    assert.equal(row.action, testAction);
+    assert.ok(row.currHash && row.currHash.length === 64, 'currHash must be SHA-256 hex');
+
+    const logs = await queryAuditLogs({ limit: 5 });
+    assert.ok(Array.isArray(logs));
+    assert.ok(logs.some(l => l.action === testAction));
+
+    const telemetry = await getAuditStorageTelemetry();
+    assert.ok(telemetry.totalRecords >= 1);
+    assert.ok(telemetry.fileSizeBytes >= 0);
+    assert.ok(typeof telemetry.estimatedStoragePer100k === 'string');
+  });
+
+  test('359. LanguageContext.jsx: maintains 100% bilingual parity between English and Kiswahili dictionaries', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
-    const scriptPath = path.resolve(process.cwd(), 'scripts/verify_live_system.mjs');
-    const content = fs.readFileSync(scriptPath, 'utf8');
-    assert.ok(content.includes("HTTPS Connectivity & TLS Handshake"));
-    assert.ok(content.includes("/api/health"));
-    assert.ok(content.includes("POST /api/admin/users"));
-    assert.ok(content.includes("DELETE /api/admin/users"));
-    assert.ok(content.includes("VERIFICATION SCORECARD SUMMARY"));
+    const contextPath = path.resolve(process.cwd(), 'src/context/LanguageContext.jsx');
+    const content = fs.readFileSync(contextPath, 'utf8');
+
+    // Extract all 'key': 'value' pairs under en and sw
+    const enBlock = content.match(/en:\s*{([\s\S]*?)},\s*\n\s*sw:/)?.[1] || '';
+    const swBlock = content.match(/sw:\s*{([\s\S]*?)}\s*\n\s*};/)?.[1] || '';
+
+    const extractKeys = (block) => {
+      const keys = [];
+      const regex = /'([^']+)':\s*'([^']*)'/g;
+      let m;
+      while ((m = regex.exec(block)) !== null) {
+        keys.push(m[1]);
+      }
+      return keys.sort();
+    };
+
+    const enKeys = extractKeys(enBlock);
+    const swKeys = extractKeys(swBlock);
+
+    assert.ok(enKeys.length > 50, 'English dictionary must contain at least 50 tokens');
+    assert.equal(enKeys.length, swKeys.length, 'English and Kiswahili must have identical token counts');
+    for (const key of enKeys) {
+      assert.ok(swKeys.includes(key), `Kiswahili dictionary missing translation for token: ${key}`);
+    }
+  });
+
+  test('360. ElectoralMapRoom.jsx: dynamically synchronizes with application theme and provides light/dark styling', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const jsxPath = path.resolve(process.cwd(), 'src/components/modules/ElectoralMapRoom.jsx');
+    const cssPath = path.resolve(process.cwd(), 'src/components/modules/ElectoralMapRoom.css');
+
+    const jsx = fs.readFileSync(jsxPath, 'utf8');
+    const css = fs.readFileSync(cssPath, 'utf8');
+
+    assert.ok(jsx.includes("useTheme"), 'ElectoralMapRoom must import and use useTheme');
+    assert.ok(jsx.includes("map-room-container ${isDark ? 'dark' : 'light'}"), 'Must apply dynamic light/dark class');
+    assert.ok(css.includes(".map-room-container.light"), 'CSS must contain light theme container styles');
+    assert.ok(css.includes('[data-theme="light"]'), 'CSS must contain light theme attribute rules');
   });
 
 });

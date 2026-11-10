@@ -729,6 +729,22 @@ html.dark .admin-role-btn.is-active,
   color: #fff;
 }
 
+.admin-metric.is-clickable {
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.admin-metric.is-clickable:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px -12px rgba(7, 51, 34, 0.25);
+  border-color: var(--admin-green, #10b981);
+}
+
+.admin-metric.is-featured.is-clickable:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 32px -10px rgba(14, 122, 69, 0.45);
+}
+
 .admin-metric-top {
   display: flex;
   align-items: center;

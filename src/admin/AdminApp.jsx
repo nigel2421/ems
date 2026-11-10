@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { LoginModal } from '../components/auth/LoginModal';
+import { IdleTimeoutModal } from '../components/auth/IdleTimeoutModal';
+import { useIdleTimeout } from '../hooks/useIdleTimeout';
 import { AdminDashboard } from '../components/dashboards/AdminDashboard';
 import { AuditLogViewer } from '../components/modules/AuditLogViewer';
 import { SystemHealthPanel } from '../components/modules/SystemHealthPanel';
 import ProductionReadinessBoard from '../components/modules/ProductionReadinessBoard';
 import { ElectoralMapRoom } from '../components/modules/ElectoralMapRoom';
 import { ThemeSwitcher } from '../components/common/ThemeSwitcher';
+import { LanguageSwitcher } from '../components/common/LanguageSwitcher';
 import {
   ShieldCheck,
   LayoutDashboard,
@@ -28,6 +32,7 @@ import '../components/dashboards/AdminDashboard.css';
 export const AdminApp = () => {
   const { currentUser, isAuthenticated, logout, users, getAccountLockState } = useAuth();
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [adminTab, setAdminTab] = useState('overview');
   const [asideOpen, setAsideOpen] = useState(false);
 
@@ -37,6 +42,14 @@ export const AdminApp = () => {
       logout('unauthorized_domain');
     }
   }, [isAuthenticated, currentUser, logout]);
+
+  // 30-minute inactivity limit with 28-minute warning for Admin Console
+  const { phase, secondsLeft, stayActive } = useIdleTimeout({
+    isAuthenticated,
+    onTimeout: () => logout('inactivity'),
+    limitMs: 30 * 60 * 1000,
+    warningMs: 28 * 60 * 1000
+  });
 
   if (!isAuthenticated || !currentUser) {
     return <LoginModal isAdminConsole={true} />;
@@ -48,13 +61,13 @@ export const AdminApp = () => {
   const closeAside = () => setAsideOpen(false);
 
   const navItems = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'user_directory', label: 'Accounts & Directory', icon: Users, badge: lockedAccountsCount > 0 ? `${lockedAccountsCount} Locked` : null, badgeColor: '#eab308' },
-    { id: 'feature_settings', label: 'Campaign Features', icon: Sliders },
-    { id: 'interactive_map', label: 'Electoral Map Room', icon: Map },
-    { id: 'audit', label: 'Audit Trail', icon: Activity },
-    { id: 'health', label: 'System Health', icon: HeartPulse },
-    { id: 'readiness', label: 'Readiness Board', icon: Radio }
+    { id: 'overview', label: t('nav.dashboard', 'Overview'), icon: LayoutDashboard },
+    { id: 'user_directory', label: t('nav.user_directory', 'Accounts & Directory'), icon: Users, badge: lockedAccountsCount > 0 ? `${lockedAccountsCount} Locked` : null, badgeColor: '#eab308' },
+    { id: 'feature_settings', label: t('nav.settings', 'Campaign Features'), icon: Sliders },
+    { id: 'interactive_map', label: t('nav.map_room', 'Electoral Map Room'), icon: Map },
+    { id: 'audit', label: t('nav.audit_logs', 'Audit Trail'), icon: Activity },
+    { id: 'health', label: t('nav.system_health', 'System Health'), icon: HeartPulse },
+    { id: 'readiness', label: t('nav.readiness', 'Readiness Board'), icon: Radio }
   ];
 
   return (
@@ -73,15 +86,18 @@ export const AdminApp = () => {
           <ShieldCheck size={20} color="#0ea5e9" />
           <strong style={{ fontSize: '0.95rem', fontWeight: 800 }}>Kuratech Ops Console</strong>
         </div>
-        <button
-          type="button"
-          className="admin-btn admin-btn-sm admin-btn-ghost"
-          onClick={() => logout('manual')}
-          title="Logout"
-          style={{ padding: '0.2rem 0.5rem' }}
-        >
-          <LogOut size={14} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          <LanguageSwitcher compact={true} />
+          <button
+            type="button"
+            className="admin-btn admin-btn-sm admin-btn-ghost"
+            onClick={() => logout('manual')}
+            title="Logout"
+            style={{ padding: '0.2rem 0.5rem' }}
+          >
+            <LogOut size={14} />
+          </button>
+        </div>
       </header>
 
       {/* Mobile Backdrop Scrim */}
@@ -185,8 +201,13 @@ export const AdminApp = () => {
           })}
         </nav>
 
-        {/* Sidebar Footer: Theme Toggle & Admin Profile */}
+        {/* Sidebar Footer: Language & Theme Toggle & Admin Profile */}
         <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.85rem', paddingTop: '0.85rem', borderTop: '1px solid var(--admin-line)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--admin-muted)', fontWeight: 600 }}>Language</span>
+            <LanguageSwitcher compact={true} />
+          </div>
+
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '0.72rem', color: 'var(--admin-muted)', fontWeight: 600 }}>Appearance</span>
             <ThemeSwitcher compact={true} />
@@ -243,6 +264,14 @@ export const AdminApp = () => {
                 setAdminTab('user_directory');
               }
             }}
+          />
+        )}
+
+        {phase === 'warning' && (
+          <IdleTimeoutModal
+            secondsLeft={secondsLeft}
+            onStayActive={stayActive}
+            onLogout={() => logout('manual')}
           />
         )}
       </main>
