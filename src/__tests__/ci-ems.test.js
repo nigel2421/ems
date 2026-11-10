@@ -4638,6 +4638,29 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     assert.ok(content.includes("headers['X-EMS-Realm'] = 'admin'"));
   });
 
+  test('356. server.mjs: exposes DELETE /api/admin/users/:id with baseline protection and audit logging', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const serverPath = path.resolve(process.cwd(), 'server.mjs');
+    const content = fs.readFileSync(serverPath, 'utf8');
+    assert.ok(content.includes("req.method === 'DELETE' && deleteMatch"));
+    assert.ok(content.includes("BASELINE_PERSONAS.some"));
+    assert.ok(content.includes("ADMIN_DELETE_USER"));
+    assert.ok(content.includes("saveUsers(currentUsers)"));
+  });
+
+  test('357. verify_live_system.mjs: contains complete 11-step verification suite and ANSI scorecard reporter', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const scriptPath = path.resolve(process.cwd(), 'scripts/verify_live_system.mjs');
+    const content = fs.readFileSync(scriptPath, 'utf8');
+    assert.ok(content.includes("HTTPS Connectivity & TLS Handshake"));
+    assert.ok(content.includes("/healthz"));
+    assert.ok(content.includes("POST /api/admin/users"));
+    assert.ok(content.includes("DELETE /api/admin/users"));
+    assert.ok(content.includes("VERIFICATION SCORECARD SUMMARY"));
+  });
+
 });
 
 

@@ -495,9 +495,30 @@ export const AuthProvider = ({ children }) => {
     } : u));
   };
 
-  const deleteUser = (userId) => {
-    // Deprecated in favor of suspendUser; soft-suspends to preserve audit integrity
-    suspendUser(userId, 'Account archived/quarantined');
+  const deleteUser = async (userId) => {
+    try {
+      const isAdm = isInAdminRealm();
+      const headers = isAdm ? { 'X-EMS-Realm': 'admin' } : {};
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+        method: 'DELETE',
+        headers,
+        credentials: 'include'
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return { success: false, error: data.error || 'Server rejected user deletion.' };
+      }
+    } catch (err) {
+      console.warn('[AuthContext] Server user deletion failed, updating locally:', err);
+    }
+    setUsers(prev => {
+      const filtered = prev.filter(u => u.id !== userId);
+      try {
+        localStorage.setItem('ems_users', JSON.stringify(filtered));
+      } catch (e) {}
+      return filtered;
+    });
+    return { success: true, deletedId: userId };
   };
 
   const toggle2FAStatus = () => {

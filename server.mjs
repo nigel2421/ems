@@ -16,6 +16,7 @@ import {
   adminUnlockUser
 } from './server/auth.js';
 import { loadUsers, saveUsers, findUserByEmail, findUserById, findUserByPhone, updateUserInStore, ensureBaselineUsers } from './server/users.store.js';
+import { BASELINE_PERSONAS } from './server/baseline-personas.js';
 import { computeCountyIntelligence, runPoliticalIntelligenceSweep } from './server/agents/political-intelligence-agent.mjs';
 import { READINESS_WORKSTREAMS, STAKEHOLDER_ROLES, evaluateProductionReadiness, signOffReadinessGate } from './src/utils/productionReadinessGate.js';
 
@@ -593,6 +594,78 @@ const server = http.createServer((req, res) => {
 
             res.writeHead(201, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: true, user: sanitizeUser(newUser) }));
+          } catch (err) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: err.message }));
+          }
+        });
+        return;
+      }
+    }
+
+    // Admin Delete User: DELETE /api/admin/users/:id or POST /api/admin/users/delete
+    const deleteMatch = pathname.match(/^\/(?:ems\/)?api\/admin\/users\/([^/]+)$/);
+    if ((req.method === 'DELETE' && deleteMatch) || ((pathname === '/api/admin/users/delete' || pathname === '/ems/api/admin/users/delete') && req.method === 'POST')) {
+      const handleUserDelete = (targetId) => {
+        const idToDelete = String(targetId || '').trim();
+        if (!idToDelete) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: 'User ID is required for deletion.' }));
+          return;
+        }
+
+        const currentUsers = loadUsers();
+        const userIndex = currentUsers.findIndex(u => u.id === idToDelete || (u.email && u.email.toLowerCase() === idToDelete.toLowerCase()));
+
+        if (userIndex === -1) {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: `User with ID "${idToDelete}" not found.` }));
+          return;
+        }
+
+        const targetUser = currentUsers[userIndex];
+
+        // Safeguard 1: Cannot delete self
+        if (targetUser.id === decoded.uid || (targetUser.email && decoded.email && targetUser.email.toLowerCase() === decoded.email.toLowerCase())) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: 'Administrators cannot delete their own active account.' }));
+          return;
+        }
+
+        // Safeguard 2: Cannot delete baseline personas
+        const isBaseline = BASELINE_PERSONAS.some(bp => bp.id === targetUser.id || (bp.email && targetUser.email && bp.email.toLowerCase() === targetUser.email.toLowerCase()));
+        if (isBaseline) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: 'Baseline system accounts are protected and cannot be deleted.' }));
+          return;
+        }
+
+        currentUsers.splice(userIndex, 1);
+        saveUsers(currentUsers);
+
+        appendServerAuditLog({
+          userId: decoded.uid,
+          userName: decoded.name,
+          role: decoded.role,
+          action: 'ADMIN_DELETE_USER',
+          details: `Admin deleted user account "${targetUser.email || targetUser.id}" (Role: ${targetUser.role})`,
+          ipAddress: clientIp
+        });
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, deletedId: targetUser.id, email: targetUser.email }));
+      };
+
+      if (req.method === 'DELETE') {
+        handleUserDelete(decodeURIComponent(deleteMatch[1]));
+        return;
+      } else {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', () => {
+          try {
+            const { id } = JSON.parse(body || '{}');
+            handleUserDelete(id);
           } catch (err) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: false, error: err.message }));

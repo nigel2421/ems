@@ -13,6 +13,7 @@
     "test:e2e:live": "python -m pytest tests/e2e_selenium --env=live",
     "test:e2e:local": "python -m pytest tests/e2e_selenium --env=local",
     "test:e2e:report": "python -m pytest tests/e2e_selenium --html=tests/e2e_selenium/reports/report.html --self-contained-html",
+    "verify:live": "node scripts/verify_live_system.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

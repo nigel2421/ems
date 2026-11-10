@@ -73,6 +73,7 @@ export const AdminDashboard = ({
   const {
     users,
     addUser,
+    deleteUser,
     fetchServerUsers,
     currentUser,
     updateUserProfile,
@@ -97,6 +98,8 @@ export const AdminDashboard = ({
   const [accountNotice, setAccountNotice] = useState('');
   const [directoryFilter, setDirectoryFilter] = useState('active'); // 'active' | 'suspended'
   const [suspendTarget, setSuspendTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchServerUsers?.();
@@ -1247,6 +1250,18 @@ export const AdminDashboard = ({
                                   <ShieldAlert strokeWidth={1.75} />
                                 </button>
                               )}
+                              {!['admin.super@ems.go.ke', 'governor.nairobi@ems.go.ke', 'senator.nairobi@ems.go.ke', 'mp.westlands@ems.go.ke', 'mp.nyali@ems.go.ke', 'governor.mombasa@ems.go.ke', 'mca.parklands@ems.go.ke', 'sarah.kimani@aspirant.ke', 'james.agent@ems.go.ke'].includes((u.email || '').toLowerCase()) && u.id !== currentUser?.id && (
+                                <button
+                                  type="button"
+                                  className="admin-icon-btn is-danger"
+                                  style={{ color: '#ef4444' }}
+                                  title="Delete account permanently"
+                                  aria-label={`Delete ${u.name}`}
+                                  onClick={() => setDeleteTarget(u)}
+                                >
+                                  <Trash2 strokeWidth={1.75} />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1499,6 +1514,55 @@ export const AdminDashboard = ({
               >
                 <ShieldAlert strokeWidth={1.75} />
                 Suspend Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="admin-modal-overlay" onClick={() => setDeleteTarget(null)}>
+          <div className="admin-modal admin-modal-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-head">
+              <div>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444' }}>
+                  <Trash2 size={20} />
+                  Permanently Delete Account
+                </h3>
+                <p>Remove {deleteTarget.name} from the VPS persistent user database.</p>
+              </div>
+              <button type="button" className="admin-icon-btn" aria-label="Close" onClick={() => setDeleteTarget(null)}>
+                <X strokeWidth={1.75} />
+              </button>
+            </div>
+            <p className="admin-modal-copy">
+              Are you sure you want to permanently delete the account for <strong>{deleteTarget.email || deleteTarget.name}</strong>? This user will be removed from the server disk. This operation is recorded in the immutable audit log.
+            </p>
+            <div className="admin-modal-actions">
+              <button type="button" className="admin-btn admin-btn-ghost" onClick={() => setDeleteTarget(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="admin-btn admin-btn-danger"
+                style={{ background: '#dc2626', borderColor: '#b91c1c' }}
+                disabled={isDeleting}
+                onClick={async () => {
+                  setIsDeleting(true);
+                  const res = await deleteUser(deleteTarget.id);
+                  setIsDeleting(false);
+                  if (res && res.success === false) {
+                    setAccountNotice(`Error deleting user: ${res.error}`);
+                  } else {
+                    logAuditAction(currentUser, 'ADMIN_DELETE_USER', `Admin permanently deleted user account ${deleteTarget.name} (${deleteTarget.email || deleteTarget.id})`);
+                    setAccountNotice(`Successfully removed ${deleteTarget.name} from the server.`);
+                  }
+                  setDeleteTarget(null);
+                  setTimeout(() => setAccountNotice(''), 4000);
+                }}
+              >
+                <Trash2 strokeWidth={1.75} />
+                {isDeleting ? 'Deleting...' : 'Delete Permanently'}
               </button>
             </div>
           </div>
