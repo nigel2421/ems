@@ -89,7 +89,39 @@ curl.exe -i -s -X POST https://kuratech.site/api/auth/login \
 
 ---
 
-## 3. Test Suite & Code Quality Status
-- **Test Suite**: 347 of 347 unit tests passing (`npm test`).
-- **Linter**: 0 errors across 138 files (`npx oxlint --quiet`).
-- **Production Build**: Verified clean multi-page build (`npm run build`).
+---
+
+## 4. Google Maps Live Activation & Dynamic Key Delivery
+
+### Verified Live Endpoints:
+- `GET https://kuratech.site/api/config/maps`: **HTTP 200 OK** (Dynamically delivers runtime Google Maps key to frontend).
+- `POST https://kuratech.site/api/config/maps`: **HTTP 200 OK** (Allows authenticated Super Admin to persist Google Maps key globally across the server).
+- `deploy.yml`: Updated with `VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}` for CI/CD bundling.
+
+### How to Activate Your Key on Live:
+
+You have **3 simple options** to make Google Maps visible to everyone:
+
+#### Option 1: Right in the Browser (Fastest, zero terminal needed)
+1. Go to **`https://kuratech.site/`** and sign in as Super Admin (`admin.super@ems.go.ke` / `AdminSuper2026!`).
+2. Open the **Electoral Map Room** (`#map-room` or via navigation).
+3. Paste your Google Maps API key (`AIzaSy...`) into the input box and click **Save & Activate**.
+4. The key will be saved directly to the live server database (`ems_server_db.json`), immediately activating Google Satellite and Street maps for **all** visitors!
+
+#### Option 2: Add as GitHub Secret (Permanent CI/CD Embedding)
+1. In your GitHub repository: Go to **Settings > Secrets and variables > Actions**.
+2. Click **New repository secret**.
+3. Name: `VITE_GOOGLE_MAPS_API_KEY`
+4. Value: `Your_AIzaSy_Key_Here`
+5. On the next push/deploy, Vite will compile this key directly into the production bundle.
+
+#### Option 3: VPS Environment File
+1. On your VPS, edit `/var/www/kutatech-api/.env` (or create it):
+   ```bash
+   GOOGLE_MAPS_API_KEY="Your_AIzaSy_Key_Here"
+   ```
+2. Restart backend:
+   ```bash
+   bash /var/www/kutatech-api/deploy/restart-backend.sh
+   ```
+
