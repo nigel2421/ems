@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ====================================================================
-CI-EMS GEOSPATIAL POLLING STATION GEOCODER & ACCURATE AREA MAPPER
+KuraTech GEOSPATIAL POLLING STATION GEOCODER & ACCURATE AREA MAPPER
 Maps IEBC polling stations hierarchically:
 County -> Constituency -> Ward -> Polling Station Name
 Outputs accurate GPS latitude & longitude into src/data/pollingStationCoordinates.json
@@ -134,7 +134,7 @@ def geocode_with_google(query, api_key):
     })
 
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "CI-EMS-Geocoder/1.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "KuraTech-Geocoder/1.0"})
         with urllib.request.urlopen(req, timeout=5) as response:
             data = json.loads(response.read().decode())
             if data.get("status") == "OK" and data.get("results"):
@@ -162,7 +162,7 @@ def geocode_with_osm(query):
     })
 
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "CI-EMS-Kenya-Election-System/1.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "KuraTech-Kenya-Election-System/1.0"})
         with urllib.request.urlopen(req, timeout=5) as response:
             data = json.loads(response.read().decode())
             if data and len(data) > 0:
@@ -217,7 +217,7 @@ def process_polling_stations(target_county=None, target_constituency=None, limit
     api_key = load_env_api_key()
     cache = load_cache()
 
-    print(f"[*] Starting CI-EMS Geospatial Station Mapper...")
+    print(f"[*] Starting KuraTech Geospatial Station Mapper...")
     print(f"[*] Google Maps Platform Key Available: {'YES' if api_key else 'NO'}")
     print(f"[*] Cache size: {len(cache)} entries.")
 
@@ -495,7 +495,7 @@ def sanitize_land_coordinates(lat, lng, county_id, const_id, idx=0):
     return round(lat, 6), round(lng, 6)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="CI-EMS Geospatial Polling Station Mapper")
+    parser = argparse.ArgumentParser(description="KuraTech Geospatial Polling Station Mapper")
     parser.add_argument("--county", type=str, default=None, help="Filter by County name (e.g., MOMBASA)")
     parser.add_argument("--constituency", type=str, default=None, help="Filter by Constituency name (e.g., MVITA)")
     parser.add_argument("--limit", type=int, default=None, help="Limit number of stations to process")

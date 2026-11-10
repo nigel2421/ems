@@ -1,5 +1,5 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS 3.1)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 3.1)
 // Production S3-Compatible Object Storage & Immutability Engine
 // ====================================================================
 
@@ -10,9 +10,9 @@ import {
 } from './legallyApprovedRetentionPolicyEngine.js';
 
 export const STORAGE_BUCKETS = {
-  EVIDENCE_VAULT: 'ci-ems-evidence-vault-prod',
-  AUDIT_CHECKPOINTS: 'ci-ems-audit-checkpoints-prod',
-  BIOMETRIC_REDACTIONS: 'ci-ems-biometric-redactions-prod'
+  EVIDENCE_VAULT: 'KuraTech-evidence-vault-prod',
+  AUDIT_CHECKPOINTS: 'KuraTech-audit-checkpoints-prod',
+  BIOMETRIC_REDACTIONS: 'KuraTech-biometric-redactions-prod'
 };
 
 /**
@@ -40,7 +40,7 @@ export const createObjectStoreRecord = ({
 
   const contentHash = calculatePayloadHash(payload);
   const now = new Date();
-  
+
   const activePolicy = customPolicy || getLegallyApprovedRetentionPolicy({ jurisdiction, contestType });
   const retentionInfo = calculateStatutoryRetentionDate(now, activePolicy);
 

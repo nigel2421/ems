@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS SQLite Native Audit Database Engine
+// KuraTech SQLite Native Audit Database Engine
 // High-performance, timestamped immutable audit logs with SHA-256
 // cryptographic hash chaining and storage telemetry.
 // ====================================================================
@@ -81,7 +81,8 @@ export const recordAuditLogEntry = async (entry = {}) => {
 
   const prevHash = lastKnownHash || GENESIS_HASH;
   const hashPayload = `${prevHash}|${timestamp}|${userId}|${action}|${details}`;
-  const currHash = crypto.createHash('sha256').update(hashPayload).digest('hex');
+  const AUDIT_CHAIN_INTEGRITY_KEY = process.env.AUDIT_INTEGRITY_KEY || 'ci-ems-audit-chain-tamper-evident-seal-2026';
+  const currHash = crypto.createHmac('sha256', AUDIT_CHAIN_INTEGRITY_KEY).update(hashPayload).digest('hex');
   lastKnownHash = currHash;
 
   if (db) {
@@ -150,14 +151,14 @@ export const getAuditStorageTelemetry = async () => {
     if (fs.existsSync(dbPath)) {
       fileSize = fs.statSync(dbPath).size;
     }
-  } catch {}
+  } catch { }
 
   let totalLogs = 0;
   if (db) {
     try {
       const row = db.prepare('SELECT COUNT(*) as count FROM audit_logs').get();
       totalLogs = row?.count || 0;
-    } catch {}
+    } catch { }
   }
 
   return {

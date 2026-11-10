@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS Gemini Campaign Intelligence Service
+// KuraTech Gemini Campaign Intelligence Service
 // Scoped, Role-Gated Electoral Analytics & Strategy Advice
 // ====================================================================
 
@@ -24,7 +24,7 @@ export const buildJurisdictionalContext = (user, geography, stationStats = {}) =
 
   return `
 SYSTEM DIRECTIVE:
-You are CI-EMS Campaign AI, an elite electoral strategy and polling intelligence copilot for Kenya elections.
+You are KuraTech Campaign AI, an elite electoral strategy and polling intelligence copilot for Kenya elections.
 User: ${name} (${role})
 Authorized Jurisdiction: ${boundaryDescription}
 
@@ -102,7 +102,7 @@ const generateLocalHeuristicResponse = (prompt, user, geography, stationStats) =
     return {
       success: true,
       text: `Based on your ${role} command scope, priority mobilization must target high-density polling stations where turnout currently lags behind historical baselines. We recommend deploying mobile ground teams to stream locations with <55% projected turnout between 10:00 AM and 2:00 PM on election day.`,
-      source: 'ci-ems-heuristic-engine',
+      source: 'KuraTech-heuristic-engine',
       timestamp: new Date().toISOString()
     };
   }
@@ -110,8 +110,8 @@ const generateLocalHeuristicResponse = (prompt, user, geography, stationStats) =
   if (lower.includes('risk') || lower.includes('swing') || lower.includes('contested')) {
     return {
       success: true,
-      text: `Identified swing wards in your jurisdiction show high responsiveness to door-to-door ground mobilizers over mass rallies. Ensure certified party agents are stationed and equipped with the CI-EMS offline PWA at all flagged high-risk polling streams prior to 5:00 AM on election day.`,
-      source: 'ci-ems-heuristic-engine',
+      text: `Identified swing wards in your jurisdiction show high responsiveness to door-to-door ground mobilizers over mass rallies. Ensure certified party agents are stationed and equipped with the KuraTech offline PWA at all flagged high-risk polling streams prior to 5:00 AM on election day.`,
+      source: 'KuraTech-heuristic-engine',
       timestamp: new Date().toISOString()
     };
   }
@@ -120,7 +120,7 @@ const generateLocalHeuristicResponse = (prompt, user, geography, stationStats) =
     return {
       success: true,
       text: `Form 34A transmission protocol requires complete photograph capture of the signed declaration sheet prior to departure from the polling stream. Our reconciliation engine will immediately check agent numbers against the registered voter capacity to flag any discrepancies.`,
-      source: 'ci-ems-heuristic-engine',
+      source: 'KuraTech-heuristic-engine',
       timestamp: new Date().toISOString()
     };
   }
@@ -128,7 +128,7 @@ const generateLocalHeuristicResponse = (prompt, user, geography, stationStats) =
   return {
     success: true,
     text: `As ${role}, your campaign operational readiness in your assigned jurisdiction is actively tracked. All 46,051 gazetted stations are mapped with real GPS coordinates. Form 34A verification, agent mobilization queues, and parallel tally comparisons are active.`,
-    source: 'ci-ems-heuristic-engine',
+    source: 'KuraTech-heuristic-engine',
     timestamp: new Date().toISOString()
   };
 };

@@ -1,12 +1,12 @@
-# 🗳️ Campaign Intelligence & Election Management System (CI-EMS) System Manual
+# 🗳️ Campaign Intelligence & Election Management System (KuraTech) System Manual
 
-This document provides a comprehensive operational guide for the extended **Campaign Intelligence & Election Management System (CI-EMS 3.1)**.
+This document provides a comprehensive operational guide for the extended **Campaign Intelligence & Election Management System (KuraTech 3.1)**.
 
 ---
 
 ## 🏛️ System Overview
 
-The CI-EMS platform is built to deliver real-time election monitoring, voter intelligence, agent management, survey analytics, stakeholder mobilization, campaign strategy tracking, department organization, and election day tally verification with AI-assisted strategic insights.
+The KuraTech platform is built to deliver real-time election monitoring, voter intelligence, agent management, survey analytics, stakeholder mobilization, campaign strategy tracking, department organization, and election day tally verification with AI-assisted strategic insights.
 
 ---
 
@@ -38,6 +38,7 @@ The system enforces server-derived security roles and specialized candidate dash
 ## 🚀 Key Modules & Capabilities
 
 ### 1. Strategy Team & Campaign Organization (`StrategyTeamModule.jsx` & `campaignOrganization.js`)
+
 - **9 Core Campaign Departments**:
   1. Executive Office & Strategy
   2. Ground Operations & Mobilization
@@ -57,6 +58,7 @@ The system enforces server-derived security roles and specialized candidate dash
 - **Task & Roadmap Engine**: 5-phase campaign plan tracking with task priorities, overdue warnings, and target completion metrics.
 
 ### 2. Scoped Location Sieve (`ScopedLocationSieve.jsx` & `scopeResolver.js`)
+
 - **Hierarchical Boundary Filter**: Allows users to filter polling stations and metrics seamlessly down the administrative tree: `County → Constituency → Ward → Polling Centre → Polling Station / Stream`.
 - **Dynamic Scope Locks**:
   - Automatically disables out-of-jurisdiction dropdowns based on user security role or candidate scope.
@@ -64,35 +66,42 @@ The system enforces server-derived security roles and specialized candidate dash
 - **Server-Side Security Enforcement**: Validates request parameters server-side to prevent client-side scope manipulation (`evaluates user tenant & jurisdiction scope; fails closed on tampering`).
 
 ### 3. Agent Accreditation, Training & Mission Center (`agentMissions.js` & `agentCertification.js`)
+
 - **Agent Accreditation Lifecycle**: `UNASSIGNED` → `TRAINING_COMPLETED` → `EXAM_PASSED` → `ACCREDITED` → `DEPLOYED_AT_STATION`.
 - **Station Readiness Checklist**: Verifies agent presence, statutory form possession, battery power level, network signal, and presider contact.
 - **Mission Vectors**: Defines pre-election, election-day, and post-election task missions with target deadlines and completion logging.
 - **Break-Glass Device Recovery**: Handles lost or damaged mobile terminals by revoking old hardware tokens and re-binding replacement units without breaking audit continuity.
 
 ### 4. Polling Station Intelligence Module (`PollingStationIntelligence.jsx`)
+
 - **Fields**: Name, Code, County, Constituency, Ward, Village, GPS Coordinates, Registered Voters, Active Voters, Historical Turnout %.
 - **Intelligence Fields**: Party Advantage Score, Incumbency Score, Opposition Strength, Public Perception Rating, Competitor Activity Level, Strategic Importance, Risk Level.
 - **Features**: Multi-criteria search, risk level filters, interactive GIS mapping canvas, CSV bulk importer, and mass update tools.
 
 ### 5. Survey & Polling Engine (`SurveyEngine.jsx`)
+
 - **Survey Types**: Anonymous Public Survey, Targeted Survey, Candidate Preference Poll, Issue-Based Survey.
 - **Question Types**: Single Choice, Multi Choice, Text, Rating, Number.
 - **Features**: Visual survey builder, public share link & SVG QR Code generator, response collector, response analytics, and CSV export.
 
 ### 6. Field Reporting Module (`FieldReporting.jsx`)
+
 - **Report Types**: Mobilization Reports, Campaign Reports, Incident Reports, Opponent Activity Reports, Community Sentiment Reports.
 - **Features**: Client-side photo auto-compression engine (reduces camera images from ~4MB down to ~400KB), thumbnail generator, GPS location tagger, severity badges (Low, Medium, High, Critical), and centralized feed.
 
 ### 7. Team Mobilization & Stakeholder Network (`TeamMobilization.jsx`)
+
 - **Categories**: Village Elders, Clergy, Youth Mobilizers, Women Leaders, Bodaboda Leaders, Business Leaders, Community Organizers.
 - **Tracking**: Influence rating (1-10), voter reach estimator, assigned coordinator, and activity follow-up logger.
 
 ### 8. Election Day Operations & Parallel Tally (`TallyCenter.jsx` & `ParallelTally.jsx`)
+
 - **Statutory Form Capture**: Form 34A (Presidential), 35A (MP), 36A (Senator), 37A (Woman Rep), 38A (Governor), 39A (MCA).
 - **Validation**: Automatic math sum check and registered voters ceiling check.
 - **Evidence Vault**: SHA-256 binary content hash, client-side auto-compression, simulated OCR extraction reader, discrepancy mismatch flagging, and supervisor verification workflow.
 
 ### 9. AI Intelligence Assistant (`AIAssistantModal.jsx`)
+
 - **Capabilities**: Summarizes field reports, flags high-risk wards, tracks top voter concerns, identifies underperforming agents, and generates executive weekly strategy briefings using Gemini RAG.
 
 ---
@@ -109,9 +118,11 @@ The system enforces server-derived security roles and specialized candidate dash
 
 ## 🧪 Automated Verification & Test Suite
 
-CI-EMS features an extensive automated test suite (`src/__tests__/ci-ems.test.js`):
+KuraTech features an extensive automated test suite (`src/__tests__/KuraTech.test.js`):
+
 - **258 Passing Automated Tests** covering security RLS policies, object storage immutability, RAG LLM engine, scope resolvers, ASVS v5.0 verification, DR drills, and strategy team metrics.
 - Execute via terminal:
+
   ```bash
   npm test
   ```

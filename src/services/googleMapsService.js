@@ -1,11 +1,12 @@
 // ====================================================================
-// CI-EMS GOOGLE MAPS SERVICE
+// KuraTech GOOGLE MAPS SERVICE
 // Singleton loader and geospatial helper for Google Maps JavaScript API
 // Supports runtime API key management, real Kenya coordinates,
 // role-based framing, and custom station pin rendering.
 // ====================================================================
 
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
+import { safeStorage } from '../utils/safeStorage.js';
 
 export const STORAGE_KEY_GOOGLE_MAPS_KEY = 'ems_google_maps_api_key';
 
@@ -77,8 +78,8 @@ export const fetchGoogleMapsApiKeyFromServer = async () => {
     if (data && data.apiKey && data.apiKey.trim()) {
       const key = data.apiKey.trim();
       inMemoryApiKey = key;
-      if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.setItem(STORAGE_KEY_GOOGLE_MAPS_KEY, key);
+      if (typeof window !== 'undefined') {
+        safeStorage.setItem(STORAGE_KEY_GOOGLE_MAPS_KEY, key);
       }
       return key;
     }

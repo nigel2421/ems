@@ -1,4 +1,4 @@
-// CI-EMS Offline Service Worker for Field Agent PWA (QA OFF-01..OFF-09)
+// KuraTech Offline Service Worker for Field Agent PWA (QA OFF-01..OFF-09)
 const CACHE_NAME = 'ems-pwa-v1';
 const ASSETS_TO_CACHE = [
   '/',

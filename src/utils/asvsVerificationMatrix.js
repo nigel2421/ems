@@ -1,5 +1,5 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS 3.1)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 3.1)
 // OWASP Application Security Verification Standard (ASVS 5.0) Requirement-Level Matrix
 // ====================================================================
 
@@ -103,7 +103,7 @@ export const ASVS_5_MATRIX = [
  */
 export const evaluateASVSCompliance = (matrix = ASVS_5_MATRIX) => {
   const total = matrix.length;
-  
+
   const fullyVerifiedCount = matrix.filter(
     item => item.verificationStatus === ASVS_VERIFICATION_STATUS.FULLY_VERIFIED
   ).length;

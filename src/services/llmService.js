@@ -1,5 +1,5 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech)
 // LLM Service (Google Gemini / OpenAI / Custom LLM Integration)
 // ====================================================================
 
@@ -75,7 +75,7 @@ const buildSystemContextPrompt = (contextData = {}) => {
   const surveySummaries = (surveys || []).map(s => `- ${s.title} (${s.responseCount || 0} responses)`).join('\n');
   const tallySummary = (tallyResults || []).map(t => `- ${t.pollingStationName}: Total ${t.totalVotesCast} votes (Cand A: ${t.candAVotes}, Cand B: ${t.candBVotes}) Status: ${t.status}`).join('\n');
 
-  return `You are the Chief AI Campaign Strategist for the Campaign Intelligence & Election Management System (CI-EMS).
+  return `You are the Chief AI Campaign Strategist for the Campaign Intelligence & Election Management System (KuraTech).
 OPERATING FOR: ${name} (${role})
 ASSIGNED JURISDICTION: ${scopeDesc}
 

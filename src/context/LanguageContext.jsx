@@ -1,29 +1,41 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 // ====================================================================
-// CI-EMS MULTILINGUAL LOCALIZATION DICTIONARIES (EN & SW)
+// KuraTech MULTILINGUAL LOCALIZATION DICTIONARIES (EN & SW)
 // Bilingual English & Kiswahili interface tokens for election command
 // ====================================================================
 
 export const DICTIONARY = {
   en: {
     // Navigation & Headers
+    'nav.modules': 'Modules',
     'nav.dashboard': 'Overview Dashboard',
     'nav.operations': 'Operations Konsole',
     'nav.tallying': 'Presidential Tallying',
     'nav.verification': 'Document Verification',
     'nav.map_room': 'Electoral Map Room',
-    'nav.agent_management': 'Field Agent Corps',
+    'nav.polling_intel': 'Polling Intel',
+    'nav.agent_management': 'Agent Management',
+    'nav.agents': 'Agent Management',
+    'nav.tally_center': 'Tally Center',
     'nav.logistics': 'Logistics & Supply',
     'nav.security': 'Security Command',
     'nav.user_directory': 'Personnel Directory',
     'nav.audit_logs': 'Cryptographic Audit Trail',
     'nav.system_health': 'System Health & Telemetry',
     'nav.readiness': 'Election Readiness',
+    'nav.admin_tools': 'Admin tools',
+    'nav.workspace': 'Workspace',
+    'nav.more': 'More',
+    'nav.alerts': 'Alerts',
     'nav.settings': 'System Settings',
     'nav.logout': 'Sign Out',
-    'nav.admin_console': 'CI-EMS Admin Console',
+    'nav.admin_console': 'KuraTech Admin Console',
     'nav.kenya_elections': 'Kenya General Election',
+    'app.subtitle': 'Election Management',
+    'common.role': 'Role',
+    'common.theme': 'Theme',
+    'common.language': 'Language',
 
     // Dashboard Overview Metric Cards
     'metrics.registered_voters': 'Registered Voters',
@@ -72,26 +84,45 @@ export const DICTIONARY = {
     'role.polling_clerk': 'Polling Clerk',
     'role.security_admin': 'Security Admin',
     'role.super_admin': 'Super Administrator',
+    'role.president': 'Presidential Candidate',
+    'role.governor': 'Governor',
+    'role.senator': 'Senator',
+    'role.woman_rep': 'Woman Representative',
+    'role.mp': 'Member of Parliament',
+    'role.mca': 'Member of County Assembly',
+    'role.agent': 'Polling Station Agent',
     'role.observer': 'Accredited Observer'
   },
   sw: {
     // Navigation & Headers
+    'nav.modules': 'Moduli',
     'nav.dashboard': 'Dashibodi ya Jumla',
     'nav.operations': 'Kituo cha Operesheni',
     'nav.tallying': 'Uhesabuji wa Kura za Urais',
     'nav.verification': 'Uthibitishaji wa Fomu',
     'nav.map_room': 'Chumba cha Ramani ya Uchaguzi',
+    'nav.polling_intel': 'Uchambuzi wa Vituo vya Kura',
     'nav.agent_management': 'Usimamizi wa Maafisa',
+    'nav.agents': 'Usimamizi wa Mawakala',
+    'nav.tally_center': 'Kituo cha Ujumlishaji Kura',
     'nav.logistics': 'Usafirishaji na Vifaa',
     'nav.security': 'Usalama wa Mfumo',
     'nav.user_directory': 'Orodha ya Watumiaji',
     'nav.audit_logs': 'Kumbukumbu za Kiuchunguzi',
     'nav.system_health': 'Hali ya Mfumo na Mawasiliano',
     'nav.readiness': 'Utayari wa Uchaguzi',
+    'nav.admin_tools': 'Zana za Msimamizi',
+    'nav.workspace': 'Eneo la Kazi',
+    'nav.more': 'Zaidi',
+    'nav.alerts': 'Tahadhari',
     'nav.settings': 'Mipangilio ya Mfumo',
     'nav.logout': 'Toka Kwenye Mfumo',
     'nav.admin_console': 'Dashibodi ya Msimamizi Mkuu',
     'nav.kenya_elections': 'Uchaguzi Mkuu wa Kenya',
+    'app.subtitle': 'Usimamizi wa Uchaguzi',
+    'common.role': 'Cheo',
+    'common.theme': 'Mandhari',
+    'common.language': 'Lugha',
 
     // Dashboard Overview Metric Cards
     'metrics.registered_voters': 'Wapiga Kura Waliosajiliwa',
@@ -140,6 +171,13 @@ export const DICTIONARY = {
     'role.polling_clerk': 'Karani wa Kupiga Kura',
     'role.security_admin': 'Msimamizi wa Usalama',
     'role.super_admin': 'Msimamizi Mkuu',
+    'role.president': 'Mgombea Urais',
+    'role.governor': 'Gavana',
+    'role.senator': 'Seneta',
+    'role.woman_rep': 'Mwakilishi wa Wanawake',
+    'role.mp': 'Mbunge',
+    'role.mca': 'Mwakilishi wa Wodi',
+    'role.agent': 'Wakala wa Kituo',
     'role.observer': 'Mwangalizi Aliyeidhinishwa'
   }
 };
@@ -191,7 +229,7 @@ export const useLanguage = () => {
     // Provide a resilient fallback if component is rendered outside LanguageProvider
     return {
       language: 'en',
-      setLanguage: () => {},
+      setLanguage: () => { },
       t: (key, fallback) => fallback !== undefined ? fallback : (DICTIONARY.en[key] || key),
       supportedLanguages: ['en', 'sw']
     };

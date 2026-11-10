@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { safeStorage } from '../utils/safeStorage';
 
 const ThemeContext = createContext(null);
 
@@ -39,7 +40,7 @@ export const ThemeProvider = ({ children }) => {
     applyThemeToDOM(targetResolved);
 
     try {
-      localStorage.setItem('ems_theme', theme);
+      safeStorage.setItem('ems_theme', theme);
     } catch (e) {
       // Storage fallback
     }

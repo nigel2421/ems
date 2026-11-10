@@ -1,12 +1,13 @@
 # 📱 Polling Station Agent Operations, Accreditation & Form 34A Workflow
 
-This document details the operational protocol, accreditation lifecycle, mission center, and technical workflow for **Polling Station Agents** utilizing the **Election Management System (CI-EMS 3.1)**.
+This document details the operational protocol, accreditation lifecycle, mission center, and technical workflow for **Polling Station Agents** utilizing the **Election Management System (KuraTech 3.1)**.
 
 ---
 
 ## 🎯 Overview
 
 Polling Station Agents operate at the front line of election monitoring. Their primary responsibilities include:
+
 1. Completing agent training and statutory accreditation exams.
 2. Executing pre-election voter outreach and station readiness missions.
 3. Monitoring polling station opening, voter queue progression, and ballot counting.
@@ -54,6 +55,7 @@ Before deployment on election day, every agent must progress through the 5-stage
 ## 📋 2. Station Readiness Checklist & Logistics
 
 Upon arriving at the assigned polling station on election morning (05:30 AM), the agent completes the **Station Readiness Checklist**:
+
 - [x] **IEBC Accreditation Badge**: Visible on lanyard.
 - [x] **Battery Power Status**: Terminal charged to $\ge 80\%$ + power bank connected.
 - [x] **Statutory Tally Sheets**: Carbon copy sheets for Form 34A/35A/39A ready.
@@ -92,11 +94,14 @@ Agents execute structured mission vectors throughout the election cycle:
 ## 🔄 5. Offline Resiliency & Break-Glass Recovery Protocol
 
 ### Idempotent Offline Sync
+
 - If network connection is disrupted during tally submission, the payload is persisted into the offline sync queue (`IndexedDB` / `localStorage`).
 - Automatically flushes upon network restoration using an `idempotency_key` (`UUIDv4`) to guarantee exactly-once processing.
 
 ### Break-Glass Device Recovery (`deviceRecovery.js`)
+
 If an agent's phone is lost, stolen, or damaged:
+
 1. Station Coordinator triggers **Break-Glass Device Recovery**.
 2. Old terminal device signature is revoked immediately (`DEV_STATUS: REVOKED`).
 3. Replacement device is provisioned with a temporary emergency token.

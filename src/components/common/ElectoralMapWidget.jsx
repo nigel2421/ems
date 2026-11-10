@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS EMBEDDED ELECTORAL MAP WIDGET
+// KuraTech EMBEDDED ELECTORAL MAP WIDGET
 // Compact dashboard mini-map card with live choropleth preview and
 // 1-click expansion to the Electoral Map Room.
 // ====================================================================

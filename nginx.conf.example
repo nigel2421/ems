@@ -28,7 +28,7 @@ server {
 
 
     # ====================================================================
-    # 2. ELECTION MANAGEMENT SYSTEM (CI-EMS 3.1)
+    # 2. ELECTION MANAGEMENT SYSTEM (KuraTech 3.1)
     # Served from subpath '/ems/'
     # ====================================================================
     location /ems/ {

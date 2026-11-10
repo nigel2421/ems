@@ -18,6 +18,7 @@ import { TallyCenter } from './components/modules/TallyCenter';
 import { AIAssistantModal } from './components/modules/AIAssistantModal';
 import { AuditLogViewer } from './components/modules/AuditLogViewer';
 import { ElectionCountdown } from './components/modules/ElectionCountdown';
+import { KenyaPoliticalNewsFab } from './components/modules/KenyaPoliticalNewsPanel';
 import { FieldAgentPWA } from './components/field/FieldAgentPWA';
 import { ExceptionCommandCenter } from './components/dashboards/ExceptionCommandCenter';
 import { ElectionWarRoom } from './components/dashboards/ElectionWarRoom';
@@ -318,7 +319,10 @@ const MainAppContent = () => {
         </div>
       )}
 
-      <ElectionCountdown variant="floating" />
+      <div className="ems-bottom-floating-stack">
+        <KenyaPoliticalNewsFab />
+        <ElectionCountdown variant="floating" />
+      </div>
     </div>
   );
 };

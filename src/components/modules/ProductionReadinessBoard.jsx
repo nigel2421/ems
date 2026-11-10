@@ -29,7 +29,7 @@ export default function ProductionReadinessBoard({ userRole = 'SUPER_ADMIN' }) {
         setSignOffs(res.signOffs);
       }
       setIsServerManaged(!!res.serverManaged);
-    }).catch(() => {});
+    }).catch(() => { });
 
     return () => { isMounted = false; };
   }, []);
@@ -160,7 +160,7 @@ export default function ProductionReadinessBoard({ userRole = 'SUPER_ADMIN' }) {
               <tr style={{ borderBottom: '2px solid #334155', textAlign: 'left', color: '#94a3b8' }}>
                 <th style={{ padding: '10px' }}>Req ID</th>
                 <th style={{ padding: '10px' }}>Category</th>
-                <th style={{ padding: '10px' }}>CI-EMS Control</th>
+                <th style={{ padding: '10px' }}>KuraTech Control</th>
                 <th style={{ padding: '10px' }}>Test Evidence / Target</th>
                 <th style={{ padding: '10px' }}>Verification Status</th>
               </tr>

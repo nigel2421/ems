@@ -1,5 +1,5 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS 2.4)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 2.4)
 // Tamper-Evident SHA-256 Hash-Chained Audit Ledger Engine
 // ====================================================================
 

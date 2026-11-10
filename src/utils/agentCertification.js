@@ -1,10 +1,10 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS 2.5)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 2.5)
 // Training Sandbox & Agent Certification Module Engine
 // ====================================================================
 
 export const CERTIFICATION_MODULES = [
-  { id: 'MOD-01', title: 'Module 1: CI-EMS Basics & Navigation' },
+  { id: 'MOD-01', title: 'Module 1: KuraTech Basics & Navigation' },
   { id: 'MOD-02', title: 'Module 2: Polling Station Assignment & Check-In' },
   { id: 'MOD-03', title: 'Module 3: Offline Queue & Sync Operations' },
   { id: 'MOD-04', title: 'Module 4: Incident Reporting & SLA Escalation' },
@@ -30,7 +30,7 @@ export const evaluateAgentCertification = (agentProgress = {}) => {
     totalModulesCount: CERTIFICATION_MODULES.length,
     practicalExamPassed,
     isFullyCertified,
-    certificationStatus: isFullyCertified ? 'CI-EMS READY CERTIFIED' : 'TRAINING IN PROGRESS',
+    certificationStatus: isFullyCertified ? 'KuraTech READY CERTIFIED' : 'TRAINING IN PROGRESS',
     certifiedAt: isFullyCertified ? (agentProgress.certifiedAt || new Date().toISOString()) : null
   };
 };

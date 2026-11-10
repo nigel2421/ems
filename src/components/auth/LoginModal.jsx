@@ -85,8 +85,8 @@ export const LoginModal = ({ isAdminConsole = false }) => {
           return;
         }
         if ((res.user?.role === 'Super Admin' || res.user?.role === 'Admin') &&
-            typeof window !== 'undefined' &&
-            !window.location.pathname.includes('admin.html')) {
+          typeof window !== 'undefined' &&
+          !window.location.pathname.includes('admin.html')) {
           window.location.href = '/admin.html';
           return;
         }
@@ -110,7 +110,7 @@ export const LoginModal = ({ isAdminConsole = false }) => {
         <aside className="auth-brand">
           <div className="auth-brand-heading">
             <div className="auth-brand-mark"><Map size={19} /></div>
-            <div><strong>CI-EMS</strong><span>Election operations platform</span></div>
+            <div><strong>KuraTech</strong><span>Election operations platform</span></div>
           </div>
 
           <div className="auth-brand-copy">
@@ -247,10 +247,10 @@ export const LoginModal = ({ isAdminConsole = false }) => {
               {isSubmitting
                 ? 'Signing in…'
                 : isPermanentLock
-                ? 'Account Locked'
-                : lockCountdown > 0
-                ? `Locked (${formatRetry(lockCountdown * 1000)})`
-                : 'Sign In'}
+                  ? 'Account Locked'
+                  : lockCountdown > 0
+                    ? `Locked (${formatRetry(lockCountdown * 1000)})`
+                    : 'Sign In'}
               <ArrowRight strokeWidth={1.75} />
             </button>
           </form>

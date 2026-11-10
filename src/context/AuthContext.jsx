@@ -19,6 +19,7 @@ import {
   normaliseEmail,
   THROTTLE_STORAGE_KEY
 } from '../utils/loginThrottle';
+import { safeStorage } from '../utils/safeStorage';
 import { isSessionExpired, LAST_ACTIVITY_KEY, LOGOUT_REASON_KEY } from '../utils/sessionPolicy';
 
 const AuthContext = createContext(null);
@@ -145,23 +146,23 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('ems_users', JSON.stringify(users));
+    safeStorage.setItem('ems_users', users);
   }, [users]);
 
   useEffect(() => {
-    localStorage.setItem('ems_login_activity_logs', JSON.stringify(loginActivityLogs));
+    safeStorage.setItem('ems_login_activity_logs', loginActivityLogs);
   }, [loginActivityLogs]);
 
   useEffect(() => {
     if (currentUser) {
-      sessionStorage.setItem('ems_current_user', JSON.stringify(currentUser));
+      safeStorage.setItem('ems_current_user', currentUser);
     } else {
       sessionStorage.removeItem('ems_current_user');
     }
   }, [currentUser]);
 
   useEffect(() => {
-    sessionStorage.setItem('ems_is_authenticated', JSON.stringify(isAuthenticated));
+    safeStorage.setItem('ems_is_authenticated', isAuthenticated);
   }, [isAuthenticated]);
 
   // Helper to determine if current client is in the Admin Console realm
@@ -188,8 +189,8 @@ export const AuthProvider = ({ children }) => {
         if (data && data.authenticated && data.user) {
           setCurrentUser(data.user);
           setIsAuthenticated(true);
-          sessionStorage.setItem('ems_current_user', JSON.stringify(data.user));
-          sessionStorage.setItem('ems_is_authenticated', 'true');
+          safeStorage.setItem('ems_current_user', data.user);
+          safeStorage.setItem('ems_is_authenticated', true);
           if (data.user.role === 'Super Admin' || data.user.role === 'Admin' || isAdm) {
             fetchServerUsers();
           }
@@ -197,7 +198,7 @@ export const AuthProvider = ({ children }) => {
           setCurrentUser(null);
           setIsAuthenticated(false);
           sessionStorage.removeItem('ems_current_user');
-          sessionStorage.setItem('ems_is_authenticated', 'false');
+          safeStorage.setItem('ems_is_authenticated', false);
         }
       })
       .catch(() => {
@@ -299,8 +300,8 @@ export const AuthProvider = ({ children }) => {
         setLogoutReason(null);
         sessionStorage.removeItem(LOGOUT_REASON_KEY);
         sessionStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
-        sessionStorage.setItem('ems_current_user', JSON.stringify(authedUser));
-        sessionStorage.setItem('ems_is_authenticated', 'true');
+        safeStorage.setItem('ems_current_user', authedUser);
+        safeStorage.setItem('ems_is_authenticated', true);
         return { success: true, user: authedUser, redirectTo: data.redirectTo };
       }
 
@@ -343,7 +344,7 @@ export const AuthProvider = ({ children }) => {
     else sessionStorage.removeItem(LOGOUT_REASON_KEY);
     sessionStorage.removeItem(LAST_ACTIVITY_KEY);
     sessionStorage.removeItem('ems_current_user');
-    sessionStorage.setItem('ems_is_authenticated', 'false');
+    safeStorage.setItem('ems_is_authenticated', false);
     localStorage.removeItem('ems_is_authenticated');
     localStorage.removeItem('ems_current_user');
   };
@@ -384,7 +385,7 @@ export const AuthProvider = ({ children }) => {
           });
           const merged = Array.from(map.values());
           try {
-            localStorage.setItem('ems_users', JSON.stringify(merged));
+            safeStorage.setItem('ems_users', merged);
           } catch {}
           return merged;
         });
@@ -405,6 +406,8 @@ export const AuthProvider = ({ children }) => {
       };
       if (isAdm || (currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin')) {
         headers['X-EMS-Realm'] = 'admin';
+      } else {
+        headers['X-EMS-Realm'] = 'user';
       }
       const res = await fetch('/api/admin/users', {
         method: 'POST',
@@ -437,7 +440,7 @@ export const AuthProvider = ({ children }) => {
     setUsers(prev => {
       const updated = prev.map(u => u.id === userId ? { ...u, ...updatedFields } : u);
       try {
-        localStorage.setItem('ems_users', JSON.stringify(updated));
+        safeStorage.setItem('ems_users', updated);
       } catch (e) {}
       return updated;
     });
@@ -456,7 +459,7 @@ export const AuthProvider = ({ children }) => {
         return u;
       });
       try {
-        localStorage.setItem('ems_users', JSON.stringify(updated));
+        safeStorage.setItem('ems_users', updated);
       } catch (e) {}
       return updated;
     });
@@ -514,7 +517,7 @@ export const AuthProvider = ({ children }) => {
     setUsers(prev => {
       const filtered = prev.filter(u => u.id !== userId);
       try {
-        localStorage.setItem('ems_users', JSON.stringify(filtered));
+        safeStorage.setItem('ems_users', filtered);
       } catch (e) {}
       return filtered;
     });
@@ -543,10 +546,11 @@ export const AuthProvider = ({ children }) => {
   const checkCanPerformAction = (action) => canPerformAction(currentUser, action);
   const checkCanAccessLocation = (location) => canAccessLocation(currentUser, location);
 
+  const CANDIDATE_ROLES = ['Governor', 'Senator', 'Woman Rep', 'MP', 'MCA', 'Presidential', 'President', 'Aspirant', 'Candidate Admin'];
+
   const findParentCandidate = (user) => {
     if (!user) return null;
-    const candidateRoles = ['Governor', 'Senator', 'MP', 'MCA', 'Aspirant', 'Candidate Admin'];
-    if (candidateRoles.includes(user.role)) {
+    if (CANDIDATE_ROLES.includes(user.role)) {
       return user;
     }
     if (user.candidateId) {
@@ -554,7 +558,7 @@ export const AuthProvider = ({ children }) => {
       if (match) return match;
     }
     if (user.county) {
-      const gov = users.find(u => candidateRoles.includes(u.role) && u.county?.toLowerCase() === user.county?.toLowerCase());
+      const gov = users.find(u => CANDIDATE_ROLES.includes(u.role) && u.county?.toLowerCase() === user.county?.toLowerCase());
       if (gov) return gov;
     }
     return null;
@@ -567,8 +571,7 @@ export const AuthProvider = ({ children }) => {
 
     switch (moduleName) {
       case 'strategy': {
-        const candidateRoles = ['Governor', 'Senator', 'MP', 'MCA', 'Aspirant', 'Candidate Admin'];
-        if (candidateRoles.includes(role)) {
+        if (CANDIDATE_ROLES.includes(role)) {
           return Boolean(currentUser.features?.strategicIntelligence);
         }
         const parentCandidate = findParentCandidate(currentUser);
@@ -578,8 +581,7 @@ export const AuthProvider = ({ children }) => {
         return false;
       }
       case 'strategy_team': {
-        const candidateRoles = ['Governor', 'Senator', 'MP', 'MCA', 'Aspirant', 'Candidate Admin'];
-        if (candidateRoles.includes(role)) {
+        if (CANDIDATE_ROLES.includes(role)) {
           return Boolean(currentUser.features?.strategyTeam);
         }
         const parentCandidate = findParentCandidate(currentUser);

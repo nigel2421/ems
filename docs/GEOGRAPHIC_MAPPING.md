@@ -1,6 +1,6 @@
 # 🗺️ Geographic Hierarchy, Scope Sieve & Agent Deployment Mapping
 
-This document details the administrative boundary structure, candidate scope locking, and agent assignment system within the **Election Management System (CI-EMS 3.1)**.
+This document details the administrative boundary structure, candidate scope locking, and agent assignment system within the **Election Management System (KuraTech 3.1)**.
 
 ---
 
@@ -41,7 +41,8 @@ The **Scoped Location Sieve** provides an interactive, role-restricted location 
  └────────────────┘      └────────────────┘      └────────────────┘      └────────────────┘
 ```
 
-### Key UI Invariants:
+### Key UI Invariants
+
 1. **Cascade State Clearing**: Changing a parent selection (e.g., switching Constituency) automatically clears lower selections (Ward, Polling Centre, Stream) to maintain strict data hierarchy validity.
 2. **Disabled Selector Locking**: Selectors above a user's authorized root level are disabled or hidden to prevent out-of-scope selection.
 
@@ -49,7 +50,7 @@ The **Scoped Location Sieve** provides an interactive, role-restricted location 
 
 ## 🔒 Jurisdiction Scope Resolver & Root Locking (`scopeResolver.js`)
 
-CI-EMS enforces strict root scope locking based on candidate position or coordinator assignment:
+KuraTech enforces strict root scope locking based on candidate position or coordinator assignment:
 
 | User Persona / Role | Authorized Scope Root | Sieve Starting Level | Restricted Scope Boundaries |
 | :--- | :--- | :--- | :--- |
@@ -74,6 +75,7 @@ In addition to client-side UI locking, the server layer independently validates 
 ## 🛠️ Operating the Geographic Mapper
 
 ### 1. Navigating Administrative Levels
+
 - Launch **Geographic Mapper** from the main navigation header or Admin/Governor dashboards.
 - Select a **Constituency** tab (e.g. *Westlands*) to view all component Wards and Polling Stations.
 - Visual statistics update in real-time:
@@ -83,7 +85,9 @@ In addition to client-side UI locking, the server layer independently validates 
   - **Voter Turnout & Statutory Form Submission Rate**.
 
 ### 2. Admin Agent Assignment Matrix
+
 Administrators can re-assign polling station agents in real time:
+
 1. In the **Geographic Mapper** table, select an unassigned or active polling station.
 2. Select an agent from the dropdown roster.
 3. Click **Assign Agent**.
@@ -97,6 +101,7 @@ Administrators can re-assign polling station agents in real time:
 ## 📈 Visual Heatmaps & Analytics
 
 Dashboards render dynamic charts (powered by `Chart.js` / `react-chartjs-2`):
+
 - **Candidate Lead Distribution**: Doughnut/Bar breakdown of votes by candidate.
 - **Turnout Percentage by Constituency**: Comparative bar chart of voter turnout across regions.
 - **Statutory Form Transmission Progress**: Radial ring indicator showing percentage of completed uploads.

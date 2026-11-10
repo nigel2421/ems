@@ -1,6 +1,6 @@
 # 🔒 PostgreSQL Row-Level Security (RLS) & DB Role Hygiene
 
-CI-EMS 3.1 enforces multi-tenant data isolation directly at the PostgreSQL database engine layer.
+KuraTech 3.1 enforces multi-tenant data isolation directly at the PostgreSQL database engine layer.
 
 ## Database Role Hygiene Requirements
 

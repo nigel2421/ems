@@ -1,5 +1,5 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech)
 // Comprehensive Seed Dataset for all 9 Modules
 // ====================================================================
 
@@ -105,7 +105,7 @@ export const initialCampaignPhases = [
     status: 'Active',
     objectives: ['Achieve 100% agent coverage in high-risk polling stations', 'Conduct agent Form 34A mobile app training'],
     tasks: [
-      { id: 'TSK-201', title: 'Train regional coordinators on CI-EMS portal', assignedTeam: 'Operations', priority: 'Urgent', status: 'Completed', kpiTarget: '47 Coordinators', kpiCurrent: '47 Coordinators', dueDate: '2026-08-01' },
+      { id: 'TSK-201', title: 'Train regional coordinators on KuraTech portal', assignedTeam: 'Operations', priority: 'Urgent', status: 'Completed', kpiTarget: '47 Coordinators', kpiCurrent: '47 Coordinators', dueDate: '2026-08-01' },
       { id: 'TSK-202', title: 'Bind polling station agents to IEBC streams', assignedTeam: 'Field Ops', priority: 'High', status: 'In Progress', kpiTarget: '2,000 Agents', kpiCurrent: '1,840 Agents', dueDate: '2026-08-30' }
     ]
   },

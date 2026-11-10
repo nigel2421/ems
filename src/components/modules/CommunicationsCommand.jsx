@@ -1,5 +1,5 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS 2.3)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 2.3)
 // Communications Command & Emergency Broadcast Workspace Component
 // ====================================================================
 
@@ -184,7 +184,7 @@ export const CommunicationsCommand = ({ user }) => {
             <h3 style={{ margin: '0 0 12px 0', color: '#ef4444' }}>🚨 EMERGENCY BROADCAST MAKER-CHECKER APPROVAL</h3>
             <p style={{ fontSize: '0.85rem', color: '#cbd5e1', lineHeight: 1.5 }}>
               Requester <strong>{pendingDispatch?.senderName}</strong> has requested a high-priority Emergency Broadcast to <strong>{pendingDispatch?.recipientCount} recipients</strong>.
-              Under CI-EMS 2.3 security policy, emergency broadcasts require independent Checker authorization.
+              Under KuraTech 2.3 security policy, emergency broadcasts require independent Checker authorization.
             </p>
 
             <div style={{ background: '#0f172a', padding: '12px', borderRadius: '8px', fontSize: '0.8rem', margin: '14px 0', borderLeft: '4px solid #ef4444' }}>

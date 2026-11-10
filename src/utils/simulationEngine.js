@@ -1,5 +1,5 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS 3.1)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 3.1)
 // Election-Day Simulation & Reproducible Infrastructure Benchmarking Engine
 // ====================================================================
 
@@ -215,7 +215,7 @@ export const executeFullElectionSimulation = ({
     },
     afterActionReport: {
       overallClassification: 'PASS',
-      summary: 'CI-EMS 3.1 Full Election-Day Simulation executed successfully. Zero data loss across regional network outages, 100% idempotency deduplication on reconnection, and 0-breach on continuous invariants.',
+      summary: 'KuraTech 3.1 Full Election-Day Simulation executed successfully. Zero data loss across regional network outages, 100% idempotency deduplication on reconnection, and 0-breach on continuous invariants.',
       recommendations: [
         'Maintain current PWA local storage allocation for remote rift valley stations',
         'Keep OCR queue batch size at 50 for optimal worker concurrency'
@@ -227,7 +227,7 @@ export const executeFullElectionSimulation = ({
 };
 
 /**
-  CI-EMS 3.1 Formal Election Readiness Exercise & Governance Certification
+  KuraTech 3.1 Formal Election Readiness Exercise & Governance Certification
   Verifies the 7 Non-Negotiable Zero-Tolerance Production Outcomes
  */
 export const executeElectionReadinessExercise = (exerciseTier = 'FINAL_DRESS_REHEARSAL') => {

@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS Cryptographic Audit Trail Engine
+// KuraTech Cryptographic Audit Trail Engine
 // SHA-256 Hash-Chaining & Tamper-Evident Election Logging
 // ====================================================================
 
@@ -124,7 +124,7 @@ export const exportAuditLogsToCSV = (logs = []) => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', `CI-EMS_AUDIT_LOGS_${new Date().toISOString().slice(0, 10)}.csv`);
+  link.setAttribute('download', `KuraTech_AUDIT_LOGS_${new Date().toISOString().slice(0, 10)}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -133,9 +133,9 @@ export const exportAuditLogsToCSV = (logs = []) => {
 /**
  * Generates an official cryptographic audit certificate PDF
  */
-export const exportAuditLogsToPDF = (logs = [], certTitle = 'CI-EMS OFFICIAL AUDIT TRAIL CERTIFICATE') => {
+export const exportAuditLogsToPDF = (logs = [], certTitle = 'KuraTech OFFICIAL AUDIT TRAIL CERTIFICATE') => {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-  
+
   doc.setFontSize(16);
   doc.setTextColor(15, 23, 42);
   doc.text(certTitle, 40, 40);
@@ -175,5 +175,5 @@ export const exportAuditLogsToPDF = (logs = [], certTitle = 'CI-EMS OFFICIAL AUD
     y += 18;
   });
 
-  doc.save(`CI-EMS_Audit_Certificate_${Date.now()}.pdf`);
+  doc.save(`KuraTech_Audit_Certificate_${Date.now()}.pdf`);
 };

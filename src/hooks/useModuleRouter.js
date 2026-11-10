@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS DEEP ROUTING & URL SYNCHRONIZATION HOOK
+// KuraTech DEEP ROUTING & URL SYNCHRONIZATION HOOK
 // Enables search engine crawlability, deep bookmarks, and browser
 // back/forward navigation for all application pages and modules.
 // ====================================================================

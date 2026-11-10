@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS Server Users Store
+// KuraTech Server Users Store
 // Stores users with scrypt password hashes outside web root
 // Non-destructive: preserves existing VPS user accounts and merges baseline personas
 // ====================================================================

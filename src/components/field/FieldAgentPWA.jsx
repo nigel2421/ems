@@ -1,5 +1,5 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS 2.3)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 2.3)
 // Mobile-First Field Agent PWA Application Component
 // ====================================================================
 
@@ -116,7 +116,7 @@ export const FieldAgentPWA = ({ user, onBackToDashboard }) => {
       {/* Header Bar */}
       <header className="field-header">
         <div className="field-brand">
-          <span>CI-EMS FIELD</span>
+          <span>KuraTech FIELD</span>
         </div>
         <div className={`connectivity-badge ${isOnline ? 'online' : 'offline'}`}>
           <span className="pulse-dot"></span>

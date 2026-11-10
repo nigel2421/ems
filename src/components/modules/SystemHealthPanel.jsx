@@ -1,5 +1,5 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS 2.3)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 2.3)
 // Live Platform System Health & Telemetry Diagnostic Component
 // Runs real-time in-browser health checks against VPS endpoints
 // ====================================================================
@@ -158,7 +158,7 @@ export const SystemHealthPanel = () => {
 
   const handleCopyReport = () => {
     const reportLines = [
-      `CI-EMS SYSTEM DIAGNOSTIC REPORT`,
+      `KuraTech SYSTEM DIAGNOSTIC REPORT`,
       `Target: https://kuratech.site`,
       `Audited At: ${lastRunTime ? lastRunTime.toISOString() : 'N/A'}`,
       `Auditor: ${currentUser?.name} (${currentUser?.role})`,

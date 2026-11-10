@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS Idle Session Policy (QA DEF-02 / AUTH-12)
+// KuraTech Idle Session Policy (QA DEF-02 / AUTH-12)
 // Pure helpers so the timing rules can be unit-tested in Node.
 // ====================================================================
 

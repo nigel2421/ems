@@ -1,4 +1,4 @@
-/* CI-EMS 2.3 Mobile-First Field Agent PWA Stylesheet */
+/* KuraTech 2.3 Mobile-First Field Agent PWA Stylesheet */
 
 .field-pwa-container {
   max-width: 480px;
@@ -62,9 +62,17 @@
 }
 
 @keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.4; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+
+  100% {
+    opacity: 1;
+  }
 }
 
 /* Offline Banner */
@@ -338,6 +346,14 @@
   font-weight: 700;
 }
 
-.timeline-status.done { color: #10b981; }
-.timeline-status.warn { color: #f59e0b; }
-.timeline-status.pending { color: #64748b; }
+.timeline-status.done {
+  color: #10b981;
+}
+
+.timeline-status.warn {
+  color: #f59e0b;
+}
+
+.timeline-status.pending {
+  color: #64748b;
+}

@@ -10,6 +10,7 @@ import {
   signToken,
   verifyToken,
   isAdminRole,
+  isAspirantRole,
   getLockoutState,
   recordFailedAttempt,
   resetFailedAttempts,
@@ -113,7 +114,8 @@ function appendServerAuditLog({ userId, userName, role, action, details, scope, 
   const prevHash = prev[0]?.hash || '0000000000000000000000000000000000000000000000000000000000000000';
   const timestamp = new Date().toISOString();
   const rawPayload = `${prevHash}|${timestamp}|${userId || 'SYSTEM'}|${role || 'System'}|${action}|${details || ''}|${scope || 'National'}`;
-  const hash = crypto.createHash('sha256').update(rawPayload).digest('hex');
+  const AUDIT_CHAIN_INTEGRITY_KEY = process.env.AUDIT_INTEGRITY_KEY || 'ci-ems-audit-chain-tamper-evident-seal-2026';
+  const hash = crypto.createHmac('sha256', AUDIT_CHAIN_INTEGRITY_KEY).update(rawPayload).digest('hex');
 
   const newLog = {
     id: `LOG-${Date.now().toString().slice(-6)}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`,
@@ -188,8 +190,20 @@ const server = http.createServer((req, res) => {
   const origin = req.headers.origin;
   const hostHeader = req.headers['x-forwarded-host'] || req.headers.host || '';
 
-  if (origin && isAllowedOrigin(origin, hostHeader)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
+  const TRUSTED_ORIGINS = [
+    'https://kuratech.site',
+    'https://www.kuratech.site',
+    'https://ops-konsole.kuratech.site',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:3000'
+  ];
+
+  const normalized = (origin || '').trim().toLowerCase();
+  const matchedOrigin = TRUSTED_ORIGINS.find(trusted => trusted === normalized);
+
+  if (matchedOrigin && isAllowedOrigin(origin, hostHeader)) {
+    res.setHeader('Access-Control-Allow-Origin', matchedOrigin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
   } else if (!origin) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -518,11 +532,24 @@ const server = http.createServer((req, res) => {
   // ====================================================================
   // ADMIN CONSOLE ONLY ROUTES (/api/admin/*)
   // ====================================================================
-  if (pathname.startsWith('/api/admin/') || pathname.startsWith('/ems/api/admin/')) {
-    const rawToken = extractTokenFromReq(req, 'admin');
+  // ====================================================================
+  // ADMIN CONSOLE ROUTES (/api/admin/*) & AGENTS PROVISIONING (/api/agents)
+  // ====================================================================
+  const isAgentEndpoint = pathname === '/api/agents' || pathname === '/ems/api/agents';
+  const isAdminUserEndpoint = pathname === '/api/admin/users' || pathname === '/ems/api/admin/users';
+
+  if (pathname.startsWith('/api/admin/') || pathname.startsWith('/ems/api/admin/') || isAgentEndpoint) {
+    const rawToken = extractTokenFromReq(req, 'admin') || extractTokenFromReq(req, 'user');
     const decoded = verifyToken(rawToken);
 
-    if (!decoded || decoded.realm !== 'admin' || !isAdminRole(decoded.role)) {
+    const isAdm = Boolean(decoded && decoded.realm === 'admin' && isAdminRole(decoded.role));
+    const isAsp = Boolean(decoded && isAspirantRole(decoded.role));
+
+    // Aspirants are permitted to create agents and read agents scoped to their ticket
+    const isAgentCreation = req.method === 'POST' && (isAdminUserEndpoint || isAgentEndpoint);
+    const isAgentRead = req.method === 'GET' && isAgentEndpoint;
+
+    if (!decoded || (!isAdm && !(isAsp && (isAgentCreation || isAgentRead)))) {
       appendServerAuditLog({
         userId: decoded?.uid || 'UNKNOWN',
         userName: decoded?.name || 'Unauthorized Actor',
@@ -532,16 +559,32 @@ const server = http.createServer((req, res) => {
         ipAddress: clientIp
       });
       res.writeHead(403, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Access denied: Admin realm credentials required.' }));
+      res.end(JSON.stringify({ error: 'Access denied: Admin realm credentials or authorized Aspirant session required.' }));
       return;
     }
 
-    // Admin Users Management: GET & POST /api/admin/users
-    if (pathname === '/api/admin/users' || pathname === '/ems/api/admin/users') {
+    // Users & Agents Management: GET & POST
+    if (isAdminUserEndpoint || isAgentEndpoint) {
       if (req.method === 'GET') {
-        const users = loadUsers().map(sanitizeUser);
+        const allUsers = loadUsers().map(sanitizeUser);
+        if (isAdm && isAdminUserEndpoint) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(allUsers));
+          return;
+        }
+        // Aspirant or agent endpoint: filter to agents scoped to candidate
+        const scopedAgents = allUsers.filter(u => {
+          if (u.role !== 'Agent' && u.role !== 'Field Agent') return false;
+          if (isAdm) return true;
+          if (u.candidateId && u.candidateId === decoded.uid) return true;
+          if (u.creatorId && u.creatorId === decoded.uid) return true;
+          if (decoded.ward && u.ward && decoded.ward.toLowerCase() === u.ward.toLowerCase()) return true;
+          if (decoded.constituency && u.constituency && decoded.constituency.toLowerCase() === u.constituency.toLowerCase()) return true;
+          if (decoded.county && u.county && decoded.county.toLowerCase() === u.county.toLowerCase()) return true;
+          return false;
+        });
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(users));
+        res.end(JSON.stringify(scopedAgents));
         return;
       }
 
@@ -550,14 +593,24 @@ const server = http.createServer((req, res) => {
         req.on('data', chunk => { body += chunk; });
         req.on('end', () => {
           try {
-            const { name, email, phone, role, password, county, constituency, ward, party } = JSON.parse(body || '{}');
+            const { name, email, phone, role, password, county, constituency, ward, party, assignedEntity, entityName } = JSON.parse(body || '{}');
 
             const cleanEmail = String(email || '').trim().toLowerCase();
             const cleanPhone = String(phone || '').replace(/\s+/g, '').toLowerCase();
 
-            if (!cleanEmail || !role || !password) {
+            // When an Aspirant is creating an agent:
+            if (isAsp && !isAdm) {
+              const targetRole = String(role || 'Agent').trim();
+              if (targetRole !== 'Agent' && targetRole !== 'Field Agent') {
+                res.writeHead(403, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: 'Aspirants are only authorized to provision Agent accounts.' }));
+                return;
+              }
+            }
+
+            if (!cleanEmail || !password) {
               res.writeHead(400, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ success: false, error: 'Email, role, and password are required.' }));
+              res.end(JSON.stringify({ success: false, error: 'Email and password are required.' }));
               return;
             }
 
@@ -583,17 +636,29 @@ const server = http.createServer((req, res) => {
               }
             }
 
+            // Geographic scoping: lock to Aspirant's jurisdiction if caller is Aspirant
+            const effectiveRole = isAsp && !isAdm ? 'Agent' : String(role || 'Agent').trim();
+            const effectiveCounty = (isAsp && !isAdm && decoded.county) ? decoded.county : (county || null);
+            const effectiveConst = (isAsp && !isAdm && decoded.constituency) ? decoded.constituency : (constituency || null);
+            const effectiveWard = (isAsp && !isAdm && decoded.ward) ? decoded.ward : (ward || null);
+            const effectiveParty = (isAsp && !isAdm && decoded.party) ? decoded.party : (party || 'Independent');
+
             const newUser = {
-              id: `USR-${String(role).toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3)}-${Date.now().toString().slice(-5)}`,
+              id: `USR-${effectiveRole.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3)}-${Date.now().toString().slice(-5)}`,
               name: String(name || 'Campaign User').trim(),
-              role: String(role).trim(),
+              role: effectiveRole,
               email: cleanEmail,
               phone: phone ? String(phone).trim() : null,
               passwordHash: hashPassword(password),
-              county: county || null,
-              constituency: constituency || null,
-              ward: ward || null,
-              party: party || 'Independent',
+              county: effectiveCounty,
+              constituency: effectiveConst,
+              ward: effectiveWard,
+              party: effectiveParty,
+              assignedEntity: assignedEntity || effectiveWard || 'PS-1',
+              entityName: entityName || 'Assigned Polling Station',
+              candidateId: isAsp ? decoded.uid : null,
+              candidateName: isAsp ? decoded.name : null,
+              creatorId: decoded.uid,
               status: 'Active',
               isSuspended: false,
               twoFactorEnabled: false,
@@ -609,8 +674,10 @@ const server = http.createServer((req, res) => {
               userId: decoded.uid,
               userName: decoded.name,
               role: decoded.role,
-              action: 'ADMIN_CREATE_USER',
-              details: `Admin created user account "${cleanEmail}" with role "${newUser.role}"`,
+              action: isAdm ? 'ADMIN_CREATE_USER' : 'ASPIRANT_CREATE_AGENT',
+              details: isAdm
+                ? `Admin created user account "${cleanEmail}" with role "${newUser.role}"`
+                : `${decoded.role} "${decoded.name}" registered Agent account "${cleanEmail}" for ${newUser.assignedEntity || newUser.ward || newUser.constituency || newUser.county}`,
               ipAddress: clientIp
             });
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-CI-EMS Internationalization (i18n) Parity & Integrity Manager
+KuraTech Internationalization (i18n) Parity & Integrity Manager
 Validates and audits bilingual dictionary parity (English <-> Kiswahili)
-for the Campaign Intelligence & Election Management System (CI-EMS).
+for the Campaign Intelligence & Election Management System (KuraTech).
 
 Usage:
     python scripts/i18n_manager.py --verify
@@ -78,7 +78,7 @@ def verify_i18n(data):
     coverage = (parity_keys / total_keys * 100) if total_keys > 0 else 100.0
 
     print("=" * 60)
-    print("  CI-EMS BILINGUAL i18n INTEGRITY REPORT (EN <-> SW)")
+    print("  KuraTech BILINGUAL i18n INTEGRITY REPORT (EN <-> SW)")
     print("=" * 60)
     print(f"  Total Unique Keys:     {total_keys}")
     print(f"  English Keys:          {len(en_keys)}")

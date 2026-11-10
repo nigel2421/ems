@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS Seed Dev Users Script
+// KuraTech Seed Dev Users Script
 // Safely merges baseline personas into server user store (.data/users.json)
 // Non-destructive: preserves any existing VPS accounts
 // ====================================================================

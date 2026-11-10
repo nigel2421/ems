@@ -1,5 +1,5 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS 2.4)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 2.4)
 // Flagship Election Command War Room Component
 // ====================================================================
 
@@ -55,7 +55,7 @@ export const ElectionWarRoom = ({ user, onSelectModule }) => {
       <header className="warroom-header">
         <div>
           <div className="warroom-title">
-            <span>🏛️ CI-EMS ELECTION COMMAND WAR ROOM</span>
+            <span>🏛️ KuraTech ELECTION COMMAND WAR ROOM</span>
           </div>
           <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Operational Control & Real-time Exception Monitoring Engine</div>
         </div>

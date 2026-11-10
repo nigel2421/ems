@@ -46,7 +46,7 @@ import {
 import '../dashboards/DashboardShared.css';
 import './PollingStationIntelligence.css';
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE_DEFAULT = 20;
 
 const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
 
@@ -118,6 +118,7 @@ const PollingStationIntelligenceInner = ({ onOpenModule }) => {
   const [selectedRisk, setSelectedRisk] = useState('');
   const [selectedImportance, setSelectedImportance] = useState('');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE_DEFAULT);
   const [showTools, setShowTools] = useState(false);
 
   const [editingStation, setEditingStation] = useState(null);
@@ -255,20 +256,22 @@ const PollingStationIntelligenceInner = ({ onOpenModule }) => {
     };
   }, [filteredStations, stationIntelligence]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredStations.length / PAGE_SIZE));
+  const effectivePageSize = pageSize === 'All' ? Math.max(1, filteredStations.length) : Number(pageSize);
+  const totalPages = Math.max(1, Math.ceil(filteredStations.length / effectivePageSize));
 
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, selectedCounty, selectedRisk, selectedImportance, activeTab, assignment.level, assignment.title]);
+  }, [searchTerm, selectedCounty, selectedRisk, selectedImportance, activeTab, assignment.level, assignment.title, pageSize]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
   const pageStations = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return filteredStations.slice(start, start + PAGE_SIZE);
-  }, [filteredStations, page]);
+    if (pageSize === 'All') return filteredStations;
+    const start = (page - 1) * effectivePageSize;
+    return filteredStations.slice(start, start + effectivePageSize);
+  }, [filteredStations, page, pageSize, effectivePageSize]);
 
   const mapStations = useMemo(() => filteredStations.map((station) => {
     const latitude = Number(station.latitude ?? station.lat);
@@ -289,8 +292,8 @@ const PollingStationIntelligenceInner = ({ onOpenModule }) => {
     return mapStations.slice(0, 20).map(({ latitude, longitude }) => `${latitude.toFixed(5)},${longitude.toFixed(5)}`).join('|');
   }, [mapStations]);
 
-  const rangeStart = filteredStations.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const rangeEnd = Math.min(page * PAGE_SIZE, filteredStations.length);
+  const rangeStart = filteredStations.length === 0 ? 0 : (page - 1) * effectivePageSize + 1;
+  const rangeEnd = Math.min(page * effectivePageSize, filteredStations.length);
   const selectedCountyName = geoLookups.counties.get(selectedCounty) || 'Selected county';
   const scopeLabel = isNational
     ? selectedCountyName
@@ -752,9 +755,30 @@ const PollingStationIntelligenceInner = ({ onOpenModule }) => {
           </div>
 
           <div className="psi-pagination">
-            <span>
-              {formatCount(rangeStart)}–{formatCount(rangeEnd)} of {formatCount(filteredStations.length)}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
+              <span>
+                {formatCount(rangeStart)}–{formatCount(rangeEnd)} of {formatCount(filteredStations.length)}
+              </span>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                <span>Show:</span>
+                <select
+                  className="psi-select"
+                  value={pageSize}
+                  onChange={(e) => {
+                    const val = e.target.value === 'All' ? 'All' : Number(e.target.value);
+                    setPageSize(val);
+                    setPage(1);
+                  }}
+                  style={{ padding: '0.2rem 0.5rem', fontSize: '0.8rem', borderRadius: '6px' }}
+                  aria-label="Rows per page"
+                >
+                  <option value={20}>20 stations</option>
+                  <option value={50}>50 stations</option>
+                  <option value={100}>100 stations</option>
+                  <option value="All">All stations</option>
+                </select>
+              </div>
+            </div>
             <div className="psi-pagination-controls">
               <button
                 type="button"

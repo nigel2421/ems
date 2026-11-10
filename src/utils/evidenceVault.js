@@ -1,5 +1,5 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS 2.2)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 2.2)
 // Evidence Vault: Quality Scoring, Field-Level Reconciliation & Discrepancy Case Management
 // ====================================================================
 

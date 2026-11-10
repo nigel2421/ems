@@ -1,5 +1,5 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS 3.1)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 3.1)
 // PostgreSQL Row-Level Security (RLS) Engine & Default-Deny Defense
 // ====================================================================
 
@@ -106,7 +106,7 @@ export const evaluatePostgresRlsAccess = ({
  */
 export const runPostgresRlsExecutionTest = () => {
   const tenantAContext = { tenantId: 'TENANT-NAIROBI-2027', userId: 'USR-001' };
-  
+
   const sameTenantRes = evaluatePostgresRlsAccess({
     userContext: tenantAContext,
     targetTenantId: 'TENANT-NAIROBI-2027'
@@ -128,7 +128,7 @@ export const runPostgresRlsExecutionTest = () => {
     targetTenantId: 'TENANT-NAIROBI-2027'
   });
 
-  const isTestPassed = 
+  const isTestPassed =
     sameTenantRes.isAllowed === true &&
     crossTenantRes.isAllowed === false &&
     superuserRes.isAllowed === false &&

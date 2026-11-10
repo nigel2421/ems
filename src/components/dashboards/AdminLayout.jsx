@@ -101,10 +101,28 @@ export const AdminLayout = ({
 }) => {
   const { currentUser, users, logout, canAccessModule, userScope } = useAuth();
   const { tallyResults, geography } = useData();
+  const { t } = useLanguage();
   const [showMore, setShowMore] = useState(false);
   const [showAgentMenu, setShowAgentMenu] = useState(false);
   const [showAddAgent, setShowAddAgent] = useState(false);
   const [asideOpen, setAsideOpen] = useState(false);
+
+  const getModuleLabel = (item) => {
+    switch (item.id) {
+      case 'dashboard': return t('nav.dashboard', item.label);
+      case 'interactive_map': return t('nav.map_room', item.label);
+      case 'polling_stations': return t('nav.polling_intel', item.label);
+      case 'agents': return t('nav.agents', item.label);
+      case 'results': return t('nav.tally_center', item.label);
+      case 'operations': return t('nav.operations', item.label);
+      case 'tallying': return t('nav.tallying', item.label);
+      case 'verification': return t('nav.verification', item.label);
+      case 'security': return t('nav.security', item.label);
+      case 'system_health': return t('nav.system_health', item.label);
+      case 'readiness': return t('nav.readiness', item.label);
+      default: return t(`nav.${item.id}`, item.label);
+    }
+  };
 
   const isAdmin =
     currentUser?.role === 'Admin' || currentUser?.role === 'Super Admin';
@@ -168,7 +186,7 @@ export const AdminLayout = ({
     onOpenModule?.('dashboard');
   };
 
-  const toolsLabel = isAdmin ? 'Admin tools' : 'Workspace';
+  const toolsLabel = isAdmin ? t('nav.admin_tools', 'Admin tools') : t('nav.workspace', 'Workspace');
 
   return (
     <div className={`admin-layout${asideOpen ? ' is-aside-open' : ''}`}>
@@ -190,7 +208,7 @@ export const AdminLayout = ({
         <button type="button" className="admin-mobile-brand" onClick={() => openModule('dashboard')}>
           <Shield strokeWidth={2} />
           <strong>
-            CI-EMS <span className="admin-pro-badge">PRO</span>
+            KuraTech <span className="admin-pro-badge">PRO</span>
           </strong>
         </button>
       </header>
@@ -210,9 +228,9 @@ export const AdminLayout = ({
           </div>
           <div>
             <strong>
-              CI-EMS <span className="admin-pro-badge">PRO</span>
+              KuraTech <span className="admin-pro-badge">PRO</span>
             </strong>
-            <span>Election Management</span>
+            <span>{t('app.subtitle', 'Election Management')}</span>
           </div>
         </button>
 
@@ -222,14 +240,14 @@ export const AdminLayout = ({
               <MapPin size={13} /> {userScope.name}
             </div>
             <div style={{ fontSize: '0.7rem', opacity: 0.8, marginTop: '2px' }}>
-              Role: <strong>{currentUser?.role || 'Guest'}</strong>
+              {t('common.role', 'Role')}: <strong>{currentUser?.role || 'Guest'}</strong>
             </div>
           </div>
         )}
 
 
         <div className="admin-nav-group">
-          <div className="admin-nav-label">Modules</div>
+          <div className="admin-nav-label">{t('nav.modules', 'Modules')}</div>
           {primaryModules.map((item) => {
             const Icon = item.icon;
             const isAgents = item.id === 'agents';
@@ -251,7 +269,7 @@ export const AdminLayout = ({
                     }}
                   >
                     <Icon strokeWidth={1.75} />
-                    <span>{item.label}</span>
+                    <span>{getModuleLabel(item)}</span>
                     <ChevronDown
                       strokeWidth={1.75}
                       className={`admin-nav-chevron${showAgentMenu ? ' is-open' : ''}`}
@@ -300,7 +318,7 @@ export const AdminLayout = ({
                 }}
               >
                 <Icon strokeWidth={1.75} />
-                <span>{item.label}</span>
+                <span>{getModuleLabel(item)}</span>
               </button>
             );
           })}
@@ -314,7 +332,7 @@ export const AdminLayout = ({
                 aria-expanded={showMore}
               >
                 <Layers strokeWidth={1.75} />
-                <span>More</span>
+                <span>{t('nav.more', 'More')}</span>
                 <ChevronDown
                   strokeWidth={1.75}
                   className={`admin-nav-chevron${showMore ? ' is-open' : ''}`}
@@ -334,7 +352,7 @@ export const AdminLayout = ({
                         onClick={() => openModule(item.id)}
                       >
                         <Icon strokeWidth={1.75} />
-                        <span>{item.label}</span>
+                        <span>{getModuleLabel(item)}</span>
                       </button>
                     );
                   })}
@@ -375,25 +393,25 @@ export const AdminLayout = ({
             ['Strategy Team', 'Governor', 'Senator', 'Regional Coordinator'].includes(
               currentUser?.role
             )) && (
-            <button type="button" className="admin-nav-btn" onClick={() => { onCloseProfilePanel?.(); closeAside(); onOpenAuditLogs?.(); }}>
-              <Activity strokeWidth={1.75} />
-              <span>Audit</span>
-            </button>
-          )}
+              <button type="button" className="admin-nav-btn" onClick={() => { onCloseProfilePanel?.(); closeAside(); onOpenAuditLogs?.(); }}>
+                <Activity strokeWidth={1.75} />
+                <span>Audit</span>
+              </button>
+            )}
           <button type="button" className="admin-nav-btn" onClick={() => { onCloseProfilePanel?.(); closeAside(); onOpenNotifications?.(); }}>
             <Bell strokeWidth={1.75} />
-            <span>Alerts</span>
+            <span>{t('nav.alerts', 'Alerts')}</span>
             {totalAlerts > 0 && <span className="admin-nav-badge">{totalAlerts}</span>}
           </button>
         </div>
 
         <div style={{ padding: '0.65rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.45rem', borderTop: '1px solid var(--border-color, rgba(0, 0, 0, 0.08))', marginTop: 'auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>Language</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>{t('common.language', 'Language')}</span>
             <LanguageSwitcher compact={true} />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>Theme</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>{t('common.theme', 'Theme')}</span>
             <ThemeSwitcher compact={true} />
           </div>
         </div>
@@ -505,8 +523,6 @@ export const AdminLayout = ({
           onClose={() => setShowAddAgent(false)}
         />
       )}
-
-      <KenyaPoliticalNewsFab />
     </div>
   );
 };

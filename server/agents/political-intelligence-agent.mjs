@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS SELF-HOSTED BACKGROUND POLITICAL INTELLIGENCE AGENT
+// KuraTech SELF-HOSTED BACKGROUND POLITICAL INTELLIGENCE AGENT
 // Autonomous intelligence worker for Kenyan electoral strategy.
 // Ingests real-world political news, tracks all 47 counties,
 // tags parties/coalitions, and calculates dynamic strategy indices.
@@ -113,15 +113,20 @@ const OPPONENT_THREAT_INDICATORS = [
 /**
  * Strips HTML tags and decodes XML entities
  */
+const XML_ENTITIES = {
+  '&amp;': '&',
+  '&lt;': '<',
+  '&gt;': '>',
+  '&quot;': '"',
+  '&#39;': "'",
+  '&apos;': "'"
+};
+
 const cleanText = (str = '') => {
   return String(str)
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, '$1')
+    .replace(/&(?:amp|lt|gt|quot|apos|#39);/g, (match) => XML_ENTITIES[match] || match)
     .replace(/<[^>]*>/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
     .replace(/\s+/g, ' ')
     .trim();
 };
@@ -169,7 +174,7 @@ export const fetchLivePoliticalFeeds = async () => {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 4500);
       const res = await fetch(feed.url, {
-        headers: { 'User-Agent': 'CI-EMS-Political-Intelligence-Agent/3.1' },
+        headers: { 'User-Agent': 'KuraTech-Political-Intelligence-Agent/3.1' },
         signal: controller.signal
       }).catch(() => null);
       clearTimeout(timer);
@@ -252,7 +257,7 @@ export const computeCountyIntelligence = (county = 'Mombasa', stories = []) => {
   if (evidenceArticles.length === 0) {
     evidenceArticles.push({
       title: `${normCounty} Campaign Intelligence Baseline Active`,
-      source: 'CI-EMS Autonomous Desk',
+      source: 'KuraTech Autonomous Desk',
       snippet: `Operating under ${profile.region} regional strategy. Priority ground issues: ${profile.localIssues.slice(0, 2).join(', ')}.`,
       url: '#',
       publishedAt: new Date().toISOString()

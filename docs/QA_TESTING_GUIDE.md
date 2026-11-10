@@ -1,16 +1,18 @@
 # 🧪 Quality Assurance (QA) & System Verification Testing Guide
 
-> **Campaign Intelligence & Election Management System (CI-EMS 3.1)**  
+> **Campaign Intelligence & Election Management System (KuraTech 3.1)**  
 > **Target Audience:** QA Engineers, Software Testers, Election Operations Auditors, and Security Lead Reviewers.
 
 ---
 
 ## 📌 Executive Summary & QA Invariants
 
-This guide defines the Quality Assurance verification protocols for **CI-EMS 3.1**. All release candidates must pass automated test validation (258/258 tests) and satisfy manual verification criteria across all 4 election operating lifecycles.
+This guide defines the Quality Assurance verification protocols for **KuraTech 3.1**. All release candidates must pass automated test validation (258/258 tests) and satisfy manual verification criteria across all 4 election operating lifecycles.
 
 ### 🚫 7 Zero-Tolerance Quality Invariants
+
 Any failure in the following invariants blocks deployment immediately (`NO_GO`):
+
 1. **Data Loss = 0**: Zero loss of statutory vote payloads or evidence hashes.
 2. **Silent Overwrites = 0**: Zero unversioned or un-audited overwrites of tally records.
 3. **Unauthorized Cross-Tenant Access = 0**: Zero database or API leaks across tenant IDs.
@@ -23,7 +25,7 @@ Any failure in the following invariants blocks deployment immediately (`NO_GO`):
 
 ## ⚡ 1. Automated Test Suite Execution (`npm test`)
 
-CI-EMS includes **258 comprehensive automated unit and integration tests** located in [`src/__tests__/ci-ems.test.js`](file:///c:/Users/user/Documents/Websites/EMS/src/__tests__/ci-ems.test.js).
+KuraTech includes **258 comprehensive automated unit and integration tests** located in [`src/__tests__/KuraTech.test.js`](file:///c:/Users/user/Documents/Websites/EMS/src/__tests__/KuraTech.test.js).
 
 ### Executing Automated Tests
 
@@ -57,6 +59,7 @@ npx vite test -t "postgres"
 QA engineers must execute manual end-to-end verification across the primary operational roles:
 
 ### Test Suite A: Super Admin Control Center (`AdminDashboard.jsx`)
+
 1. **User Provisioning & Role Assignment**:
    - Action: Navigate to Admin Dashboard -> User Management. Create a new user with role `Regional Coordinator`.
    - Expected Result: User is assigned rank 6; audit log records `USER_PROVISIONED`.
@@ -70,6 +73,7 @@ QA engineers must execute manual end-to-end verification across the primary oper
 ---
 
 ### Test Suite B: Candidate Command War Rooms (`GovernorDashboard.jsx`, `MPDashboard.jsx`, `MCADashboard.jsx`)
+
 1. **Governor Scope Locking (Nairobi County)**:
    - Action: Log in as Nairobi Governor. Open `ScopedLocationSieve.jsx`.
    - Expected Result: County dropdown is locked to `County 047 - Nairobi` (cannot select Mombasa or Nakuru). Sieve starting level begins at Constituency.
@@ -83,6 +87,7 @@ QA engineers must execute manual end-to-end verification across the primary oper
 ---
 
 ### Test Suite C: Field Agent Mobile PWA (`AgentPortal.jsx` & `FieldOperationsPWA.jsx`)
+
 1. **Accreditation & Readiness Checklist**:
    - Action: Select Field Agent persona. Verify accreditation badge indicator. Complete Station Readiness Checklist (Battery, Network, Forms).
    - Expected Result: Status changes to `DEPLOYED_AT_STATION`.
@@ -98,6 +103,7 @@ QA engineers must execute manual end-to-end verification across the primary oper
 ---
 
 ### Test Suite D: Aspirant Verification & Mismatch Engine (`AspirantDashboard.jsx` & `MismatchDetector.jsx`)
+
 1. **Side-by-Side Evidence Inspection**:
    - Action: Open Aspirant Verification Queue. Click **Review & Verify** on a pending Form 34A submission.
    - Expected Result: Displays `ApprovalWorkflowModal` showing Form 34A image thumbnail on left and entered tally numbers on right.
@@ -113,14 +119,17 @@ QA engineers must execute manual end-to-end verification across the primary oper
 ## 🔒 3. Security & Boundary QA Test Scenarios
 
 ### Scenario 1: Scope Tampering Interception
+
 - **Procedure**: Using browser Developer Tools or API test client, send a POST request to save polling station tally with `ward_id` set to a ward outside the candidate's authorized constituency.
 - **Pass Criteria**: Server rejects request with `403 Forbidden` (`SCOPE_DENIED`); security audit ledger records `OUT_OF_SCOPE_GEOGRAPHY_ACCESS_DENIED`.
 
 ### Scenario 2: S3 Evidence Tampering Detection
+
 - **Procedure**: Modify binary payload of an existing evidence image stored in object storage. Trigger evidence re-verification.
 - **Pass Criteria**: `objectStorageEngine.js` flags payload as `CRITICAL CORRUPTION: Hash Mismatch` and disables legal approval.
 
 ### Scenario 3: Break-Glass Device Recovery
+
 - **Procedure**: In Admin Dashboard, trigger Break-Glass Device Recovery for an agent's lost phone.
 - **Pass Criteria**: Revokes old device token (`REVOKED`); binds new replacement hardware fingerprint; preserves existing submission audit trail.
 

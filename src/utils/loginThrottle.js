@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS Login Throttle (QA DEF-01 / AUTH-09)
+// KuraTech Login Throttle (QA DEF-01 / AUTH-09)
 // --------------------------------------------------------------------
 // Escalating lockout after repeated failed sign-ins:
 //   5 failures -> 30 s, next 5 -> 2 min, next 5 -> 5 min, next 5 -> 15 min,

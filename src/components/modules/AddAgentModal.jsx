@@ -218,6 +218,7 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
                 type="password"
                 className="form-input"
                 placeholder="Min. 8 characters"
+                autoComplete="new-password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
@@ -235,6 +236,7 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
                 type="password"
                 className="form-input"
                 placeholder="Re-enter password"
+                autoComplete="new-password"
                 value={passwordConfirm}
                 onChange={e => setPasswordConfirm(e.target.value)}
                 required

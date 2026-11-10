@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS ELECTORAL MAP ROOM COMPONENT
+// KuraTech ELECTORAL MAP ROOM COMPONENT
 // Authoritative Geospatial Command Interface:
 // - Google Maps Engine (Satellite / Hybrid / Roadmap)
 // - Polling Centre Stream Hubs (Super-imposed stream pins with count badges)
@@ -160,7 +160,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
       const canonicalConst = resolveCanonicalConstituency(currentUser.constituency || currentUser.assignedEntity);
       const foundConst = (geography.constituencies || []).find(c => {
         return resolveCanonicalConstituency(c.id) === canonicalConst ||
-               resolveCanonicalConstituency(c.name) === canonicalConst;
+          resolveCanonicalConstituency(c.name) === canonicalConst;
       });
 
       if (foundConst) {
@@ -176,7 +176,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
       const canonicalCounty = resolveCanonicalCounty(currentUser.county || currentUser.assignedEntity);
       const foundCounty = (geography.counties || []).find(c => {
         return resolveCanonicalCounty(c.id) === canonicalCounty ||
-               resolveCanonicalCounty(c.name) === canonicalCounty;
+          resolveCanonicalCounty(c.name) === canonicalCounty;
       });
 
       if (foundCounty) {
@@ -953,37 +953,6 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
 
         {/* Authoritative Google Map Canvas */}
         <div ref={googleMapRef} className="google-map-canvas" />
-
-        {/* Prompt when API Key is missing */}
-        {!apiKey && (
-          <div className="google-maps-setup-card">
-            <div style={{ display: 'inline-flex', padding: '0.75rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '50%', marginBottom: '1rem' }}>
-              <Globe size={32} color="#10b981" />
-            </div>
-            <h3>Google Maps Integration</h3>
-            <p>
-              View Kenyan satellite imagery, streets, and GPS polling station hub pins. Paste your Google Maps API Key below to activate:
-            </p>
-            <input
-              type="text"
-              className="google-maps-key-input"
-              placeholder="AIzaSy..."
-              value={apiKeyInput}
-              onChange={(e) => setApiKeyInput(e.target.value)}
-            />
-            {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
-              <p style={{ fontSize: '0.76rem', color: '#10b981', margin: '0.5rem 0 0 0' }}>
-                Administrator notice: Saving this key here will automatically configure it on the live server for all users.
-              </p>
-            )}
-            <div className="google-maps-actions">
-              <button type="button" className="btn btn-primary btn-sm" onClick={handleSaveApiKey} disabled={!apiKeyInput.trim()}>
-                <CheckCircle size={14} />
-                Save & Activate
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Error display if Google Maps fails to load */}
         {mapLoadError && (

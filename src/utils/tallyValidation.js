@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS Tally Validation Engine (QA TAL-01..TAL-11)
+// KuraTech Tally Validation Engine (QA TAL-01..TAL-11)
 // Results validation, sum checks, duplicate prevention, and lock rules.
 // ====================================================================
 

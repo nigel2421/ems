@@ -57,7 +57,7 @@ export default function ElectionSimulationControl({ userRole = 'SUPER_ADMIN' }) 
 
       {/* Trigger Button */}
       <div style={{ backgroundColor: '#1e293b', padding: '24px', borderRadius: '12px', marginBottom: '24px', border: '1px solid #334155' }}>
-        <h3 style={{ margin: '0 0 12px 0', color: '#f8fafc' }}>Execute CI-EMS 3.0 Full Election Simulation</h3>
+        <h3 style={{ margin: '0 0 12px 0', color: '#f8fafc' }}>Execute KuraTech 3.0 Full Election Simulation</h3>
         <p style={{ color: '#94a3b8', fontSize: '14px', marginBottom: '20px' }}>
           Simulates 46,229 stations across 47 counties: T-12h setup $\rightarrow$ morning check-ins $\rightarrow$ network outage injection $\rightarrow$ evidence submission surge $\rightarrow$ reconciliation lock $\rightarrow$ closeout.
         </p>

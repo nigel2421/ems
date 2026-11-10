@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS Universal Colorblind-Safe Categorical & Risk Palette (QA DEF-05 / CHT-06)
+// KuraTech Universal Colorblind-Safe Categorical & Risk Palette (QA DEF-05 / CHT-06)
 // --------------------------------------------------------------------
 // Based on the accessible Okabe-Ito / ColorBrewer qualitative palette,
 // keeping brand Green as the first element while ensuring high-contrast

@@ -4,13 +4,13 @@ import { useData } from '../context/DataContext';
 import { ElectionCountdown } from './modules/ElectionCountdown';
 import { ThemeSwitcher } from './common/ThemeSwitcher';
 import { sanitizeMediaUrl } from '../utils/urlSanitizer';
-import { 
-  Shield, 
-  MapPin, 
-  Bell, 
-  ChevronDown, 
-  Activity, 
-  LogOut, 
+import {
+  Shield,
+  MapPin,
+  Bell,
+  ChevronDown,
+  Activity,
+  LogOut,
   UserCheck,
   Building2,
   Users,
@@ -118,7 +118,7 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
             <div className="brand-logo" onClick={() => onOpenModule && onOpenModule('dashboard')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Shield style={{ width: '22px', height: '22px', color: 'var(--accent-primary)' }} />
               <span style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-                CI-EMS
+                KuraTech
               </span>
               <span style={{ fontSize: '0.65rem', fontWeight: '800', padding: '0.15rem 0.4rem', background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-primary)', border: '1px solid var(--border-glow)', borderRadius: '4px' }}>
                 PRO
@@ -126,7 +126,7 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
             </div>
 
             <div className="nav-desktop-divider" style={{ height: '18px', width: '1px', background: 'var(--border-color)', margin: '0 0.25rem' }}></div>
-            
+
             {/* Countdown Badge - Desktop */}
             <div className="nav-desktop-row" style={{ border: 'none', padding: 0 }}>
               <ElectionCountdown variant="navbar" />
@@ -135,7 +135,7 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
 
           {/* Center: Mobile Active Breadcrumb Selector Bar (Visible <= 768px) */}
           <div className="nav-mobile-breadcrumb-bar" style={{ flex: 1, maxWidth: '210px', margin: '0 0.5rem' }}>
-            <div 
+            <div
               className="nav-breadcrumb-selector"
               onClick={() => setShowMobileNavDrawer(true)}
               style={{ background: 'var(--bg-surface-card)', border: '1px solid var(--border-color)', padding: '0.35rem 0.6rem', borderRadius: '10px' }}
@@ -156,7 +156,7 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
             <div className="nav-desktop-row" style={{ border: 'none', padding: 0, gap: '0.4rem' }}>
               <ThemeSwitcher compact={true} />
 
-              <button 
+              <button
                 className="btn btn-secondary btn-sm"
                 onClick={onOpenAuditLogs}
                 title="View System Audit Trail & Login Logs"
@@ -166,14 +166,14 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
                 <span>Audit</span>
               </button>
 
-              <button 
-                className="btn btn-secondary btn-sm" 
+              <button
+                className="btn btn-secondary btn-sm"
                 style={{ position: 'relative', padding: '0.3rem 0.6rem', borderColor: 'var(--border-color)' }}
                 onClick={onOpenNotifications}
               >
                 <Bell style={{ width: '14px', height: '14px' }} />
                 {totalAlerts > 0 && (
-                  <span 
+                  <span
                     style={{
                       position: 'absolute',
                       top: '-4px',
@@ -197,7 +197,7 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
             </div>
 
             {/* Profile Avatar Button (Opens Unified Account Sheet on Mobile & Desktop) */}
-            <button 
+            <button
               onClick={() => setShowAccountSheet(true)}
               style={{
                 display: 'flex',
@@ -214,10 +214,10 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
               aria-label="User Account Menu"
             >
               <div style={{ position: 'relative' }}>
-                <img 
-                  src={sanitizeMediaUrl(currentUser?.avatar, 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80')} 
-                  alt={currentUser?.name} 
-                  style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} 
+                <img
+                  src={sanitizeMediaUrl(currentUser?.avatar, 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80')}
+                  alt={currentUser?.name}
+                  style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }}
                 />
                 <span style={{ position: 'absolute', bottom: '0', right: '0', width: '7px', height: '7px', borderRadius: '50%', background: '#10B981', border: '1px solid var(--bg-canvas)' }}></span>
               </div>
@@ -295,7 +295,7 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
             </button>
 
             {showMoreDropdown && (
-              <div 
+              <div
                 className="nav-overflow-menu"
                 style={{
                   position: 'absolute',
@@ -360,15 +360,15 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
         <div className="mobile-drawer-overlay" onClick={() => setShowMobileNavDrawer(false)}>
           <div className="mobile-drawer-sheet" style={{ background: 'var(--bg-surface-card)', borderTop: '1px solid var(--border-color)' }} onClick={e => e.stopPropagation()}>
             <div className="drawer-drag-handle"></div>
-            
+
             {/* Drawer Title Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Shield style={{ width: '20px', height: '20px', color: 'var(--accent-primary)' }} />
-                <span style={{ fontWeight: '800', fontSize: '1rem', color: 'var(--text-primary)' }}>CI-EMS System Modules</span>
+                <span style={{ fontWeight: '800', fontSize: '1rem', color: 'var(--text-primary)' }}>KuraTech System Modules</span>
               </div>
-              <button 
-                onClick={() => setShowMobileNavDrawer(false)} 
+              <button
+                onClick={() => setShowMobileNavDrawer(false)}
                 style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: '0.4rem', cursor: 'pointer' }}
               >
                 <X style={{ width: '20px', height: '20px' }} />
@@ -431,10 +431,10 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
             {/* Account Sheet Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <img 
-                  src={sanitizeMediaUrl(currentUser?.avatar, 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80')} 
-                  alt={currentUser?.name} 
-                  style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} 
+                <img
+                  src={sanitizeMediaUrl(currentUser?.avatar, 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80')}
+                  alt={currentUser?.name}
+                  style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }}
                 />
                 <div>
                   <div style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-primary)' }}>{currentUser?.name}</div>
@@ -463,8 +463,8 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
               </div>
 
               {/* Notifications */}
-              <button 
-                className="btn btn-secondary" 
+              <button
+                className="btn btn-secondary"
                 onClick={() => {
                   setShowAccountSheet(false);
                   onOpenNotifications && onOpenNotifications();
@@ -485,8 +485,8 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
               </button>
 
               {/* Audit Logs */}
-              <button 
-                className="btn btn-secondary" 
+              <button
+                className="btn btn-secondary"
                 onClick={() => {
                   setShowAccountSheet(false);
                   onOpenAuditLogs && onOpenAuditLogs();
@@ -510,7 +510,7 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
                 style={{ width: '100%', marginTop: '0.5rem', minHeight: '48px' }}
               >
                 <LogOut style={{ width: '18px', height: '18px' }} />
-                <span>Sign Out of CI-EMS</span>
+                <span>Sign Out of KuraTech</span>
               </button>
             </div>
           </div>

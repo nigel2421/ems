@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS Baseline Personas
+// KuraTech Baseline Personas
 // Canonical baseline accounts for demonstration, staging, and administrative bootstrap.
 // All passwords default to AdminSuper2026! unless overridden by ENV.
 // ====================================================================

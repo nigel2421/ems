@@ -1,10 +1,10 @@
 # ====================================================================
-# CI-EMS Credential Rotation Automation Script (PowerShell)
+# KuraTech Credential Rotation Automation Script (PowerShell)
 # Usage: .\scripts\security\rotate-credentials.ps1
 # ====================================================================
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "    CI-EMS Security Credential Rotation Automation       " -ForegroundColor Cyan
+Write-Host "    KuraTech Security Credential Rotation Automation       " -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 # 1. PostgreSQL Database Password Rotation
@@ -29,7 +29,8 @@ if ($updateEnv -match '^[Yy]') {
         $content = $content -replace "DATABASE_URL=.*", "DATABASE_URL=postgresql://wemisico_adminuser:$newDbPass@localhost:5432/wemisico_ems"
         Set-Content -Path ".env" -Value $content
         Write-Host "Updated .env with new DB_PASSWORD and DATABASE_URL." -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "No .env file found. Copy .env.example to .env first." -ForegroundColor Red
     }
 }

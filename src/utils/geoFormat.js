@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS GPS & Spatial Formatter (QA DEF-06)
+// KuraTech GPS & Spatial Formatter (QA DEF-06)
 // Safe numeric formatting avoiding raw floating-point precision leaks
 // ====================================================================
 

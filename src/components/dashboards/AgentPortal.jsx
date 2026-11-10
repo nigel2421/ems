@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { safeStorage } from '../../utils/safeStorage';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { 
@@ -55,7 +56,7 @@ export const AgentPortal = () => {
   // Auto-save draft on tally change
   useEffect(() => {
     const draftObj = { tallies, evidencePhoto, timestamp: new Date().toISOString() };
-    localStorage.setItem(draftKey, JSON.stringify(draftObj));
+    safeStorage.setItem(draftKey, draftObj);
   }, [tallies, evidencePhoto]);
 
   const handleInputChange = (field, value) => {
@@ -64,7 +65,7 @@ export const AgentPortal = () => {
 
   const handleSaveDraft = () => {
     const draftObj = { tallies, evidencePhoto, timestamp: new Date().toISOString() };
-    localStorage.setItem(draftKey, JSON.stringify(draftObj));
+    safeStorage.setItem(draftKey, draftObj);
     setSavedNotice(true);
     setTimeout(() => setSavedNotice(false), 3000);
   };

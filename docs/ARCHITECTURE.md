@@ -1,11 +1,11 @@
-# 🏛️ CI-EMS 3.1 System Architecture Document
+# 🏛️ KuraTech 3.1 System Architecture Document
 
 ## Overview
 
-The **Campaign Intelligence & Election Management System (CI-EMS 3.1)** is a production-oriented election operations platform designed for political campaign headquarters, tallying centers, and field agents.
+The **Campaign Intelligence & Election Management System (KuraTech 3.1)** is a production-oriented election operations platform designed for political campaign headquarters, tallying centers, and field agents.
 
 ```
-                                  CI-EMS 3.1 ARCHITECTURE
+                                  KuraTech 3.1 ARCHITECTURE
                                              │
              ┌───────────────────────────────┴───────────────────────────────┐
              │                                                               │

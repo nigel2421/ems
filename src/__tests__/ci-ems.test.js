@@ -73,7 +73,7 @@ const localStorageMock = (() => {
 
 globalThis.localStorage = localStorageMock;
 
-describe('CI-EMS Core Service & LLM Unit Tests', () => {
+describe('KuraTech Core Service & LLM Unit Tests', () => {
 
   test('1. LLM API Key Management (getLLMApiKey & setLLMApiKey)', () => {
     const initialKey = getLLMApiKey();
@@ -105,7 +105,7 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
 
   test('3. CSV Bulk Polling Station Parser', () => {
     const csvContent = `Code,Name,County,Constituency,Ward,Village,RegisteredVoters,ActiveVoters,TurnoutPct\n001,Westlands Primary,Nairobi,Westlands,Westlands Ward,Kangemi,750,600,80.0\n002,Parklands Primary,Nairobi,Westlands,Parklands Ward,Highridge,820,680,82.9`;
-    
+
     const parsed = parsePollingStationsCSV(csvContent);
     assert.equal(parsed.length, 2);
     assert.equal(parsed[0].code, '001');
@@ -166,7 +166,7 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
         if (userNameLower && agSupervisorLower.includes(userNameLower)) return true;
         const agRegionLower = (ag.region || ag.entityName || '').toLowerCase();
         const agAssignedLower = (ag.assignedEntity || '').toLowerCase();
-        return tokens.some(t => 
+        return tokens.some(t =>
           (agRegionLower && (agRegionLower.includes(t) || t.includes(agRegionLower))) ||
           (agAssignedLower && (agAssignedLower.includes(t) || t.includes(agAssignedLower)))
         );
@@ -273,7 +273,7 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
   });
 
   // ====================================================================
-  // CI-EMS 2.1 SECURITY & OPERATIONS TEST SUITE (20 INTEGRATION TESTS)
+  // KuraTech 2.1 SECURITY & OPERATIONS TEST SUITE (20 INTEGRATION TESTS)
   // ====================================================================
 
   test('11. Tenant A cannot access Tenant B data', async () => {
@@ -588,7 +588,7 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
   });
 
   // ====================================================================
-  // CI-EMS 2.3 FIELD OPERATIONS & COMMAND PLATFORM TESTS (53 TO 60)
+  // KuraTech 2.3 FIELD OPERATIONS & COMMAND PLATFORM TESTS (53 TO 60)
   // ====================================================================
 
   test('53. AgentMission lifecycle state transitions', async () => {
@@ -712,7 +712,7 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
   });
 
   // ====================================================================
-  // CI-EMS 2.4 RESILIENCE, SECURITY & SIMULATION TESTS (61 TO 100)
+  // KuraTech 2.4 RESILIENCE, SECURITY & SIMULATION TESTS (61 TO 100)
   // ====================================================================
 
   test('61. Duplicate offline event remains exactly-once (Idempotency)', async () => {
@@ -1009,7 +1009,7 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
   });
 
   // ====================================================================
-  // CI-EMS 2.5 PRODUCTION READINESS & DISASTER RECOVERY TESTS (101 TO 120)
+  // KuraTech 2.5 PRODUCTION READINESS & DISASTER RECOVERY TESTS (101 TO 120)
   // ====================================================================
 
   test('101. Tier 0 services must survive Tier 2/3 outages', async () => {
@@ -1196,7 +1196,7 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
     });
 
     assert.equal(certRes.isFullyCertified, true);
-    assert.equal(certRes.certificationStatus, 'CI-EMS READY CERTIFIED');
+    assert.equal(certRes.certificationStatus, 'KuraTech READY CERTIFIED');
   });
 
   test('120. Uncertified agent training status remains IN PROGRESS', async () => {
@@ -1211,7 +1211,7 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
   });
 
   // ====================================================================
-  // CI-EMS 2.6 INTEGRATION TESTS (121 - 140)
+  // KuraTech 2.6 INTEGRATION TESTS (121 - 140)
   // Operational Command, Communications, Logistics & Intelligence
   // ====================================================================
 
@@ -1396,7 +1396,7 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
   });
 
   // ====================================================================
-  // CI-EMS 3.0 INTEGRATION TESTS (141 - 160)
+  // KuraTech 3.0 INTEGRATION TESTS (141 - 160)
   // Production Readiness, Resilience & Election Simulation Engine
   // ====================================================================
 
@@ -1578,7 +1578,7 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
   });
 
   // ====================================================================
-  // CI-EMS 3.1 INTEGRATION TESTS (161 - 180)
+  // KuraTech 3.1 INTEGRATION TESTS (161 - 180)
   // Real Infrastructure, Security RLS, OWASP ASVS & Readiness Certification
   // ====================================================================
 
@@ -1912,12 +1912,12 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
     assert.ok(content.includes('getASVSBadgeColor'));
   });
 
-  test('196. README.md contains comprehensive CI-EMS 3.1 technical architecture documentation', async () => {
+  test('196. README.md contains comprehensive KuraTech 3.1 technical architecture documentation', async () => {
     const fs = await import('node:fs');
     const path = await import('node:path');
     const filePath = path.resolve(process.cwd(), 'README.md');
     const content = fs.readFileSync(filePath, 'utf8');
-    assert.ok(content.includes('CI-EMS 3.1'));
+    assert.ok(content.includes('KuraTech 3.1'));
     assert.ok(content.includes('PostgreSQL Row-Level Security'));
     assert.ok(content.includes('Versioned Legally-Approved Data Retention Policy Engine'));
   });
@@ -1949,8 +1949,8 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
     assert.ok(content.includes('executeDrFailoverExercise'));
   });
 
-  test('200. Complete CI-EMS 3.1 test suite passes 200/200 automated verification tests', async () => {
-    assert.ok(true, 'CI-EMS 3.1 complete test suite achieved 200/200 passing tests');
+  test('200. Complete KuraTech 3.1 test suite passes 200/200 automated verification tests', async () => {
+    assert.ok(true, 'KuraTech 3.1 complete test suite achieved 200/200 passing tests');
   });
 
   test('201. verifyReleaseProvenance confirms complete release build manifest', async () => {
@@ -2028,7 +2028,7 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
     const filePath = path.resolve(process.cwd(), 'docs/ARCHITECTURE.md');
     assert.ok(fs.existsSync(filePath));
     const content = fs.readFileSync(filePath, 'utf8');
-    assert.ok(content.includes('CI-EMS 3.1 System Architecture'));
+    assert.ok(content.includes('KuraTech 3.1 System Architecture'));
   });
 
   test('210. docs/POSTGRES_RLS.md contains database RLS security guidelines', async () => {
@@ -2519,8 +2519,8 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
     assert.equal(member.campaignId, 'CMP-NAIROBI-2027');
   });
 
-  test('260. Complete CI-EMS 3.1 strategy team & campaign organization test suite passes 260/260 automated verification tests', async () => {
-    assert.ok(true, 'CI-EMS 3.1 complete test suite achieved 260/260 passing tests');
+  test('260. Complete KuraTech 3.1 strategy team & campaign organization test suite passes 260/260 automated verification tests', async () => {
+    assert.ok(true, 'KuraTech 3.1 complete test suite achieved 260/260 passing tests');
   });
 
   test('261. Login throttle: 4 failures remain unlocked; 5th triggers escalating lockout', async () => {
@@ -2891,7 +2891,7 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
   });
 
   // ====================================================================
-  // CI-EMS 4.0 INTERACTIVE ELECTORAL MAP TESTS (277 - 282)
+  // KuraTech 4.0 INTERACTIVE ELECTORAL MAP TESTS (277 - 282)
   // Zero-Server Vector TopoJSON/SVG Drill-down & Role-based Auto-framing
   // ====================================================================
 
@@ -3050,7 +3050,7 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
   });
 
   // ====================================================================
-  // CI-EMS 4.1 GOOGLE MAPS API SERVICE TESTS (283 - 286)
+  // KuraTech 4.1 GOOGLE MAPS API SERVICE TESTS (283 - 286)
   // Google Maps JavaScript API, Coordinates, Pin Styling & Auto-Framing
   // ====================================================================
 
@@ -3394,14 +3394,14 @@ describe('CI-EMS Core Service & LLM Unit Tests', () => {
     };
 
     globalThis.document = mockDoc;
-    globalThis.window = { location: { origin: 'https://ci-ems.ke' } };
+    globalThis.window = { location: { origin: 'https://KuraTech.ke' } };
 
     updatePageMetadata('interactive_map');
 
     assert.equal(globalThis.document.title, PAGE_SEO_REGISTRY['interactive_map'].title);
     assert.equal(metaStore['description'], PAGE_SEO_REGISTRY['interactive_map'].description);
     assert.equal(metaStore['robots'], 'index, follow');
-    assert.equal(linkStore['canonical'], 'https://ci-ems.ke/ems/#/map');
+    assert.equal(linkStore['canonical'], 'https://KuraTech.ke/ems/#/map');
 
     delete globalThis.document;
     delete globalThis.window;
@@ -4914,6 +4914,80 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     const queue = getOfflineQueue();
     assert.ok(Array.isArray(queue), 'Queue retrieved as array');
     assert.ok(queue.some(q => q.logicalRecordId === 'PS-MOMBASA-001'), 'Queue contains enqueued station item');
+  });
+
+  test('369. ROLES and ROLE_HIERARCHY include Woman Rep and Presidential roles', async () => {
+    const { ROLES, ROLE_HIERARCHY, getUserScope, SCOPE_LEVELS } = await import('../../src/utils/rbac.js');
+    assert.strictEqual(ROLES.WOMAN_REP, 'Woman Rep');
+    assert.strictEqual(ROLES.PRESIDENTIAL, 'Presidential');
+    assert.strictEqual(ROLES.PRESIDENT, 'President');
+    assert.strictEqual(ROLE_HIERARCHY[ROLES.PRESIDENTIAL], 9);
+    assert.strictEqual(ROLE_HIERARCHY[ROLES.WOMAN_REP], 8);
+
+    const presScope = getUserScope({ role: 'Presidential', county: 'All' });
+    assert.strictEqual(presScope.level, SCOPE_LEVELS.NATIONAL);
+
+    const womanRepScope = getUserScope({ role: 'Woman Rep', county: 'Nairobi City' });
+    assert.strictEqual(womanRepScope.level, SCOPE_LEVELS.COUNTY);
+    assert.strictEqual(womanRepScope.county, 'Nairobi City');
+  });
+
+  test('370. isAspirantRole recognizes candidate roles for agent provisioning', async () => {
+    const { isAspirantRole } = await import('../../server/auth.js');
+    assert.strictEqual(isAspirantRole('MCA'), true);
+    assert.strictEqual(isAspirantRole('MP'), true);
+    assert.strictEqual(isAspirantRole('Governor'), true);
+    assert.strictEqual(isAspirantRole('Senator'), true);
+    assert.strictEqual(isAspirantRole('Woman Rep'), true);
+    assert.strictEqual(isAspirantRole('Presidential'), true);
+    assert.strictEqual(isAspirantRole('President'), true);
+    assert.strictEqual(isAspirantRole('Agent'), false);
+    assert.strictEqual(isAspirantRole('Super Admin'), false);
+  });
+
+  test('371. PollingStationIntelligence.jsx: includes 20, 50, 100, All rows per page options', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const psiContent = fs.readFileSync(path.resolve(process.cwd(), 'src/components/modules/PollingStationIntelligence.jsx'), 'utf8');
+    assert.ok(psiContent.includes('PAGE_SIZE_DEFAULT = 20'), 'Defaults to 20 rows per page');
+    assert.ok(psiContent.includes('setPageSize'), 'Provides setPageSize state handler');
+    assert.ok(psiContent.includes('<option value={20}>20 stations</option>'), 'Provides 20 stations option');
+    assert.ok(psiContent.includes('<option value={50}>50 stations</option>'), 'Provides 50 stations option');
+    assert.ok(psiContent.includes('<option value={100}>100 stations</option>'), 'Provides 100 stations option');
+    assert.ok(psiContent.includes('<option value="All">All stations</option>'), 'Provides All stations option');
+  });
+
+  test('372. LanguageContext.jsx: translates modules, roles, and common navigation in EN and SW', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const langContent = fs.readFileSync(path.resolve(process.cwd(), 'src/context/LanguageContext.jsx'), 'utf8');
+    assert.ok(langContent.includes("'nav.modules': 'Modules'"));
+    assert.ok(langContent.includes("'nav.modules': 'Moduli'"));
+    assert.ok(langContent.includes("'nav.polling_intel': 'Polling Intel'"));
+    assert.ok(langContent.includes("'nav.polling_intel': 'Uchambuzi wa Vituo vya Kura'"));
+    assert.ok(langContent.includes("'nav.tally_center': 'Tally Center'"));
+    assert.ok(langContent.includes("'nav.tally_center': 'Kituo cha Ujumlishaji Kura'"));
+    assert.ok(langContent.includes("'common.role': 'Role'"));
+    assert.ok(langContent.includes("'common.role': 'Cheo'"));
+    assert.ok(langContent.includes("'role.woman_rep'"));
+    assert.ok(langContent.includes("'role.president'"));
+  });
+
+  test('373. ElectoralMapRoom.jsx: eliminates intrusive blocking setup card when !apiKey', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const mapContent = fs.readFileSync(path.resolve(process.cwd(), 'src/components/modules/ElectoralMapRoom.jsx'), 'utf8');
+    assert.ok(!mapContent.includes('View Kenyan satellite imagery, streets, and GPS polling station hub pins. Paste your Google Maps API Key below to activate:'), 'In-canvas blocking card removed');
+  });
+
+  test('374. Floating Dock Stacking: App.jsx wraps News Fab and Countdown Timer in ems-bottom-floating-stack', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const appContent = fs.readFileSync(path.resolve(process.cwd(), 'src/App.jsx'), 'utf8');
+    const cssContent = fs.readFileSync(path.resolve(process.cwd(), 'src/index.css'), 'utf8');
+    assert.ok(appContent.includes('ems-bottom-floating-stack'), 'App.jsx utilizes unified floating stack');
+    assert.ok(cssContent.includes('.ems-bottom-floating-stack'), 'index.css defines floating column flex stack');
+    assert.ok(cssContent.includes('flex-direction: column'), 'Stack is aligned vertically');
   });
 
 });

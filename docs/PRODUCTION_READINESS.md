@@ -1,6 +1,6 @@
 # 🚦 Production Readiness Board & Go-Live Decision Gate
 
-CI-EMS 3.1 mandates an objective, evidence-driven Go/No-Go Decision Gate.
+KuraTech 3.1 mandates an objective, evidence-driven Go/No-Go Decision Gate.
 
 ## Decision Gate Formula
 

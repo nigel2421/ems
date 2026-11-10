@@ -1,5 +1,5 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech)
 // Role-Based Access Control (RBAC) & Geographic Data Scoping Engine
 // ====================================================================
 
@@ -9,8 +9,11 @@ export const ROLES = {
   CANDIDATE_ADMIN: 'Candidate/Campaign Admin',
   STRATEGY_TEAM: 'Strategy Team',
   COUNTY_COORDINATOR: 'County Coordinator',
+  PRESIDENTIAL: 'Presidential',
+  PRESIDENT: 'President',
   GOVERNOR: 'Governor',
   SENATOR: 'Senator',
+  WOMAN_REP: 'Woman Rep',
   CONSTITUENCY_COORDINATOR: 'Constituency Coordinator',
   MP: 'MP',
   WARD_COORDINATOR: 'Ward Coordinator',
@@ -24,7 +27,7 @@ export const ROLES = {
 
 export const SCOPE_LEVELS = {
   NATIONAL: 'NATIONAL',       // Super Admin, Admin, Campaign HQ
-  COUNTY: 'COUNTY',           // County Coordinator, Governor, Senator
+  COUNTY: 'COUNTY',           // County Coordinator, Governor, Senator, Woman Rep
   CONSTITUENCY: 'CONSTITUENCY', // Constituency Coordinator, MP
   WARD: 'WARD',               // Ward Coordinator, MCA
   POLLING_CENTRE: 'POLLING_CENTRE', // Polling Coordinator
@@ -42,9 +45,12 @@ export {
 export const ROLE_HIERARCHY = {
   [ROLES.SUPER_ADMIN]: 10,
   [ROLES.ADMIN]: 10,
+  [ROLES.PRESIDENTIAL]: 9,
+  [ROLES.PRESIDENT]: 9,
   [ROLES.CANDIDATE_ADMIN]: 9,
   [ROLES.GOVERNOR]: 8,
   [ROLES.SENATOR]: 8,
+  [ROLES.WOMAN_REP]: 8,
   [ROLES.COUNTY_COORDINATOR]: 7,
   [ROLES.STRATEGY_TEAM]: 7,
   [ROLES.MP]: 6,
@@ -69,12 +75,19 @@ export const getUserScope = (user) => {
   const role = user.role;
   const contest = String(user.contestType || user.contest || '').toLowerCase();
 
-  if (role === ROLES.SUPER_ADMIN || role === ROLES.ADMIN || (role === ROLES.STRATEGY_TEAM && user.assignedEntity === 'GLOBAL')) {
+  if (
+    role === ROLES.SUPER_ADMIN ||
+    role === ROLES.ADMIN ||
+    role === ROLES.PRESIDENTIAL ||
+    role === ROLES.PRESIDENT ||
+    String(role).includes('President') ||
+    (role === ROLES.STRATEGY_TEAM && user.assignedEntity === 'GLOBAL')
+  ) {
     return {
       level: SCOPE_LEVELS.NATIONAL,
       name: 'National Scope (All 47 Counties)',
       county: user.county || 'All',
-      entityName: user.entityName || 'National HQ'
+      entityName: user.entityName || (role === ROLES.PRESIDENTIAL || role === ROLES.PRESIDENT ? 'Presidential Campaign HQ' : 'National HQ')
     };
   }
 
@@ -107,7 +120,7 @@ export const getUserScope = (user) => {
         entityName: user.entityName || `${user.ward} Campaign HQ`
       };
     }
-    // Default candidate to county (Gubernatorial / Senatorial)
+    // Default candidate to county (Gubernatorial / Senatorial / Woman Rep)
     return {
       level: SCOPE_LEVELS.COUNTY,
       name: `${user.county || 'Assigned'} County`,
@@ -120,8 +133,10 @@ export const getUserScope = (user) => {
     role === ROLES.COUNTY_COORDINATOR ||
     role === ROLES.GOVERNOR ||
     role === ROLES.SENATOR ||
+    role === ROLES.WOMAN_REP ||
     String(role).includes('Governor') ||
     String(role).includes('Senator') ||
+    String(role).includes('Woman Rep') ||
     (String(role).includes('County') && !String(role).includes('Constituency'))
   ) {
     return {
@@ -417,7 +432,22 @@ export const canPerformAction = (user, action) => {
 
     case 'CREATE_SURVEY':
     case 'MANAGE_AGENTS':
-      return [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.CANDIDATE_ADMIN, ROLES.COUNTY_COORDINATOR, ROLES.CONSTITUENCY_COORDINATOR, ROLES.WARD_COORDINATOR, ROLES.GOVERNOR, ROLES.SENATOR, ROLES.MP, ROLES.MCA].includes(role);
+      return [
+        ROLES.SUPER_ADMIN,
+        ROLES.ADMIN,
+        ROLES.CANDIDATE_ADMIN,
+        ROLES.COUNTY_COORDINATOR,
+        ROLES.CONSTITUENCY_COORDINATOR,
+        ROLES.WARD_COORDINATOR,
+        ROLES.PRESIDENTIAL,
+        ROLES.PRESIDENT,
+        ROLES.GOVERNOR,
+        ROLES.SENATOR,
+        ROLES.WOMAN_REP,
+        ROLES.MP,
+        ROLES.MCA,
+        ROLES.ASPIRANT
+      ].includes(role);
 
     case 'VIEW_AI_ASSISTANT':
       return [ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.CANDIDATE_ADMIN, ROLES.STRATEGY_TEAM, ROLES.COUNTY_COORDINATOR, ROLES.CONSTITUENCY_COORDINATOR, ROLES.GOVERNOR, ROLES.SENATOR, ROLES.MP, ROLES.ASPIRANT].includes(role);

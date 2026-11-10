@@ -1,5 +1,5 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS 3.1)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 3.1)
 // Strategy Team & Campaign Organization Main Module
 // ====================================================================
 
@@ -338,10 +338,10 @@ export const StrategyTeamModule = () => {
           <div className="strategy-overview-grid">
             <section className="admin-card strategy-overview-panel">
               <div className="admin-card-head mb-2">
-              <div>
-                <h2>Priority work</h2>
-                <p>Open tasks across the campaign</p>
-              </div>
+                <div>
+                  <h2>Priority work</h2>
+                  <p>Open tasks across the campaign</p>
+                </div>
               </div>
               <label className="strategy-overview-search">
                 <Search size={15} />
@@ -689,7 +689,7 @@ export const StrategyTeamModule = () => {
             <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 mb-4">
               <h5 className="text-xs font-bold text-slate-200 mb-2 d-flex align-items-center gap-1.5">
                 <Lock size={14} className="text-amber-400" />
-                <span>CI-EMS System Access & Security Role</span>
+                <span>KuraTech System Access & Security Role</span>
               </h5>
               <div className="d-flex align-items-center justify-content-between text-xs mb-2">
                 <span className="text-slate-400">System Access Granted:</span>
@@ -707,7 +707,7 @@ export const StrategyTeamModule = () => {
 
               {selectedMember.systemAccess && (
                 <div className="mt-2">
-                  <label className="form-label text-xs text-slate-400">Assigned CI-EMS Security Role</label>
+                  <label className="form-label text-xs text-slate-400">Assigned KuraTech Security Role</label>
                   <select
                     className="form-select text-xs bg-slate-950 text-slate-200 border-slate-700"
                     value={selectedMember.securityRole}
@@ -781,12 +781,12 @@ export const StrategyTeamModule = () => {
 
               <div className="p-2.5 rounded bg-slate-900 border border-slate-800">
                 <div className="d-flex align-items-center justify-content-between mb-1">
-                  <span className="font-semibold text-slate-200">Provision CI-EMS System Account?</span>
+                  <span className="font-semibold text-slate-200">Provision KuraTech System Account?</span>
                   <input type="checkbox" checked={newMemberSystemAccess} onChange={e => setNewMemberSystemAccess(e.target.checked)} />
                 </div>
                 {newMemberSystemAccess && (
                   <div>
-                    <label className="form-label text-slate-400">CI-EMS Security Role</label>
+                    <label className="form-label text-slate-400">KuraTech Security Role</label>
                     <select className="form-select text-xs" value={newMemberSecurityRole} onChange={e => setNewMemberSecurityRole(e.target.value)}>
                       {Object.values(ROLES).map(r => (
                         <option key={r} value={r}>{r}</option>

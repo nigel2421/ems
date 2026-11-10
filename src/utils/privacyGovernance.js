@@ -1,9 +1,9 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS 2.1)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 2.1)
 // Privacy Governance & Data Protection Subsystem (Kenya DPA / ODPC)
 // ====================================================================
 
-export const PRIVACY_DISCLAIMER = 
+export const PRIVACY_DISCLAIMER =
   "Designed to support compliance with Kenya's Data Protection Act and ODPC electoral guidance. Voter sentiment data is strictly aggregated at Ward/Constituency level. No individual political profiling or persuadability targeting.";
 
 export const PRIVACY_PURPOSES = [
@@ -31,7 +31,7 @@ export const registerDataSubjectRequest = (requestType, subjectIdentifier) => ({
 });
 
 /**
-  CI-EMS 3.0 Enforceable Data Policy Engine
+  KuraTech 3.0 Enforceable Data Policy Engine
  */
 export const DATA_POLICIES = {
   AGENT_PERSONAL_DATA: {

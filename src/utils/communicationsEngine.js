@@ -1,5 +1,5 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS 2.3)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 2.3)
 // Scope-Targeted Communications & Emergency Broadcast Maker-Checker Engine
 // ====================================================================
 
@@ -134,7 +134,7 @@ export const approveEmergencyDispatch = (dispatch, approverUser) => {
 };
 
 /**
-  10 Standardized Operational Message Templates for CI-EMS 2.6
+  10 Standardized Operational Message Templates for KuraTech 2.6
  */
 export const OPERATIONAL_TEMPLATES = {
   AGENT_CHECKIN_REMINDER: {
@@ -180,7 +180,7 @@ export const OPERATIONAL_TEMPLATES = {
   SYSTEM_DEGRADED: {
     key: 'SYSTEM_DEGRADED',
     subject: 'NOTICE: Operational Degradation',
-    body: 'CI-EMS system running in {{mode}} mode due to {{reason}}. Synchronizations queued locally.'
+    body: 'KuraTech system running in {{mode}} mode due to {{reason}}. Synchronizations queued locally.'
   },
   CUSTOM_BROADCAST: {
     key: 'CUSTOM_BROADCAST',

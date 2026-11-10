@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS CLI: Create User with scrypt Hash
+// KuraTech CLI: Create User with scrypt Hash
 // Usage: node scripts/create-user.mjs --email admin@example.com --role "Super Admin" --name "Jane Doe" --password "Secret123!"
 // ====================================================================
 

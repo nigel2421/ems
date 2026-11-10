@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS Offline IndexedDB Queue & Synchronization Engine
+// KuraTech Offline IndexedDB Queue & Synchronization Engine
 // Resilient vote tally and field report caching for remote polling stations
 // ====================================================================
 

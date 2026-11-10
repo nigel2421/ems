@@ -98,7 +98,7 @@ export default function TallyOperationsRoom({ userScope }) {
           Pipeline Stage Details: {selectedStage === 'ALL' ? 'All Stations' : selectedStage}
         </h3>
         <p style={{ color: '#94a3b8', fontSize: '14px' }}>
-          All votes captured in CI-EMS 2.6 are subject to strict 3-source reconciliation (Agent Field Entry, Statutory Form Image OCR/Vault, and Reference Verification). Results remain internal parallel tally estimates until official declaration by statutory election authority.
+          All votes captured in KuraTech 2.6 are subject to strict 3-source reconciliation (Agent Field Entry, Statutory Form Image OCR/Vault, and Reference Verification). Results remain internal parallel tally estimates until official declaration by statutory election authority.
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginTop: '20px' }}>

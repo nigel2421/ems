@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { safeStorage } from '../utils/safeStorage';
 import { initialGeography, initialSubmissions, iebcOfficialBroadcasts, initialAuditLogs, initialUsers } from '../data/mockData';
 import {
   initialUsersList,
@@ -27,7 +28,7 @@ const DataContext = createContext(null);
 // Helper to safely write to localStorage without crashing on QuotaExceededError
 const safeSetLocalStorage = (key, value) => {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    safeStorage.setItem(key, value);
   } catch (err) {
     console.warn(`[EMS] LocalStorage save quota exceeded or unavailable for '${key}':`, err);
     if (err.name === 'QuotaExceededError' || err.code === 22) {

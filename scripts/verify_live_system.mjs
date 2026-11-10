@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ====================================================================
-// CI-EMS Production Live System Verification Engine
+// KuraTech Production Live System Verification Engine
 // End-to-end diagnostic suite testing SSL, Nginx, Auth, Scrypt,
 // User Persistence, Automated Cleanup, Readiness, and Maps Config.
 // ====================================================================
@@ -47,7 +47,7 @@ async function runStep(stepNumber, title, testFn) {
 
 async function verifyLiveSystem() {
   console.log('\n' + colors.bold + colors.cyan + '====================================================================' + colors.reset);
-  console.log(colors.bold + ' CI-EMS PRODUCTION LIVE SYSTEM & VPS VERIFICATION SUITE' + colors.reset);
+  console.log(colors.bold + ' KuraTech PRODUCTION LIVE SYSTEM & VPS VERIFICATION SUITE' + colors.reset);
   console.log(colors.gray + ` Target: ${TARGET_URL} | Time: ${new Date().toISOString()}` + colors.reset);
   console.log(colors.bold + colors.cyan + '====================================================================\n' + colors.reset);
 

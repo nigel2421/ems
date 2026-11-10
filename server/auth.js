@@ -1,16 +1,30 @@
 // ====================================================================
-// CI-EMS Server Authentication & Host-Bound Realm Guard
+// KuraTech Server Authentication & Host-Bound Realm Guard
 // Zero external dependencies - pure Node.js crypto & timing-safe checks
 // ====================================================================
 
 import crypto from 'node:crypto';
 
-const SESSION_SECRET = process.env.SESSION_SECRET || 'ci-ems-default-dev-secret-replace-in-production-2026';
+const SESSION_SECRET = process.env.SESSION_SECRET || 'KuraTech-default-dev-secret-replace-in-production-2026';
 const TOKEN_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 export const ADMIN_ROLES = new Set(['Super Admin', 'Admin']);
 
 export const isAdminRole = (role) => ADMIN_ROLES.has(role);
+
+export const ASPIRANT_ROLES = new Set([
+  'Governor',
+  'Senator',
+  'Woman Rep',
+  'MP',
+  'MCA',
+  'Presidential',
+  'President',
+  'Aspirant',
+  'Candidate/Campaign Admin'
+]);
+
+export const isAspirantRole = (role) => ASPIRANT_ROLES.has(role);
 
 /**
  * Derives realm from Host / X-Forwarded-Host header.

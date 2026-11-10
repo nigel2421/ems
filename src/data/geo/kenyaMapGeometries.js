@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS AUTHENTIC VECTOR MAP GEOMETRIES: KENYA 47 COUNTIES & REGIONS
+// KuraTech AUTHENTIC VECTOR MAP GEOMETRIES: KENYA 47 COUNTIES & REGIONS
 // Authentic Geographic Contours with High Precision SVG Paths
 // Zero-Server Overhead, Client-Side Vector TopoJSON/SVG Path System
 // Coordinates mapped to standard Kenya 850x1000 ViewBox Projection

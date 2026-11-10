@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS MAP ANALYTICS & CHOROPLETH COMPUTATION ENGINE
+// KuraTech MAP ANALYTICS & CHOROPLETH COMPUTATION ENGINE
 // Real-time calculation of voter turnout, candidate leads, reporting,
 // and risk heatmaps across administrative hierarchies.
 // ====================================================================

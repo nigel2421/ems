@@ -768,6 +768,37 @@ html.dark .brand-logo,
   color: #006B3F;
 }
 
+/* --- Unified Bottom Right Floating Dock (News Fab stacked above Countdown Widget) --- */
+.ems-bottom-floating-stack {
+  position: fixed;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  right: 1.25rem;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.55rem;
+  pointer-events: none;
+}
+
+.ems-bottom-floating-stack > * {
+  pointer-events: auto;
+}
+
+.ems-bottom-floating-stack .psi-news-dock {
+  position: static !important;
+  bottom: auto !important;
+  right: auto !important;
+  z-index: auto !important;
+}
+
+.ems-bottom-floating-stack .countdown-floating-widget {
+  position: static !important;
+  bottom: auto !important;
+  right: auto !important;
+  margin: 0 !important;
+}
+
 /* --- Floating Sticky Widget Variant --- */
 .countdown-floating-widget {
   position: fixed;

@@ -47,14 +47,19 @@ const stripHtml = (html = '') =>
     .replace(/\s+/g, ' ')
     .trim();
 
+const XML_ENTITIES = {
+  '&amp;': '&',
+  '&lt;': '<',
+  '&gt;': '>',
+  '&quot;': '"',
+  '&#39;': "'",
+  '&apos;': "'"
+};
+
 const decodeXml = (value = '') =>
   String(value)
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
+    .replace(/&(?:amp|lt|gt|quot|apos|#39);/g, (match) => XML_ENTITIES[match] || match);
 
 const extractTag = (block, tag) => {
   const re = new RegExp(
@@ -103,7 +108,7 @@ const VERIFIED_FALLBACK_NEWS = [
   },
   {
     id: 'iebc-bulletin-03',
-    title: 'Campaign Intelligence & Election Management System (CI-EMS) Live Across Mombasa and Nairobi Command Centers',
+    title: 'Campaign Intelligence & Election Management System (KuraTech) Live Across Mombasa and Nairobi Command Centers',
     summary: 'Central operations teams activate geospatial tracking and station-level verification monitoring across all 290 constituencies.',
     link: '#',
     source: 'Capital FM',

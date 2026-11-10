@@ -1,12 +1,12 @@
 // ====================================================================
-// CI-EMS DYNAMIC HEAD & SEO MANAGEMENT ENGINE
+// KuraTech DYNAMIC HEAD & SEO MANAGEMENT ENGINE
 // Automatic indexing, canonical linking, OpenGraph/Twitter Cards,
 // and Schema.org structured data synchronization for all modules.
 // ====================================================================
 
 export const PAGE_SEO_REGISTRY = {
   dashboard: {
-    title: 'Operations Dashboard | CI-EMS Election Management System',
+    title: 'Operations Dashboard | KuraTech Election Management System',
     description: 'Central operations command dashboard for Kenya 2027 General Elections. Real-time turnout, tallies, and operational status.',
     canonicalRoute: '',
     robots: 'index, follow',
@@ -15,7 +15,7 @@ export const PAGE_SEO_REGISTRY = {
     changefreq: 'always'
   },
   interactive_map: {
-    title: 'Electoral Map Room & Geospatial Intelligence | CI-EMS',
+    title: 'Electoral Map Room & Geospatial Intelligence | KuraTech',
     description: 'High-precision Kenya electoral map with 47 counties, 290 constituencies, live candidate lead choropleth, voter turnout, and Google satellite imagery.',
     canonicalRoute: '#/map',
     robots: 'index, follow',
@@ -24,7 +24,7 @@ export const PAGE_SEO_REGISTRY = {
     changefreq: 'hourly'
   },
   polling_stations: {
-    title: 'Polling Station Intelligence & GPS Directory | CI-EMS',
+    title: 'Polling Station Intelligence & GPS Directory | KuraTech',
     description: 'Directory and security risk assessment for 46,051 Kenyan polling stations across 290 constituencies with live voter capacity and agent assignments.',
     canonicalRoute: '#/polling-stations',
     robots: 'index, follow',
@@ -33,7 +33,7 @@ export const PAGE_SEO_REGISTRY = {
     changefreq: 'daily'
   },
   tally_center: {
-    title: 'National Tally Operations & Results Certification | CI-EMS',
+    title: 'National Tally Operations & Results Certification | KuraTech',
     description: 'Real-time Form 34A tabulation, candidate vote share certification, turnout verification, and forensic discrepancy checks for Kenya elections.',
     canonicalRoute: '#/tally-center',
     robots: 'index, follow',
@@ -42,7 +42,7 @@ export const PAGE_SEO_REGISTRY = {
     changefreq: 'always'
   },
   strategy: {
-    title: 'Campaign Strategy, Roadmaps & Objectives | CI-EMS',
+    title: 'Campaign Strategy, Roadmaps & Objectives | KuraTech',
     description: 'Strategic victory roadmapping, department-level task mobilization, key milestones, and polling intelligence for election leadership.',
     canonicalRoute: '#/strategy',
     robots: 'index, follow',
@@ -51,7 +51,7 @@ export const PAGE_SEO_REGISTRY = {
     changefreq: 'daily'
   },
   strategy_team: {
-    title: 'Campaign Organization & Strategy Team Directory | CI-EMS',
+    title: 'Campaign Organization & Strategy Team Directory | KuraTech',
     description: 'Hierarchical campaign leadership structure, departmental rosters, security permissions, and strategic jurisdiction management.',
     canonicalRoute: '#/strategy-team',
     robots: 'index, follow',
@@ -60,7 +60,7 @@ export const PAGE_SEO_REGISTRY = {
     changefreq: 'weekly'
   },
   agents: {
-    title: 'Accredited Agent Management & Station Deployment | CI-EMS',
+    title: 'Accredited Agent Management & Station Deployment | KuraTech',
     description: 'Official roster of certified polling station agents, deployment tracking, digital check-ins, and direct communications network.',
     canonicalRoute: '#/agents',
     robots: 'index, follow',
@@ -69,7 +69,7 @@ export const PAGE_SEO_REGISTRY = {
     changefreq: 'daily'
   },
   field_reports: {
-    title: 'Field Agent Incident & Polling Stream Reports | CI-EMS',
+    title: 'Field Agent Incident & Polling Stream Reports | KuraTech',
     description: 'Real-time field observer observations, station opening times, queue length telemetry, and security incident logs across Kenya.',
     canonicalRoute: '#/field-reports',
     robots: 'index, follow',
@@ -78,7 +78,7 @@ export const PAGE_SEO_REGISTRY = {
     changefreq: 'hourly'
   },
   surveys: {
-    title: 'Electoral Sampling & Voter Opinion Surveys | CI-EMS',
+    title: 'Electoral Sampling & Voter Opinion Surveys | KuraTech',
     description: 'Statistically verified voter sentiment sampling, demographic trend analysis, and candidate preference tracking by region.',
     canonicalRoute: '#/surveys',
     robots: 'index, follow',
@@ -87,7 +87,7 @@ export const PAGE_SEO_REGISTRY = {
     changefreq: 'daily'
   },
   mobilization: {
-    title: 'Voter Turnout & Grassroots Mobilization | CI-EMS',
+    title: 'Voter Turnout & Grassroots Mobilization | KuraTech',
     description: 'Grassroots voter mobilization command, GOTV dispatching, volunteer task assignment, and hourly turnout acceleration metrics.',
     canonicalRoute: '#/mobilization',
     robots: 'index, follow',
@@ -96,7 +96,7 @@ export const PAGE_SEO_REGISTRY = {
     changefreq: 'hourly'
   },
   executive_briefing: {
-    title: 'Executive Situation Room & Leadership Briefing | CI-EMS',
+    title: 'Executive Situation Room & Leadership Briefing | KuraTech',
     description: 'Executive-level strategic briefing room providing summarized KPIs, decisive swing county indicators, and legal audit status.',
     canonicalRoute: '#/executive-briefing',
     robots: 'index, follow',
@@ -105,7 +105,7 @@ export const PAGE_SEO_REGISTRY = {
     changefreq: 'hourly'
   },
   production_readiness: {
-    title: 'Production Readiness & OWASP Security Gate | CI-EMS',
+    title: 'Production Readiness & OWASP Security Gate | KuraTech',
     description: 'System security posture verification, OWASP ASVS compliance audit, statutory data retention checks, and release provenance.',
     canonicalRoute: '#/production-readiness',
     robots: 'index, follow',
@@ -115,7 +115,7 @@ export const PAGE_SEO_REGISTRY = {
   },
   // Protected operational rooms (Deep-linkable, but flagged noindex)
   ops_queue: {
-    title: 'Unified Operations Queue | CI-EMS Internal Ops',
+    title: 'Unified Operations Queue | KuraTech Internal Ops',
     description: 'Internal operational workflow and escalation queue for election coordinators.',
     canonicalRoute: '#/ops-queue',
     robots: 'noindex, nofollow',
@@ -124,7 +124,7 @@ export const PAGE_SEO_REGISTRY = {
     changefreq: 'always'
   },
   war_room: {
-    title: 'Election War Room Cockpit | CI-EMS Secured Command',
+    title: 'Election War Room Cockpit | KuraTech Secured Command',
     description: 'Secure operational war room interface for authorized election coordinators.',
     canonicalRoute: '#/war-room',
     robots: 'noindex, nofollow',
@@ -133,7 +133,7 @@ export const PAGE_SEO_REGISTRY = {
     changefreq: 'always'
   },
   security_ops: {
-    title: 'Security Operations & Threat Defense | CI-EMS Ops',
+    title: 'Security Operations & Threat Defense | KuraTech Ops',
     description: 'Security incident monitoring and tamper-evident ledger verification.',
     canonicalRoute: '#/security-ops',
     robots: 'noindex, nofollow',
@@ -142,7 +142,7 @@ export const PAGE_SEO_REGISTRY = {
     changefreq: 'always'
   },
   evidence_review: {
-    title: 'Evidence Review & Form 34A Vault | CI-EMS Forensic',
+    title: 'Evidence Review & Form 34A Vault | KuraTech Forensic',
     description: 'Digital evidence inspection desk for statutory Form 34A uploads.',
     canonicalRoute: '#/evidence-review',
     robots: 'noindex, nofollow',
@@ -193,7 +193,7 @@ export const updatePageMetadata = (moduleId, customOptions = {}) => {
   setMetaTag('meta[name="robots"]', 'name', 'robots', robots);
 
   // Canonical URL
-  const origin = typeof window !== 'undefined' && window.location ? window.location.origin : 'https://ci-ems.ke';
+  const origin = typeof window !== 'undefined' && window.location ? window.location.origin : 'https://KuraTech.ke';
   const fullCanonical = `${origin}/ems/${page.canonicalRoute ? page.canonicalRoute : ''}`;
   setLinkTag('canonical', fullCanonical);
 
@@ -202,7 +202,7 @@ export const updatePageMetadata = (moduleId, customOptions = {}) => {
   setMetaTag('meta[property="og:description"]', 'property', 'og:description', description);
   setMetaTag('meta[property="og:url"]', 'property', 'og:url', fullCanonical);
   setMetaTag('meta[property="og:type"]', 'property', 'og:type', page.ogType || 'website');
-  setMetaTag('meta[property="og:site_name"]', 'property', 'og:site_name', 'CI-EMS Kenya');
+  setMetaTag('meta[property="og:site_name"]', 'property', 'og:site_name', 'KuraTech Kenya');
 
   // Twitter Cards
   setMetaTag('meta[name="twitter:card"]', 'name', 'twitter:card', 'summary_large_image');
@@ -221,11 +221,11 @@ export const updatePageMetadata = (moduleId, customOptions = {}) => {
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'GovernmentService',
-    'name': 'Campaign Intelligence & Election Management System (CI-EMS)',
+    'name': 'Campaign Intelligence & Election Management System (KuraTech)',
     'serviceType': 'Electoral Operations and Results Certification',
     'provider': {
       '@type': 'Organization',
-      'name': 'CI-EMS Kenya'
+      'name': 'KuraTech Kenya'
     },
     'url': fullCanonical,
     'description': description

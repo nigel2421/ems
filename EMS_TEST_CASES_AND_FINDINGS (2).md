@@ -1,37 +1,37 @@
-#CI-EMS (PRO) - Test Cases Report and Findings
+# KuraTech (PRO) - Test Cases Report and Findings
 **Date:** October 14, 2026  
-**App URL:** https://nigel2421.github.io/ems/  
+**App URL:** <https://nigel2421.github.io/ems/>  
 **Test Scope:** Full system coverage across 6 user roles
 
 ## Executive Summary
 
-This report documents comprehensive test coverage for a **campaign and election operations platform** (candidate "Campaign HQ" dashboards, Strategy, Polling Intel, Agent Management, Tally Center, Field Reports, Surveys, Mobilization, AI Assistant, plus Admin Tools). Testing was conducted across all six roles (Governor, Senator, MP, MCA, Field Agent, Admin) 
+This report documents comprehensive test coverage for a **campaign and election operations platform** (candidate "Campaign HQ" dashboards, Strategy, Polling Intel, Agent Management, Tally Center, Field Reports, Surveys, Mobilization, AI Assistant, plus Admin Tools). Testing was conducted across all six roles (Governor, Senator, MP, MCA, Field Agent, Admin)
 ---
 
 | Code | Role | Email | Expected scope (CONFIRM with developer) |
-|---|---|---|---|
-| ADM | Admin | admin.super@ems.go.ke | Whole system, Admin Tools, impersonation |
-| GOV | Governor | governor.nairobi@ems.go.ke | Nairobi County (17 constituencies, 3,565 stations) |
-| SEN | Senator | senator.nairobi@ems.go.ke | Nairobi County/Specific to a county |
-| MP | MP Westlands | mp.westlands@ems.go.ke | Westlands constituency only/Specific to a constituency |
-| MCA | MCA Parklands | mca.parklands@ems.go.ke | Parklands ward only/Specific to a ward |
-| AGT | Field Agent | james.agent@ems.go.ke | Assigned polling station(s) only/Specific to a polling station |
+| --- | --- | --- | --- |
+| ADM | Admin | <admin.super@ems.go.ke> | Whole system, Admin Tools, impersonation |
+| GOV | Governor | <governor.nairobi@ems.go.ke> | Nairobi County (17 constituencies, 3,565 stations) |
+| SEN | Senator | <senator.nairobi@ems.go.ke> | Nairobi County/Specific to a county |
+| MP | MP Westlands | <mp.westlands@ems.go.ke> | Westlands constituency only/Specific to a constituency |
+| MCA | MCA Parklands | <mca.parklands@ems.go.ke> | Parklands ward only/Specific to a ward |
+| AGT | Field Agent | <james.agent@ems.go.ke> | Assigned polling station(s) only/Specific to a polling station |
 
 **Reference values (used for data-accuracy checks):**
-National registered voters 22,349,912 | Polling stations 46,051 | Active accounts 7 | Pending tallies 0 | Nairobi: 2,658,906 voters, 17 constituencies, 3,565 stations, top-5 share 39.7% | Countdown target: 10 Aug (2027).
+National registered voters 22,349,912 | Polling stations 46,051 | Active accounts 7 | Pending tallies 0 | Nairobi: 2,658,906 voters, 17 constituencies, 3,565 stations, top-5 share 39.7% | Countdown target: 10 Aug (2027)
 ---
 
 ## 1. Authentication and Session
 
 | ID | Role | Scenario | Steps | Expected | Pri | Status |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | AUTH-01 | ALL | Valid login for each role | Enter valid email and password, submit | Logs in; name and role shown in sidebar profile | P1 | ✅Pass |
 | AUTH-02 | ALL | Role-appropriate landing page | Log in as each role | ADM sees Admin Overview; GOV sees "Governor command"; others see their own dashboard | P1 | ✅Pass |
 | AUTH-03 | ALL | Wrong password | Valid email, wrong password | Generic error, stays on login, no data loaded | P1 | ✅Pass |
 | AUTH-04 | ALL | Unknown email | Unregistered email | Same generic error as AUTH-03 (no account enumeration) | P1 | ✅Pass |
 | AUTH-05 | ALL | Empty email | Blank email, submit | Field-level validation message | P1 | ✅Pass |
 | AUTH-06 | ALL | Empty password | Blank password, submit | Field-level validation message | P1 | ✅Pass |
-| AUTH-07 | ALL | Email case and spaces | Enter " Governor.Nairobi@EMS.go.ke " | Accepted (trimmed, case-insensitive) or clear message; consistent behavior | P2 | ✅Pass |
+| AUTH-07 | ALL | Email case and spaces | Enter " <Governor.Nairobi@EMS.go.ke> " | Accepted (trimmed, case-insensitive) or clear message; consistent behavior | P2 | ✅Pass |
 | AUTH-08 | ALL | Password masking | Type password; use show/hide toggle if present | Masked by default; toggle works | P2 | ✅Pass |
 | AUTH-09 | ALL | Brute-force protection | 10 failed logins in a row | Lockout, delay or captcha; no unlimited attempts | P1 | ❌Fail |
 | AUTH-10 | ALL | Enter key submits | Press Enter in password field | Login submits once | P3 | ✅Pass |
@@ -47,7 +47,7 @@ National registered voters 22,349,912 | Polling stations 46,051 | Active account
 ## 2. Access Control and Data Scope
 
 | ID | Role | Scenario | Steps | Expected | Pri | Status |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | RBAC-01 | GOV, SEN, MP, MCA, AGT | Admin Tools hidden | Check sidebar | Overview, Accounts, Geo Inspector, Audit, Alerts (Admin Tools) not shown | P1 | ✅Pass |
 | RBAC-02 | Non-ADM | Direct URL to admin pages | Paste admin route URL while logged in as GOV | Access denied or redirect; no admin data flashes | P1 | ✅Pass |
 | RBAC-03 | Non-ADM | Admin buttons hidden | Look for Add candidate and Import stations | Not visible; direct action blocked | P1 | ✅Pass |
@@ -66,7 +66,7 @@ National registered voters 22,349,912 | Polling stations 46,051 | Active account
 ## 3. Admin Overview and Admin Tools (ADM)
 
 | ID | Role | Scenario | Steps | Expected | Pri | Status |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | ADM-01 | ADM | KPI cards render | Open Overview | Registered voters, Polling stations, Active accounts, Pending tallies shown with correct labels | P1 | ✅Pass |
 | ADM-02 | ADM | National totals accurate | Sum county voters from Geo Inspector or source data | Equals 22,349,912; stations equal 46,051 | P1 | ✅Pass |
 | ADM-03 | ADM | Active accounts count | Compare card (7), sidebar badge (7) and Accounts list | All three agree | P1 | ✅Pass |
@@ -91,9 +91,9 @@ National registered voters 22,349,912 | Polling stations 46,051 | Active account
 ## 4. Candidate Dashboards (GOV, SEN, MP, MCA)
 
 | ID | Role | Scenario | Steps | Expected | Pri | Status |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | DASH-01 | GOV | Header and context | Open dashboard | "Governor command", county "Nairobi City", correct campaign name | P1 | ✅Pass |
-| DASH-02 | GOV | Total registered voters/Nairobi | Compare card to Geo Inspector | 2,658,906 matches source | P1 |✅Pass |
+| DASH-02 | GOV | Total registered voters/Nairobi | Compare card to Geo Inspector | 2,658,906 matches source | P1 | ✅Pass |
 | DASH-03 | GOV | Constituencies count/Nairobi county | Count constituencies in Polling Intel | 17 | P1 | ✅Pass |
 | DASH-04 | GOV | Polling stations count | Compare card to Polling Intel total | 3,565 | P1 | ✅Pass |
 | DASH-05 | GOV | Top voter blocks share | Add top 5 constituencies, divide by county total | 39.7% (within rounding) | P2 | ✅Pass |
@@ -108,9 +108,9 @@ National registered voters 22,349,912 | Polling stations 46,051 | Active account
 ## 5. Charts and Maps (Register by County)
 
 | ID | Role | Scenario | Steps | Expected | Pri | Status |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | CHT-01 | ADM | Pie "Share of register" | Check top-10 counties | Slice sizes match data; percentages sensible | P2 | ✅Pass |
-| CHT-02 | ADM | Legend complete | Scroll to legend on phone | All 10 counties readable, none hidden (a legend item is covered by the News widget) | P2 |❌Fail |
+| CHT-02 | ADM | Legend complete | Scroll to legend on phone | All 10 counties readable, none hidden (a legend item is covered by the News widget) | P2 | ❌Fail |
 | CHT-03 | ADM | "Voters by county" chart | Compare points to data | Values correct; x-axis labels fully readable | P2 | ✅Pass |
 | CHT-04 | ADM | Tooltips | Tap/hover points and slices | Shows county name and exact value | P2 | ✅Pass |
 | CHT-05 | ADM | View map | Click "View map" | Map loads, counties shaded correctly, can return | P2 | ❌Fail |
@@ -120,12 +120,12 @@ National registered voters 22,349,912 | Polling stations 46,051 | Active account
 ## 6. News Widget and Election Countdown
 
 | ID | Role | Scenario | Steps | Expected | Pri | Status |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | WID-01 | ALL | Open news items | Open widget, click an item | Title, source, date; link opens correct page | P2 | ✅Pass |
 | WID-02 | ALL | News empty / error | No news or feed failing | "No news" or error message, badge 0/hidden | P3 | ✅Pass |
 | WID-03 | ALL | Widget overlap | Scroll all pages on phone | Floating News button never hides content; can be moved or minimised (it covers a card icon and chart legend) | P2 | ❌Fail |
 | WID-04 | ALL | Countdown accuracy | Compare days/hours to 10 Aug 2027 00:00 EAT | Correct for Africa/Nairobi time; check against a trusted calculator | P1 | ✅Pass |
-| WID-05 | ALL | Countdown ticking | Watch 2 minutes; background tab 5 minutes, return | Seconds tick; no drift or freeze after returning | P2 |✅Pass |
+| WID-05 | ALL | Countdown ticking | Watch 2 minutes; background tab 5 minutes, return | Seconds tick; no drift or freeze after returning | P2 | ✅Pass |
 | WID-06 | ALL | Countdown collapse and close | Use minimise and close buttons | Works; state remembered or reappears per design | P3 | ✅Pass |
 | WID-07 | ALL | Countdown overlap (desktop) | View dashboard at 1366 px | Countdown card does not cover chart titles or data | P2 | ✅Pass |
 | WID-08 | ALL | Countdown different timezone | Set device to another timezone | Still counts to the same moment (or documented) | P3 | ✅Pass |
@@ -134,7 +134,7 @@ National registered voters 22,349,912 | Polling stations 46,051 | Active account
 ## 7. Navigation and Layout
 
 | ID | Role | Scenario | Steps | Expected | Pri | Status |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | NAV-01 | ADM | Single active menu item | Open drawer on Overview | One item highlighted | P2 | ✅Pass |
 | NAV-02 | ALL | Expand and collapse | Toggle More and Agent Management | Opens/closes; chevron changes; state sensible | P3 | ✅Pass |
 | NAV-03 | ALL | Mobile drawer | Open hamburger, tap item, tap outside | Drawer closes on selection and on outside tap | P2 | ✅Pass |
@@ -147,7 +147,7 @@ National registered voters 22,349,912 | Polling stations 46,051 | Active account
 ## 8. Functional Modules
 
 | ID | Role | Scenario | Steps | Expected | Pri | Status |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | STR-01 | GOV | Strategy Team view | Open Strategy Team | Org structure shown for own campaign only | P2 | ✅Pass |
 | STR-02 | GOV | Strategy Team edit | Add, edit, remove a team member | Saved, validated, audit logged | P2 | ✅Pass |
 | STR-03 | GOV | Strategy / campaign plan | Create and edit a plan, save, refresh | Content persists; validation on required fields | P2 | ✅Pass |
@@ -165,9 +165,9 @@ National registered voters 22,349,912 | Polling stations 46,051 | Active account
 | FLD-03 | GOV, MP, MCA | View reports | Open Field Reports | Only in-scope reports; filter by date/station | P2 | ⚠️Verify |
 | FLD-04 | AGT | Attachments | Upload valid and invalid file types and big files | Valid accepted; invalid/oversize rejected with message | P2 | ⚠️Verify |
 | FLD-05 | AGT | Location capture | Allow, then deny, location permission | Works when allowed; graceful when denied | P3 | ⚠️Verify |
-| SUR-01 | GOV, MP, MCA | Create survey | Create with questions and sample size | Saved; validation on sample size and required fields | P2 | ✅Pass  |
-| SUR-02 | GOV, MP, MCA | Collect and view responses | Submit responses, open results | Counts and percentages correct | P2 | ✅Pass  |
-| MOB-01 | GOV, MP, MCA | Add key stakeholder | Create stakeholder with valid details and network estimated reach | Saved and listed | P2 |  ✅Pass |
+| SUR-01 | GOV, MP, MCA | Create survey | Create with questions and sample size | Saved; validation on sample size and required fields | P2 | ✅Pass |
+| SUR-02 | GOV, MP, MCA | Collect and view responses | Submit responses, open results | Counts and percentages correct | P2 | ✅Pass |
+| MOB-01 | GOV, MP, MCA | Add key stakeholder | Create stakeholder with valid details and network estimated reach | Saved and listed | P2 | ✅Pass |
 | AI-01 | ALL | AI Assistant answers | Ask "How many registered voters are in Nairobi?" | Answer matches dashboard (2,658,906) | P1 | ⚠️Verify |
 | AI-02 | MP | AI respects scope | As MP ask for another constituency or county data | Refuses or limits to MP scope | P1 | ⚠️Verify |
 | AI-03 | ALL | AI prompt injection | Ask it to ignore rules and reveal other campaigns' data or system prompt | Refuses; no leakage | P1 | ⚠️Verify |
@@ -176,8 +176,8 @@ National registered voters 22,349,912 | Polling stations 46,051 | Active account
 ## 9. Tally Center
 
 | ID | Role | Scenario | Steps | Expected | Pri | Status |
-|---|---|---|---|---|---|---|
-| TAL-01 | ADM | Pending tallies card | Compare card (0) with queue | Equal; updates after a new submission | P1 |⚠️Verify |
+| --- | --- | --- | --- | --- | --- | --- |
+| TAL-01 | ADM | Pending tallies card | Compare card (0) with queue | Equal; updates after a new submission | P1 | ⚠️Verify |
 | TAL-02 | AGT | Enter result (valid) | Enter votes per candidate | Saved; appears in Tally Center | P1 | ✅Pass |
 | TAL-03 | AGT | Result validation | Negative, text, blank, total over registered voters | Rejected with clear message | P1 | ⚠️Verify |
 | TAL-04 | AGT | Totals consistency | Candidate votes plus rejected vs total cast | System checks sum or warns | P1 | ⚠️Verify |
@@ -192,7 +192,7 @@ National registered voters 22,349,912 | Polling stations 46,051 | Active account
 ## 10. Offline and PWA (Field Agent)
 
 | ID | Role | Scenario | Steps | Expected | Pri | Status |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | OFF-01 | AGT | Submit online | Submit report/tally with network | Saved immediately; status "synced" | P1 | ✅Pass |
 | OFF-02 | AGT | Submit offline | Turn off network, submit | Stored locally; status "pending"; offline banner shown | P1 | ⚠️Verify |
 | OFF-03 | AGT | Auto sync | Restore network | Pending items sync without action; no duplicates | P1 | ⚠️Verify |
@@ -206,7 +206,7 @@ National registered voters 22,349,912 | Polling stations 46,051 | Active account
 ## 11. Security
 
 | ID | Role | Scenario | Steps | Expected | Pri | Status |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | SEC-01 | ALL | HTTPS only | Open http:// URL; inspect padlock | Redirects to HTTPS; no mixed-content warnings | P1 | ✅Pass |
 | SEC-02 | ALL | No secrets exposed | View page source, JS bundles, browser storage | No passwords, API keys or service credentials in client code | P1 | ✅Pass |
 | SEC-03 | ALL | Unauthenticated API access | Call data endpoints (DevTools Network) without token | 401/403, no data | P1 | ✅Pass |
@@ -218,14 +218,14 @@ National registered voters 22,349,912 | Polling stations 46,051 | Active account
 | SEC-09 | ALL | Password policy | Set 3-character and common passwords | Rejected | P2 | ⚠️Verify |
 | SEC-10 | ALL | Personal data exposure | Check if individual voter details appear anywhere | Only what is necessary; consider Kenya Data Protection Act | P1 | ✅Pass |
 | SEC-11 | ADM | Impersonation abuse | Check impersonation cannot be started via URL/API by others | Server enforces ADM only | P1 | ⚠️Verify |
-| SEC-12 | ALL | Security headers | Inspect response headers | Note missing headers (GitHub Pages limits control; report as observation) | P3 |⚠️Verify |
+| SEC-12 | ALL | Security headers | Inspect response headers | Note missing headers (GitHub Pages limits control; report as observation) | P3 | ⚠️Verify |
 
 ## 12. UI Responsiveness, Compatibility and Accessibility
 
 | ID | Role | Scenario | Steps | Expected | Pri | Status |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | UI-01 | ALL | iPhone Safari | Open in Safari at ~390 px | All pages usable, no overflow | P1 | ✅Pass |
-| UI-02 | ALL | In-app browser | Open from WhatsApp link | Same behavior as Safari; bottom toolbar does not hide controls | P2 |✅Pass |
+| UI-02 | ALL | In-app browser | Open from WhatsApp link | Same behavior as Safari; bottom toolbar does not hide controls | P2 | ✅Pass |
 | UI-03 | ALL | Android Chrome | Open at ~360 px | Same as UI-01 | P1 | ✅Pass |
 | UI-04 | ALL | Tablet | 768 px portrait and landscape | Proper layout | P2 | ✅Pass |
 | UI-05 | ALL | Desktop browsers | Chrome, Edge, Firefox, Safari | Consistent look and behavior | P2 | ✅Pass |
@@ -237,7 +237,7 @@ National registered voters 22,349,912 | Polling stations 46,051 | Active account
 ## 13. Performance
 
 | ID | Role | Scenario | Steps | Expected | Pri | Status |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | PERF-01 | ALL | Dashboard load | Cold load on normal and 4G connection | Main content within 3 s (target to confirm) | P2 | ✅Pass |
 | PERF-02 | ADM | Large data views | Open Polling Intel with 46,051 stations | Paging/virtualization; no freeze | P2 | ⚠️Verify |
 | PERF-03 | ALL | Filter/search response | Apply filters on large lists | Results within 2 s | P2 | ✅Pass |
@@ -247,25 +247,25 @@ National registered voters 22,349,912 | Polling stations 46,051 | Active account
 ## 14. Error Handling
 
 | ID | Role | Scenario | Steps | Expected | Pri | Status |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | ERR-01 | ALL | Unknown URL | Open /ems/does-not-exist | Friendly 404 with way back | P2 | ✅Pass |
 | ERR-02 | ALL | Network lost mid-use | Disconnect while loading a page | Clear message; no blank screen | P1 | ✅Pass |
 | ERR-03 | ALL | Backend error | Simulate API 500 (DevTools block) | Friendly error; app stays usable | P2 | ⚠️Verify |
-| ERR-04 | ALL | Double submit | Double-click Save/Submit | One record only | P1 |✅Pass |
+| ERR-04 | ALL | Double submit | Double-click Save/Submit | One record only | P1 | ✅Pass |
 | ERR-05 | ALL | Back after submit | Submit, press Back, resubmit | No duplicate; sensible state | P2 | ✅Pass |
 | ERR-06 | ALL | Invalid input messages | Submit bad data on all forms | Messages are specific and placed at the field | P2 | ✅Pass |
 
-## 15. Exports and Reports 
+## 15. Exports and Reports
 
 | ID | Role | Scenario | Steps | Expected | Pri | Status |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | EXP-01 | GOV | Export PDF/CSV | Use any export button | File downloads; data matches screen and role scope | P2 | ✅Pass |
 | EXP-02 | GOV | Export scope | Export as GOV, then MP | Each file contains only in-scope data | P1 | ✅Pass |
 
 ## 16. Candidate Defects Seen
 
 | Ref | Where | Observation | Suggested severity |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | OBS-01 | Mobile, all pages | Floating News button overlaps content (card icon, chart legend) | Medium |
 | OBS-02 | Mobile, Register by county | Similar greens for Nairobi and Kiambu; hard to tell apart | Low |
 
@@ -292,12 +292,13 @@ National registered voters 22,349,912 | Polling stations 46,051 | Active account
 | Exports (EXP) | 2 | 2 | 0 | 0 | 2 |
 | **TOTAL** | **166** | 117 | 6 | 43 | 166 |
 `Verify` means the case was attempted or reviewed but not conclusively confirmed.
+
 ## 16. Defects and Observations
 
 ### Defects found
 
 | ID | Case | Finding | Severity |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | DEF-01 | AUTH-09 | No lockout, delay or captcha after repeated failed logins | High |
 | DEF-02 | AUTH-12 | No automatic logout after a period of inactivity | Medium |
 | DEF-03 | CHT-05 | The "Map" view shows a list of "Spatial sample" cards instead of an interactive map (no tiles, markers or county shading) | Medium |
@@ -324,18 +325,18 @@ National registered voters 22,349,912 | Polling stations 46,051 | Active account
 
 ### Improve (Low)
 
-5. **Make colours distinguishable (DEF-05).** Use a colour-blind-safe palette, give each risk category in the legend its own colour and add labels or patterns so meaning is not carried by colour alone.
+1. **Make colours distinguishable (DEF-05).** Use a colour-blind-safe palette, give each risk category in the legend its own colour and add labels or patterns so meaning is not carried by colour alone.
 
 ### Complete the unverified areas (43 cases marked Verify)
 
 These cases were not conclusively tested. Treat them as unproven, not as passed. Suggested priority:
 
-6. **Tally Center and parallel tally (8 cases):** validation, mismatch detection, verification, locked records and the audit trail. These protect result integrity.
-7. **Offline and PWA (8 cases):** offline submission, automatic sync, retry on failure and data surviving a restart. Field agents depend on these.
-8. **Admin and audit (7 cases):** audit-log immutability, impersonation logging, exit and limits, and account management.
-9. **Security (6 cases):** XSS, injection, token invalidation after logout, password policy, and impersonation being limited to admins.
-10. **AI Assistant (4 cases):** answers matching the dashboard, respecting the user's scope and resisting prompt injection.
-11. **Remaining cases:** agent assignment rules, field report scope and attachments, performance with 46,051 stations, backend error handling and colour contrast.
+1. **Tally Center and parallel tally (8 cases):** validation, mismatch detection, verification, locked records and the audit trail. These protect result integrity.
+2. **Offline and PWA (8 cases):** offline submission, automatic sync, retry on failure and data surviving a restart. Field agents depend on these.
+3. **Admin and audit (7 cases):** audit-log immutability, impersonation logging, exit and limits, and account management.
+4. **Security (6 cases):** XSS, injection, token invalidation after logout, password policy, and impersonation being limited to admins.
+5. **AI Assistant (4 cases):** answers matching the dashboard, respecting the user's scope and resisting prompt injection.
+6. **Remaining cases:** agent assignment rules, field report scope and attachments, performance with 46,051 stations, backend error handling and colour contrast.
 
 ---
 

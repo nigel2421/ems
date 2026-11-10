@@ -1,5 +1,5 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS 3.1)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 3.1)
 // Contest-Aware Geographic Scope Gating & Smart Location Sieve Component
 // ====================================================================
 
@@ -41,8 +41,8 @@ export const ScopedLocationSieve = ({
     if (locked.county && Array.isArray(geography.counties)) {
       const matchCounty = geography.counties.find(
         c => c.name.toLowerCase().includes(locked.county.toLowerCase()) ||
-             locked.county.toLowerCase().includes(c.name.toLowerCase()) ||
-             c.id === locked.county
+          locked.county.toLowerCase().includes(c.name.toLowerCase()) ||
+          c.id === locked.county
       );
       if (matchCounty) {
         setSelectedCountyId(matchCounty.id);
@@ -52,8 +52,8 @@ export const ScopedLocationSieve = ({
     if (locked.constituency && Array.isArray(geography.constituencies)) {
       const matchConst = geography.constituencies.find(
         c => c.name.toLowerCase().includes(locked.constituency.toLowerCase()) ||
-             locked.constituency.toLowerCase().includes(c.name.toLowerCase()) ||
-             c.id === locked.constituency
+          locked.constituency.toLowerCase().includes(c.name.toLowerCase()) ||
+          c.id === locked.constituency
       );
       if (matchConst) {
         setSelectedConstituencyId(matchConst.id);
@@ -63,8 +63,8 @@ export const ScopedLocationSieve = ({
     if (locked.ward && Array.isArray(geography.wards)) {
       const matchWard = geography.wards.find(
         w => w.name.toLowerCase().includes(locked.ward.toLowerCase()) ||
-             locked.ward.toLowerCase().includes(w.name.toLowerCase()) ||
-             w.id === locked.ward
+          locked.ward.toLowerCase().includes(w.name.toLowerCase()) ||
+          w.id === locked.ward
       );
       if (matchWard) {
         setSelectedWardId(matchWard.id);
@@ -234,10 +234,10 @@ export const ScopedLocationSieve = ({
       <div className="locked-scope-header p-2.5 rounded-lg bg-surface-elevated border border-border-subtle mb-3">
         <div className="d-flex align-items-center justify-content-between mb-1">
           <div className="d-flex align-items-center gap-2">
-          <span className="text-xs font-semibold text-primary d-flex align-items-center gap-1">
-            <MapPin size={13} aria-hidden="true" />
-            Electoral Scope
-          </span>
+            <span className="text-xs font-semibold text-primary d-flex align-items-center gap-1">
+              <MapPin size={13} aria-hidden="true" />
+              Electoral Scope
+            </span>
             <span className="badge bg-primary/20 text-primary border border-primary/30 text-[11px] font-mono">
               {effectiveScope.contestType}
             </span>
@@ -373,14 +373,14 @@ export const ScopedLocationSieve = ({
       <div className="breadcrumb-nav mt-2 pt-2 border-t border-border-subtle d-flex flex-wrap align-items-center gap-1.5 text-xs text-text-muted">
         <span className="font-semibold text-primary">Location Path:</span>
         <span className="badge bg-slate-800 text-slate-300">
-          {locked.county || (selectedCountyId && geography.counties.find(c=>c.id===selectedCountyId)?.name) || 'Kenya'}
+          {locked.county || (selectedCountyId && geography.counties.find(c => c.id === selectedCountyId)?.name) || 'Kenya'}
           {locked.county && <Lock size={11} aria-hidden="true" />}
         </span>
         {(locked.constituency || selectedConstituencyId) && (
           <>
             <span>→</span>
             <span className="badge bg-slate-800 text-slate-300">
-              {locked.constituency || geography.constituencies.find(c=>c.id===selectedConstituencyId)?.name}
+              {locked.constituency || geography.constituencies.find(c => c.id === selectedConstituencyId)?.name}
               {locked.constituency && <Lock size={11} aria-hidden="true" />}
             </span>
           </>
@@ -389,7 +389,7 @@ export const ScopedLocationSieve = ({
           <>
             <span>→</span>
             <span className="badge bg-slate-800 text-slate-300">
-              {locked.ward || geography.wards.find(w=>w.id===selectedWardId)?.name}
+              {locked.ward || geography.wards.find(w => w.id === selectedWardId)?.name}
               {locked.ward && <Lock size={11} aria-hidden="true" />}
             </span>
           </>
@@ -404,7 +404,7 @@ export const ScopedLocationSieve = ({
           <>
             <span>→</span>
             <span className="badge bg-emerald-950 text-emerald-300 border border-emerald-800">
-              {geography.pollingStations.find(s=>s.id===selectedStationId)?.name}
+              {geography.pollingStations.find(s => s.id === selectedStationId)?.name}
             </span>
           </>
         )}

@@ -1,5 +1,5 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS 3.1)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 3.1)
 // Strategy Team & Campaign Organization Engine
 // ====================================================================
 
@@ -27,7 +27,7 @@ export const DEPARTMENT_ROLES_MAP = {
   'DEP-MOB': ['Resource Mobilization Lead', 'Fundraising Coordinator', 'Finance Coordinator', 'Donor Relations'],
   'DEP-LOG': ['Logistics Director', 'Transport Coordinator', 'Materials Coordinator', 'Agent Kit Coordinator'],
   'DEP-LEG': ['Legal Lead', 'Election Compliance Officer', 'Incident Legal Reviewer'],
-  'DEP-ICT': ['ICT Lead', 'CI-EMS Administrator', 'Digital Campaign Coordinator', 'Technical Support']
+  'DEP-ICT': ['ICT Lead', 'KuraTech Administrator', 'Digital Campaign Coordinator', 'Technical Support']
 };
 
 /**

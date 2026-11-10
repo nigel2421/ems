@@ -1,4 +1,4 @@
-# 🗳️ Campaign Intelligence & Election Management System (CI-EMS 3.1)
+# 🗳️ Campaign Intelligence & Election Management System (KuraTech 3.1)
 
 > **An enterprise-grade, infrastructure-validated election operations platform featuring versioned electoral geography, configurable statutory result evidence (Parallel Tally), PostgreSQL Row-Level Security (RLS) tenant isolation, S3 immutable evidence storage, offline PWA synchronization, end-to-end transaction correlation, OWASP ASVS v5.0 verification, dynamic legally-approved data retention, and a 5-stakeholder Go/No-Go Production Readiness Gate.**
 
@@ -6,12 +6,12 @@
 
 ## 📌 Executive Summary & Architecture Overview
 
-The **Campaign Intelligence & Election Management System (CI-EMS 3.1)** is engineered for political parties, campaign headquarters, regional coordinators, tallying officers, and field agents. It bridges high-throughput field operation data collection with centralized command center evidence verification and strategy execution.
+The **Campaign Intelligence & Election Management System (KuraTech 3.1)** is engineered for political parties, campaign headquarters, regional coordinators, tallying officers, and field agents. It bridges high-throughput field operation data collection with centralized command center evidence verification and strategy execution.
 
-CI-EMS operates across **4 Core Operating Lifecycles**:
+KuraTech operates across **4 Core Operating Lifecycles**:
 
 ```
-                       CI-EMS ELECTION OPERATING LIFECYCLE
+                       KuraTech ELECTION OPERATING LIFECYCLE
 
      ┌─────────────────────┐
      │ 1. PRE-ELECTION     │  Voter Sentiment Aggregation · Surveys · Mobilization Network
@@ -34,10 +34,10 @@ CI-EMS operates across **4 Core Operating Lifecycles**:
 
 ## 🖥️ System Architecture & Dual Interfaces
 
-CI-EMS provides two distinct operational interfaces powered by a unified, server-derived security backend:
+KuraTech provides two distinct operational interfaces powered by a unified, server-derived security backend:
 
 ```
-                                  CI-EMS 3.1 ARCHITECTURE
+                                  KuraTech 3.1 ARCHITECTURE
                                              │
              ┌───────────────────────────────┴───────────────────────────────┐
              │                                                               │
@@ -56,7 +56,9 @@ CI-EMS provides two distinct operational interfaces powered by a unified, server
 ## 🛠️ Core Architectural Invariants & Infrastructure Safeguards
 
 ### 1. Separation of Political Authority vs. System Security Roles
+
 Political or campaign job titles do **NOT** grant administrative system authorization. Authority is determined strictly by server-derived security roles:
+
 - `Ward Campaign Lead` → Security Role: `WARD_COORDINATOR`
 - `Campaign Treasurer / Resource Mobilizer` → Security Role: `AGENT` (Read-only financial data access)
 - System permissions are checked using `hasPermission(user, 'evidence.verify', scope)` via server-derived context, ignoring self-reported political titles.
@@ -64,6 +66,7 @@ Political or campaign job titles do **NOT** grant administrative system authoriz
 ---
 
 ### 2. Versioned Electoral Geography (No Hardcoded Station Counts)
+
 Geography is managed as a **Versioned Election Dataset**, supporting gazette changes (e.g. IEBC 2022 gazetted 46,229 polling stations across 24,559 registration centres):
 
 ```
@@ -76,6 +79,7 @@ Election → Dataset Version → County → Constituency → Ward → Polling Ce
 ---
 
 ### 3. Configurable Statutory Result Forms (Kenyan Elections Framework)
+
 Statutory form definitions are versioned by contest type rather than assumed static across elections:
 
 | Elective Contest | Statutory Form Type | Scope / Jurisdiction |
@@ -92,7 +96,8 @@ Statutory form definitions are versioned by contest type rather than assumed sta
 ---
 
 ### 4. PostgreSQL Row-Level Security (RLS) & Multi-Tenant Data Isolation
-CI-EMS enforces strict PostgreSQL Row-Level Security (`FORCE ROW LEVEL SECURITY`) across 10 sensitive database tables (`evidence`, `submissions`, `agents`, `operational_cases`, `incidents`, `communications`, `surveys`, `devices`, `audit_metadata`, `reconciliation_cases`).
+
+KuraTech enforces strict PostgreSQL Row-Level Security (`FORCE ROW LEVEL SECURITY`) across 10 sensitive database tables (`evidence`, `submissions`, `agents`, `operational_cases`, `incidents`, `communications`, `surveys`, `devices`, `audit_metadata`, `reconciliation_cases`).
 
 - **Default-Deny Policy**: Policies execute against `USING (tenant_id = current_setting('app.current_tenant_id', true))`.
 - **Privilege Separation**: Superuser or `BYPASSRLS` database roles are explicitly blocked for application database connections.
@@ -100,17 +105,22 @@ CI-EMS enforces strict PostgreSQL Row-Level Security (`FORCE ROW LEVEL SECURITY`
 ---
 
 ### 5. S3 Object Storage Contract & SHA-256 Immutability Vault
+
 Uploaded statutory form evidence images undergo deterministic SHA-256 binary content hashing:
+
 ```
 Capture → Payload Hash → S3 Vault → Hash Verification → OCR Audit → Human Maker-Checker Review → Lock
 ```
+
 - **Integrity Check**: Re-hashes payload on access and flags any data corruption (`CRITICAL CORRUPTION: Hash Mismatch`).
 - **Tenant Isolation**: Signed URL issuance validates requestor tenant ID against object metadata.
 
 ---
 
 ### 6. Versioned Legally-Approved Data Retention Policy Engine
+
 Replaces static retention numbers with a jurisdiction-aware, contest-specific retention engine:
+
 - **Presidential Election Records**: 7 Years (2,555 Days) minimum statutory lock.
 - **Gubernatorial / Senatorial / MP / MCA Records**: 7 Years (2,555 Days) statutory lock.
 - **Destruction Rule**: Requires formal High Court order (`destruction_requires_court_order = true`).
@@ -119,7 +129,9 @@ Replaces static retention numbers with a jurisdiction-aware, contest-specific re
 ---
 
 ### 7. Offline PWA Resiliency & Exactly-Once Idempotent Synchronization
+
 Field agents transmit data via IndexedDB offline queues during network disruptions:
+
 - **Idempotency Deduplication**: Requests include a unique `idempotency_key` (`UUIDv4`).
 - **Retries**: Retried sync payloads return original server ACK IDs without duplicating records.
 - **Recovered Queue Normalization**: Re-established network connections automatically deduplicate and flush stored transactions.
@@ -127,14 +139,18 @@ Field agents transmit data via IndexedDB offline queues during network disruptio
 ---
 
 ### 8. Device Trust Lifecycle & Hardware Binding
+
 Mobile field devices undergo registration and cryptographic fingerprint binding:
+
 - **Trust States**: `REGISTERED` → `TRUSTED` → `REVOKED`.
 - **Lost Phone Protocol**: Station coordinator triggers break-glass device recovery, revoking the lost device token and binding a replacement unit while maintaining audit ledger continuity.
 
 ---
 
 ### 9. Transaction Correlation & End-to-End Tracing
+
 Every transaction propagates a complete execution context:
+
 ```json
 {
   "correlation_id": "corr-uuid-v4",
@@ -150,7 +166,9 @@ Every transaction propagates a complete execution context:
 ---
 
 ### 10. OWASP ASVS v5.0 Requirement-Level Verification Status
+
 Security verification is audited on a per-requirement basis across 8 core domains:
+
 - `FULLY_VERIFIED`: Verified by automated unit/integration tests and active system controls.
 - `PARTIALLY_VERIFIED`: Software controls verified; pending staging environment integration.
 - `ENVIRONMENT_DEPENDENT_UNVERIFIED`: Depends on live cloud infrastructure configuration (e.g., AWS KMS HSM, Cloudflare WAF).
@@ -160,7 +178,7 @@ Security verification is audited on a per-requirement basis across 8 core domain
 
 ## 🚦 Production Readiness Board & Go/No-Go Decision Gate
 
-CI-EMS evaluates 10 operational workstreams against a 4-tier verification ladder (`IMPLEMENTED` → `TESTED` → `SIMULATION_VERIFIED` → `PRODUCTION_VALIDATED`):
+KuraTech evaluates 10 operational workstreams against a 4-tier verification ladder (`IMPLEMENTED` → `TESTED` → `SIMULATION_VERIFIED` → `PRODUCTION_VALIDATED`):
 
 1. **Real PostgreSQL RLS Tenant Isolation**
 2. **S3 Storage & SHA-256 Immutability**
@@ -174,7 +192,9 @@ CI-EMS evaluates 10 operational workstreams against a 4-tier verification ladder
 10. **Election Rehearsal & AAR Governance**
 
 ### Stakeholder Maker-Checker Sign-off Requirements
+
 A **`GO`** decision requires a overall readiness score $\ge 90\%$ AND explicit sign-off from all 5 required roles:
+
 - 🛡️ **Chief Technology Officer (CTO)**
 - 🔒 **Chief Information Security Officer (CISO)**
 - 📡 **Director of Election Operations**
@@ -186,12 +206,14 @@ A **`GO`** decision requires a overall readiness score $\ge 90\%$ AND explicit s
 ## ⚡ Tiered Service Resilience & Disaster Recovery
 
 ### System Tiering & Circuit Breakers
+
 - **Tier 0 (Core Election Integrity)**: Result submission, evidence hashing, audit logging. *Must remain operational during any outage.*
 - **Tier 1 (Command & Monitoring)**: Dashboard metrics, incident cases, telemetry.
 - **Tier 2 (Integrations & Messaging)**: SMS notifications, external webhooks. *Falls back to in-app messaging on failure.*
 - **Tier 3 (AI & Analytics)**: AI executive briefings, sentiment predictions. *Gracefully degrades without blocking operational tallying.*
 
 ### Disaster Recovery Targets
+
 - **Recovery Point Objective (RPO)**: $0$ seconds (Zero data loss).
 - **Recovery Time Objective (RTO)**: $< 5$ seconds (Active-standby database failover).
 
@@ -214,10 +236,12 @@ During pre-election dress rehearsals, the system evaluates 7 non-negotiable outc
 ## 🚀 Developer Setup & Test Execution
 
 ### Prerequisites
+
 - **Node.js**: v18.0.0 or higher
 - **npm**: v9.0.0 or higher
 
 ### Environment Configuration (`.env`)
+
 ```env
 # Server & Environment Settings
 NODE_ENV=development
@@ -257,7 +281,7 @@ npm run build
 EMS/
 ├── src/
 │   ├── __tests__/
-│   │   └── ci-ems.test.js              # 258 Comprehensive Unit & Integration Tests
+│   │   └── KuraTech.test.js              # 258 Comprehensive Unit & Integration Tests
 │   ├── components/
 │   │   ├── dashboards/
 │   │   │   ├── AdminDashboard.jsx       # Super Admin Control Center & System Settings

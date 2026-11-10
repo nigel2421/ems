@@ -1,6 +1,6 @@
 # 📦 Release Provenance & Build Manifest Guide
 
-CI-EMS 3.1 requires complete forensic traceability across all software deployments.
+KuraTech 3.1 requires complete forensic traceability across all software deployments.
 
 ## Release Manifest Schema
 

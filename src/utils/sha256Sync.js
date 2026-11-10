@@ -1,5 +1,5 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS 3.1)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 3.1)
 // Synchronous Zero-Dependency Pure JS SHA-256 Digest Utility
 // Isomorphic: Runs identically in Browser & Node.js environments
 // ====================================================================

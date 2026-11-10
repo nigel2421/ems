@@ -72,7 +72,7 @@ export const exportLoginLogsToCSV = (logs = []) => {
   if (!logs || logs.length === 0) return false;
 
   const headers = ['Log ID', 'Timestamp (ISO)', 'User Email', 'Role', 'Status', 'IP Address', 'Geo Location', 'Device Category', 'Operating System', 'Browser Version', 'Failure Reason'];
-  
+
   const rows = logs.map(l => [
     `"${l.id || ''}"`,
     `"${l.timestamp || ''}"`,
@@ -88,13 +88,13 @@ export const exportLoginLogsToCSV = (logs = []) => {
   ]);
 
   const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-  
+
   if (typeof window !== 'undefined' && document) {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `CI-EMS_Login_Audit_Logs_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `KuraTech_Login_Audit_Logs_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

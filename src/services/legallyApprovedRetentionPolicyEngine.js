@@ -1,14 +1,14 @@
 // ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (CI-EMS 3.1)
+// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 3.1)
 // Versioned Legally-Approved Evidence Retention Policy Engine
 // ====================================================================
 
 /**
   Legal Retention Disclaimer:
   Retention periods are configuration-driven and require documented legal/DPO approval. 
-  No retention duration in CI-EMS should be interpreted as legal advice or an automatic statutory requirement.
+  No retention duration in KuraTech should be interpreted as legal advice or an automatic statutory requirement.
  */
-export const RETENTION_DISCLAIMER = 'DISCLAIMER: Retention periods are configuration-driven and require documented legal/DPO approval. No retention duration in CI-EMS should be interpreted as legal advice or an automatic statutory requirement.';
+export const RETENTION_DISCLAIMER = 'DISCLAIMER: Retention periods are configuration-driven and require documented legal/DPO approval. No retention duration in KuraTech should be interpreted as legal advice or an automatic statutory requirement.';
 
 export const ELECTION_RETENTION_POLICIES = [
   {
@@ -102,7 +102,7 @@ export const getLegallyApprovedRetentionPolicy = ({
 } = {}) => {
   const matchedPolicy = ELECTION_RETENTION_POLICIES.find(
     policy => policy.jurisdiction.toUpperCase() === jurisdiction.toUpperCase() &&
-              policy.contestType.toUpperCase() === contestType.toUpperCase()
+      policy.contestType.toUpperCase() === contestType.toUpperCase()
   ) || ELECTION_RETENTION_POLICIES[0];
 
   return {
@@ -119,7 +119,7 @@ export const calculateStatutoryRetentionDate = (uploadDate = new Date(), policy)
   const activePolicy = policy || getLegallyApprovedRetentionPolicy();
   const startTime = new Date(uploadDate).getTime();
   const expirationTime = startTime + (activePolicy.retentionPeriodDays * 24 * 60 * 60 * 1000);
-  
+
   return {
     retentionUntil: new Date(expirationTime).toISOString(),
     policyId: activePolicy.policyId,

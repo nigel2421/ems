@@ -1,5 +1,5 @@
 // ====================================================================
-// CI-EMS Password Policy & Complexity Engine
+// KuraTech Password Policy & Complexity Engine
 // Enforces password standards for newly provisioned candidate & agent accounts
 // Ensures existing demo personas remain backward-compatible
 // ====================================================================

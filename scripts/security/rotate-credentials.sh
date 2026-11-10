@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ====================================================================
-# CI-EMS Credential Rotation Automation Script
+# KuraTech Credential Rotation Automation Script
 # Usage: ./scripts/security/rotate-credentials.sh
 # ====================================================================
 
 set -euo pipefail
 
 echo "=========================================================="
-echo "    CI-EMS Security Credential Rotation Automation       "
+echo "    KuraTech Security Credential Rotation Automation       "
 echo "=========================================================="
 
 # 1. PostgreSQL Database Password Rotation

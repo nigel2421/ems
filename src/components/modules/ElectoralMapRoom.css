@@ -1,5 +1,5 @@
 /* ====================================================================
-   CI-EMS ELECTORAL MAP ROOM: COMMAND OBSIDIAN & KENYAN EMERALD THEME
+   KuraTech ELECTORAL MAP ROOM: COMMAND OBSIDIAN & KENYAN EMERALD THEME
    Modern glassmorphic command-center UI with pure Google Maps
    ==================================================================== */
 
@@ -357,6 +357,7 @@
   from {
     transform: translateX(100%);
   }
+
   to {
     transform: translateX(0);
   }

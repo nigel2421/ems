@@ -1,4 +1,4 @@
-/* CI-EMS 2.3 Exception Command Center Stylesheet */
+/* KuraTech 2.3 Exception Command Center Stylesheet */
 
 .exception-cmd-container {
   padding: 24px;
@@ -57,10 +57,21 @@
   box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.4);
 }
 
-.exception-kpi-card.critical { border-left: 4px solid #ef4444; }
-.exception-kpi-card.warning { border-left: 4px solid #f59e0b; }
-.exception-kpi-card.review { border-left: 4px solid #eab308; }
-.exception-kpi-card.good { border-left: 4px solid #10b981; }
+.exception-kpi-card.critical {
+  border-left: 4px solid #ef4444;
+}
+
+.exception-kpi-card.warning {
+  border-left: 4px solid #f59e0b;
+}
+
+.exception-kpi-card.review {
+  border-left: 4px solid #eab308;
+}
+
+.exception-kpi-card.good {
+  border-left: 4px solid #10b981;
+}
 
 .kpi-count {
   font-size: 1.8rem;
