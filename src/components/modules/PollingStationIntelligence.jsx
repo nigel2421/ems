@@ -19,7 +19,14 @@ import {
   MoreHorizontal,
   Lock,
   Maximize2,
-  Download
+  Download,
+  Radio,
+  BatteryCharging,
+  CheckCircle2,
+  AlertCircle,
+  Signal,
+  Activity,
+  ShieldCheck
 } from 'lucide-react';
 import { downloadPollingStationsCSV } from '../../utils/pollingStationExport';
 import {
@@ -27,6 +34,7 @@ import {
   hasNationalGeographyAccess,
   filterStationsByJurisdiction
 } from '../../utils/jurisdictionAnalytics';
+import { computeAgentHealthMetrics } from '../../utils/agentHealthAnalytics';
 import {
   KENYA_PARTIES,
   KENYA_COALITIONS,
@@ -94,7 +102,7 @@ const resolveLocation = (ps, lookups) => {
 
 const PollingStationIntelligenceInner = ({ onOpenModule }) => {
   const { currentUser } = useAuth();
-  const { geography, stationIntelligence, updateStationIntelligence, bulkImportPollingStations } = useData();
+  const { geography, stationIntelligence, updateStationIntelligence, bulkImportPollingStations, agents = [] } = useData();
 
   const counties = geography?.counties || [];
   const isNational = hasNationalGeographyAccess(currentUser);
@@ -171,6 +179,11 @@ const PollingStationIntelligenceInner = ({ onOpenModule }) => {
     }
     return out;
   }, [geography?.pollingStations, isNational, assignment, selectedCounty]);
+
+  const agentHealth = useMemo(
+    () => computeAgentHealthMetrics(agents, scopedStations, stationIntelligence || {}),
+    [agents, scopedStations, stationIntelligence]
+  );
 
   const filteredStations = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -475,6 +488,123 @@ const PollingStationIntelligenceInner = ({ onOpenModule }) => {
           </button>
         </div>
       </header>
+
+      {/* Field Agent Health & Ground Telemetry Monitor */}
+      <section className="psi-telemetry-banner" aria-label="Field Agent Health & Ground Telemetry">
+        <div className="psi-telemetry-header">
+          <div className="psi-telemetry-title">
+            <Radio size={16} className="psi-pulse-emerald" />
+            <h3>Field Agent Health & Ground Telemetry</h3>
+            <span className="psi-scope-tag">{assignment?.title || scopeLabel}</span>
+          </div>
+          {onOpenModule && (
+            <button
+              type="button"
+              className="psi-telemetry-action-btn"
+              onClick={() => onOpenModule('agents')}
+              title="Open Personnel & Agent Management"
+            >
+              <Users size={13} />
+              <span>Manage Agents</span>
+            </button>
+          )}
+        </div>
+
+        <div className="psi-telemetry-grid">
+          {/* Card 1: Stream Coverage */}
+          <div className="psi-telemetry-card">
+            <div className="psi-telemetry-card-top">
+              <span className="psi-card-label">Stream Coverage</span>
+              <span className="psi-card-pct">{agentHealth.coveragePct}%</span>
+            </div>
+            <div className="psi-progress-track">
+              <div
+                className="psi-progress-fill"
+                style={{
+                  width: `${agentHealth.coveragePct}%`,
+                  background: agentHealth.coveragePct >= 75 ? '#10b981' : agentHealth.coveragePct >= 40 ? '#38bdf8' : '#f59e0b'
+                }}
+              />
+            </div>
+            <div className="psi-telemetry-card-sub">
+              <span>{agentHealth.coveredStations} of {agentHealth.totalStations} stations covered</span>
+              {agentHealth.unassignedStations > 0 && (
+                <span className="psi-warn-text">({agentHealth.unassignedStations} unassigned)</span>
+              )}
+            </div>
+          </div>
+
+          {/* Card 2: Ground Personnel Readiness */}
+          <div className="psi-telemetry-card">
+            <div className="psi-telemetry-card-top">
+              <span className="psi-card-label">Ground Personnel</span>
+              <span className="psi-card-pct">{agentHealth.readinessPct}% Active</span>
+            </div>
+            <div className="psi-pill-row">
+              <span className="psi-agent-pill is-active" title="Active on Ground">
+                <CheckCircle2 size={11} /> {agentHealth.activeCount} Active
+              </span>
+              <span className="psi-agent-pill is-onduty" title="On Duty / Standby">
+                <Activity size={11} /> {agentHealth.onDutyCount} On Duty
+              </span>
+              {agentHealth.offlineCount > 0 && (
+                <span className="psi-agent-pill is-offline" title="Offline / Check-in Required">
+                  <AlertCircle size={11} /> {agentHealth.offlineCount} Offline
+                </span>
+              )}
+            </div>
+            <div className="psi-telemetry-card-sub">
+              <span>{agentHealth.totalAgents} personnel deployed</span>
+            </div>
+          </div>
+
+          {/* Card 3: Device & Connectivity Telemetry */}
+          <div className="psi-telemetry-card">
+            <div className="psi-telemetry-card-top">
+              <span className="psi-card-label">Device & Signal</span>
+              <span className="psi-card-pct">{agentHealth.telemetry.strongSignalPct}% Strong</span>
+            </div>
+            <div className="psi-pill-row">
+              <span className="psi-agent-pill is-signal" title="4G / Network Signal">
+                <Signal size={11} /> {agentHealth.telemetry.strongSignalPct}% Signal
+              </span>
+              <span className="psi-agent-pill is-battery" title="Battery Status">
+                <BatteryCharging size={11} /> {agentHealth.telemetry.healthyBatteryPct}% Battery OK
+              </span>
+            </div>
+            <div className="psi-telemetry-card-sub">
+              <span>
+                {agentHealth.telemetry.lowBatteryAlerts > 0
+                  ? `⚠️ ${agentHealth.telemetry.lowBatteryAlerts} low battery alerts`
+                  : '⚡ All device batteries healthy'}
+              </span>
+            </div>
+          </div>
+
+          {/* Card 4: Intelligence Intake Feed */}
+          <div className="psi-telemetry-card">
+            <div className="psi-telemetry-card-top">
+              <span className="psi-card-label">Intelligence Intake</span>
+              <span className="psi-card-pct">{agentHealth.telemetry.totalReports + agentHealth.telemetry.totalSurveys} Filed</span>
+            </div>
+            <div className="psi-pill-row">
+              <span className="psi-agent-pill is-reports" title="Incident reports submitted">
+                <ShieldCheck size={11} /> {agentHealth.telemetry.totalReports} Reports
+              </span>
+              <span className="psi-agent-pill is-surveys" title="Sentiment surveys completed">
+                {agentHealth.telemetry.totalSurveys} Surveys
+              </span>
+            </div>
+            <div className="psi-telemetry-card-sub">
+              <span>
+                {agentHealth.telemetry.severeRiskStations > 0
+                  ? `🚨 ${agentHealth.telemetry.severeRiskStations} severe risk stations`
+                  : '🛡️ Register monitoring active'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="psi-toolbar">
         <div className="psi-search">

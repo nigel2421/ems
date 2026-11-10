@@ -677,3 +677,218 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ====================================================================
+   AGENT HEALTH & GROUND TELEMETRY MONITOR
+   ==================================================================== */
+.psi-telemetry-banner {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-line, #e2e8f0);
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .psi-telemetry-banner,
+.dark .psi-telemetry-banner {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(16, 185, 129, 0.25);
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.6);
+}
+
+.psi-telemetry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.psi-telemetry-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.psi-telemetry-title h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 750;
+  color: var(--admin-ink, #0f172a);
+  letter-spacing: -0.01em;
+}
+
+.psi-pulse-emerald {
+  color: #10b981;
+  animation: pulseEmerald 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulseEmerald {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.1); }
+}
+
+.psi-scope-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.1);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(2, 132, 199, 0.2);
+}
+
+.psi-telemetry-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.psi-telemetry-action-btn:hover {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.psi-telemetry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.psi-telemetry-card {
+  background: rgba(248, 250, 252, 0.85);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 10px;
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  transition: border-color 0.15s ease;
+}
+
+[data-theme="dark"] .psi-telemetry-card,
+.dark .psi-telemetry-card {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(51, 65, 85, 0.8);
+}
+
+.psi-telemetry-card:hover {
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.psi-telemetry-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.psi-card-label {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--admin-muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.psi-card-pct {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--admin-ink, #0f172a);
+}
+
+.psi-progress-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(203, 213, 225, 0.6);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .psi-progress-track,
+.dark .psi-progress-track {
+  background: rgba(51, 65, 85, 0.6);
+}
+
+.psi-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.psi-pill-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.psi-agent-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.18rem 0.45rem;
+  border-radius: 6px;
+}
+
+.psi-agent-pill.is-active {
+  background: rgba(16, 185, 129, 0.14);
+  color: #10b981;
+}
+
+.psi-agent-pill.is-onduty {
+  background: rgba(56, 189, 248, 0.14);
+  color: #0284c7;
+}
+
+.psi-agent-pill.is-offline {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.psi-agent-pill.is-signal {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.psi-agent-pill.is-battery {
+  background: rgba(245, 158, 11, 0.14);
+  color: #d97706;
+}
+
+.psi-agent-pill.is-reports {
+  background: rgba(139, 92, 246, 0.12);
+  color: #8b5cf6;
+}
+
+.psi-agent-pill.is-surveys {
+  background: rgba(14, 165, 233, 0.12);
+  color: #0284c7;
+}
+
+.psi-telemetry-card-sub {
+  font-size: 0.72rem;
+  color: var(--admin-muted, #64748b);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: auto;
+}
+
+.psi-warn-text {
+  color: #ef4444;
+  font-weight: 600;
+}

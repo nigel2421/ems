@@ -4797,6 +4797,70 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     assert.ok(Math.abs(framing.center.lng - 36.8210) < 0.001, 'Longitude centroid should be average of ward stations');
   });
 
+  test('363. KenyaPoliticalNewsFab: renders sleek dock with minimize toggle and eliminates overlapping enable button', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const jsxPath = path.resolve(process.cwd(), 'src/components/modules/KenyaPoliticalNewsPanel.jsx');
+    const cssPath = path.resolve(process.cwd(), 'src/components/modules/KenyaPoliticalNews.css');
+
+    const jsx = fs.readFileSync(jsxPath, 'utf8');
+    const css = fs.readFileSync(cssPath, 'utf8');
+
+    // 1. Verify sleek dock and minimize button exists
+    assert.ok(jsx.includes('psi-news-dock'), 'Must contain psi-news-dock container');
+    assert.ok(jsx.includes('psi-news-min-toggle'), 'Must contain minimize/expand toggle button');
+    assert.ok(jsx.includes('is-minimized'), 'Must support is-minimized state');
+
+    // 2. Verify raw overlapping button was eliminated
+    assert.ok(!jsx.includes('psi-news-enable'), 'Must not render raw psi-news-enable button');
+
+    // 3. Verify CSS rules for compact dock and minimization
+    assert.ok(css.includes('.psi-news-dock'), 'CSS must define psi-news-dock');
+    assert.ok(css.includes('.psi-news-fab.is-minimized'), 'CSS must define is-minimized styling');
+    assert.ok(css.includes('height: 38px'), 'CSS must use compact 38px height');
+  });
+
+  test('364. computeAgentHealthMetrics: calculates stream coverage, active status, and device telemetry', async () => {
+    const { computeAgentHealthMetrics } = await import('../utils/agentHealthAnalytics.js');
+
+    const mockStations = [
+      { id: 'PS-101', name: 'Station A', agentAssigned: 'AG-01' },
+      { id: 'PS-102', name: 'Station B', agentAssigned: null },
+      { id: 'PS-103', name: 'Station C', agentAssigned: null },
+      { id: 'PS-104', name: 'Station D', agentAssigned: 'AG-02' }
+    ];
+
+    const mockAgents = [
+      { id: 'AG-01', name: 'John Doe', status: 'Active', assignedStations: ['PS-101'], batteryLevel: 85, signalStrength: 90, reportsSubmittedCount: 3, surveysCompletedCount: 5 },
+      { id: 'AG-02', name: 'Jane Smith', status: 'On Duty', assignedStations: ['PS-104'], batteryLevel: 75, signalStrength: 60, reportsSubmittedCount: 1, surveysCompletedCount: 2 },
+      { id: 'AG-03', name: 'Peter Kamau', status: 'Offline', assignedStations: [], batteryLevel: 15, signalStrength: 20, reportsSubmittedCount: 0, surveysCompletedCount: 0 }
+    ];
+
+    const mockIntel = {
+      'PS-101': { riskLevel: 'Severe' },
+      'PS-102': { riskLevel: 'Low' },
+      'PS-103': { riskLevel: 'High' }
+    };
+
+    const metrics = computeAgentHealthMetrics(mockAgents, mockStations, mockIntel);
+
+    assert.ok(metrics, 'Metrics object must be returned');
+    assert.strictEqual(metrics.totalStations, 4, 'Total stations should be 4');
+    assert.strictEqual(metrics.coveredStations, 2, 'Covered stations should be 2 (PS-101, PS-104)');
+    assert.strictEqual(metrics.coveragePct, 50, 'Coverage should be 50%');
+    assert.strictEqual(metrics.unassignedStations, 2, 'Unassigned stations should be 2');
+
+    assert.strictEqual(metrics.activeCount, 1, 'Active count should be 1');
+    assert.strictEqual(metrics.onDutyCount, 1, 'On duty count should be 1');
+    assert.strictEqual(metrics.offlineCount, 1, 'Offline count should be 1');
+    assert.strictEqual(metrics.operationalAgents, 2, 'Operational agents (Active + On Duty) should be 2');
+
+    assert.strictEqual(metrics.telemetry.totalReports, 4, 'Total reports should be 4 (3 + 1)');
+    assert.strictEqual(metrics.telemetry.totalSurveys, 7, 'Total surveys should be 7 (5 + 2)');
+    assert.strictEqual(metrics.telemetry.severeRiskStations, 1, 'Severe risk stations should be 1');
+    assert.strictEqual(metrics.telemetry.highRiskStations, 1, 'High risk stations should be 1');
+  });
+
 });
 
 

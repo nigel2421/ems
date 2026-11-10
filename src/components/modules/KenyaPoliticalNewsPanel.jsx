@@ -86,7 +86,7 @@ export const KenyaPoliticalNewsPanel = ({
   </article>
 );
 
-/** Global floating News control — middle-right on every authenticated page. */
+/** Global sleek floating News control — docked compactly at bottom-right. */
 export const KenyaPoliticalNewsFab = () => {
   const cached = typeof window !== 'undefined' ? readNewsCache() : null;
   const [open, setOpen] = useState(false);
@@ -95,28 +95,10 @@ export const KenyaPoliticalNewsFab = () => {
   const [fetchedAt, setFetchedAt] = useState(cached?.fetchedAt || null);
   const [errors, setErrors] = useState(cached?.errors || []);
   const [loadError, setLoadError] = useState('');
-  const [enabled, setEnabled] = useState(() => window.localStorage.getItem('ems_news_enabled') !== 'false');
-  const [position, setPosition] = useState(() => {
-    try { return JSON.parse(window.localStorage.getItem('ems_news_position')) || { right: 18, top: Math.round(window.innerHeight / 2) }; }
-    catch { return { right: 18, top: Math.round(window.innerHeight / 2) }; }
+  const [minimized, setMinimized] = useState(() => {
+    try { return window.localStorage.getItem('ems_news_minimized') === 'true'; }
+    catch { return false; }
   });
-  const dragRef = useRef(null);
-
-  const handlePointerDown = (event) => {
-    if (event.button !== 0) return;
-    dragRef.current = { x: event.clientX, y: event.clientY, right: position.right, top: position.top, moved: false };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-  const handlePointerMove = (event) => {
-    if (!dragRef.current) return;
-    const drag = dragRef.current;
-    if (Math.abs(event.clientX - drag.x) + Math.abs(event.clientY - drag.y) > 5) drag.moved = true;
-    if (drag.moved) {
-      const next = { right: Math.max(0, Math.min(window.innerWidth - 60, drag.right - event.clientX + drag.x)), top: Math.max(8, Math.min(window.innerHeight - 60, drag.top + event.clientY - drag.y)) };
-      setPosition(next);
-      window.localStorage.setItem('ems_news_position', JSON.stringify(next));
-    }
-  };
 
   const applyResult = useCallback((result) => {
     if (result.items?.length) {
@@ -167,35 +149,51 @@ export const KenyaPoliticalNewsFab = () => {
   const count = items.length;
   const countLabel = loading && !count ? '…' : String(count);
 
+  const toggleMinimized = (e) => {
+    e.stopPropagation();
+    const next = !minimized;
+    setMinimized(next);
+    try { window.localStorage.setItem('ems_news_minimized', String(next)); } catch { /* ignore */ }
+  };
+
   return (
     <>
-      <button
-        type="button"
-        className={`psi-news-fab${open ? ' is-open' : ''}${enabled ? '' : ' is-disabled'}`}
-        style={{ right: position.right, top: position.top, transform: 'none', touchAction: 'none' }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={() => { if (dragRef.current && !dragRef.current.moved) setOpen((value) => !value); dragRef.current = null; }}
-        onPointerCancel={() => { dragRef.current = null; }}
-        aria-label={`Open Kenya political news, ${count} headlines in the last 24 hours`}
-        aria-pressed={open}
-        title="Drag to move · click to toggle news"
-      >
-        <Newspaper strokeWidth={1.75} />
-        <span className="psi-news-fab-copy">
-          <strong>News</strong>
-          <small>Last 24h</small>
-        </span>
-        <em className="psi-news-fab-count" aria-live="polite">
-          {countLabel}
-        </em>
-      </button>
+      <div className={`psi-news-dock ${minimized ? 'is-minimized' : ''}`}>
+        <button
+          type="button"
+          className={`psi-news-fab${open ? ' is-open' : ''}${minimized ? ' is-minimized' : ''}`}
+          onClick={() => setOpen((value) => !value)}
+          aria-label={`Open Kenya political news, ${count} headlines in the last 24 hours`}
+          aria-pressed={open}
+          title={minimized ? "Kenya Political News (Click to open)" : "Kenya Political News · Last 24h"}
+        >
+          <div className="psi-news-fab-icon-wrap">
+            <Newspaper strokeWidth={1.8} size={17} />
+            <em className="psi-news-fab-count" aria-live="polite">
+              {countLabel}
+            </em>
+          </div>
 
-      <button type="button" className="psi-news-enable" aria-pressed={enabled} onClick={() => { const next = !enabled; setEnabled(next); window.localStorage.setItem('ems_news_enabled', String(next)); if (!next) setOpen(false); }}>
-        {enabled ? 'Hide news button' : 'Show news button'}
-      </button>
+          {!minimized && (
+            <span className="psi-news-fab-copy">
+              <strong>News</strong>
+              <small>Last 24h</small>
+            </span>
+          )}
 
-      {enabled && open && (
+          <button
+            type="button"
+            className="psi-news-min-toggle"
+            onClick={toggleMinimized}
+            title={minimized ? "Expand news pill" : "Minimize news button"}
+            aria-label={minimized ? "Expand news" : "Minimize news"}
+          >
+            {minimized ? '+' : '×'}
+          </button>
+        </button>
+      </div>
+
+      {open && (
         <div className="psi-news-drawer-overlay" onClick={() => setOpen(false)}>
           <aside
             className="psi-news-drawer"
