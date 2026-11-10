@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { ElectionCountdown } from './modules/ElectionCountdown';
 import { ThemeSwitcher } from './common/ThemeSwitcher';
+import { sanitizeMediaUrl } from '../utils/urlSanitizer';
 import { 
   Shield, 
   MapPin, 
@@ -214,7 +215,7 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
             >
               <div style={{ position: 'relative' }}>
                 <img 
-                  src={currentUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'} 
+                  src={sanitizeMediaUrl(currentUser?.avatar, 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80')} 
                   alt={currentUser?.name} 
                   style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} 
                 />
@@ -431,7 +432,7 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <img 
-                  src={currentUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'} 
+                  src={sanitizeMediaUrl(currentUser?.avatar, 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80')} 
                   alt={currentUser?.name} 
                   style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} 
                 />

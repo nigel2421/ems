@@ -37,6 +37,7 @@ import {
   UserCheck,
   Edit2
 } from 'lucide-react';
+import { sanitizeMediaUrl } from '../../utils/urlSanitizer';
 import './StrategyTeamModule.css';
 
 export const StrategyTeamModule = () => {
@@ -428,7 +429,7 @@ export const StrategyTeamModule = () => {
                       <tr key={m.id}>
                         <td>
                           <div className="d-flex align-items-center gap-2">
-                            <img src={m.avatar} alt={m.name} className="w-8 h-8 rounded-full border border-slate-700" />
+                            <img src={sanitizeMediaUrl(m.avatar)} alt={m.name} className="w-8 h-8 rounded-full border border-slate-700" />
                             <div>
                               <strong className="block text-slate-100">{m.name}</strong>
                               <span className="text-xs text-slate-400">{m.phone}</span>
@@ -660,7 +661,7 @@ export const StrategyTeamModule = () => {
             </div>
 
             <div className="text-center mb-4">
-              <img src={selectedMember.avatar} alt={selectedMember.name} className="w-20 h-20 rounded-full mx-auto mb-2 border-2 border-indigo-500" />
+              <img src={sanitizeMediaUrl(selectedMember.avatar)} alt={selectedMember.name} className="w-20 h-20 rounded-full mx-auto mb-2 border-2 border-indigo-500" />
               <h4 className="font-bold text-slate-100 mb-0">{selectedMember.name}</h4>
               <span className="text-xs text-cyan-400 font-semibold">{selectedMember.position}</span>
             </div>

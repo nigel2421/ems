@@ -8,6 +8,7 @@ import {
   CheckCircle, 
   MapPin
 } from 'lucide-react';
+import { sanitizeMediaUrl } from '../../utils/urlSanitizer';
 import './DashboardShared.css';
 
 export const AgentPortal = () => {
@@ -176,7 +177,7 @@ export const AgentPortal = () => {
 
             <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', border: '1px solid #E6EBE8' }}>
               <img
-                src={evidencePhoto}
+                src={sanitizeMediaUrl(evidencePhoto)}
                 alt="Form 34A evidence preview"
                 style={{ width: '100%', height: 240, objectFit: 'cover', display: 'block' }}
               />

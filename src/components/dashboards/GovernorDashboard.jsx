@@ -14,6 +14,7 @@ import {
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { AddAgentModal } from '../modules/AddAgentModal';
+import { sanitizeMediaUrl } from '../../utils/urlSanitizer';
 import './DashboardShared.css';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
@@ -151,7 +152,7 @@ export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
         <div className="admin-agent-grid">
           {scopedAgents.map(ag => (
             <div key={ag.id} className="admin-agent-tile">
-              <img src={ag.avatar} alt={ag.name} />
+              <img src={sanitizeMediaUrl(ag.avatar)} alt={ag.name} />
               <strong>{ag.name}</strong>
               <span>{ag.entityName}</span>
               <span>{ag.email}</span>
@@ -252,7 +253,7 @@ export const GovernorDashboard = ({ onOpenMismatch, onOpenGeographic }) => {
                   </td>
                   <td>
                     <a
-                      href={sub.evidence.form34AUrl}
+                      href={sanitizeMediaUrl(sub.evidence.form34AUrl, '#')}
                       target="_blank"
                       rel="noreferrer"
                       style={{ color: '#006B3F', textDecoration: 'underline', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}

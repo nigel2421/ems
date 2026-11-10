@@ -5,6 +5,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { LanguageSwitcher } from '../common/LanguageSwitcher';
 import { ThemeSwitcher } from '../common/ThemeSwitcher';
 import { AddAgentModal } from '../modules/AddAgentModal';
+import { sanitizeMediaUrl } from '../../utils/urlSanitizer';
 import {
   Shield,
   LayoutDashboard,
@@ -408,7 +409,7 @@ export const AdminLayout = ({
             aria-expanded={showProfilePanel}
             aria-controls="admin-profile-panel"
           >
-            <img src={currentUser?.avatar || DEFAULT_AVATAR} alt="" />
+            <img src={sanitizeMediaUrl(currentUser?.avatar, DEFAULT_AVATAR)} alt="" />
             <div>
               <strong>{currentUser?.name}</strong>
               <span className={`role-badge ${getRoleClass(currentUser?.role)}`}>
@@ -441,7 +442,7 @@ export const AdminLayout = ({
             <div className="admin-profile-panel-card">
               <div className="admin-profile-panel-head">
                 <div className="admin-profile-panel-identity">
-                  <img src={currentUser?.avatar || DEFAULT_AVATAR} alt="" />
+                  <img src={sanitizeMediaUrl(currentUser?.avatar, DEFAULT_AVATAR)} alt="" />
                   <div>
                     <h2>{currentUser?.name}</h2>
                     <span className={`role-badge ${getRoleClass(currentUser?.role)}`}>

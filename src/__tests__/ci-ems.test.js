@@ -56,6 +56,9 @@ import {
   initialCampaignPhases,
   initialTallyCenterData
 } from '../data/seedData.js';
+import { sanitizeMediaUrl } from '../utils/urlSanitizer.js';
+import { getSecureRandomUUID, getSecureRandomHex, generateSecureId } from '../utils/cryptoRandom.js';
+import { computeCountyIntelligence } from '../../server/agents/political-intelligence-agent.mjs';
 
 // Global localStorage Mock for Node.js test environment
 const localStorageMock = (() => {
@@ -4859,6 +4862,58 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     assert.strictEqual(metrics.telemetry.totalSurveys, 7, 'Total surveys should be 7 (5 + 2)');
     assert.strictEqual(metrics.telemetry.severeRiskStations, 1, 'Severe risk stations should be 1');
     assert.strictEqual(metrics.telemetry.highRiskStations, 1, 'High risk stations should be 1');
+  });
+
+  test('365. Media & Image URL Sanitizer (CodeQL DOM text reinterpreted as HTML)', () => {
+    // Blocks dangerous schemes
+    assert.strictEqual(sanitizeMediaUrl('javascript:alert(1)', 'fallback.jpg'), 'fallback.jpg');
+    assert.strictEqual(sanitizeMediaUrl('vbscript:msgbox', 'fallback.jpg'), 'fallback.jpg');
+    assert.strictEqual(sanitizeMediaUrl('data:text/html;base64,PHNjcmlwdD4=', 'fallback.jpg'), 'fallback.jpg');
+
+    // Permits safe schemes and relative paths
+    assert.strictEqual(sanitizeMediaUrl('https://images.unsplash.com/photo-1535713875002'), 'https://images.unsplash.com/photo-1535713875002');
+    assert.strictEqual(sanitizeMediaUrl('http://kuratech.site/uploads/evidence.jpg'), 'http://kuratech.site/uploads/evidence.jpg');
+    assert.strictEqual(sanitizeMediaUrl('/uploads/form34a.png'), '/uploads/form34a.png');
+    assert.strictEqual(sanitizeMediaUrl('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAE='), 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAE=');
+    assert.strictEqual(sanitizeMediaUrl('blob:https://kuratech.site/uuid-1234'), 'blob:https://kuratech.site/uuid-1234');
+  });
+
+  test('366. Cryptographically Secure Random Utilities (CodeQL Insecure Randomness)', () => {
+    const uuid1 = getSecureRandomUUID();
+    const uuid2 = getSecureRandomUUID();
+    assert.ok(uuid1 && typeof uuid1 === 'string', 'UUID should be a non-empty string');
+    assert.notStrictEqual(uuid1, uuid2, 'Consecutive UUIDs must be unique');
+
+    const hex = getSecureRandomHex(16);
+    assert.strictEqual(hex.length, 16, 'Hex string must match requested length');
+    assert.match(hex, /^[0-9a-f]+$/i, 'Hex must only contain hex characters');
+
+    const id = generateSecureId('TEST');
+    assert.ok(id.startsWith('TEST-'), 'Prefix must be preserved');
+  });
+
+  test('367. Political Intelligence Agent RegExp Safety (CodeQL RegExp Injection)', () => {
+    // Tests with special RegExp characters that previously broke or caused regex injection
+    const specialCounty = 'Mombasa (Central) [Special] *+?^$';
+    const stories = [
+      { title: 'Peaceful voter turnout in Mombasa (Central) [Special] *+?^$', snippet: 'Local IEBC briefing' }
+    ];
+
+    // Must execute cleanly without syntax errors or unhandled exceptions
+    const intel = computeCountyIntelligence(specialCounty, stories);
+    assert.ok(intel, 'County intelligence computed without crashing on regex special characters');
+    assert.strictEqual(typeof intel.sentimentScore, 'number');
+  });
+
+  test('368. Offline Sync Queue Obfuscation (CodeQL Cleartext Storage)', async () => {
+    const { enqueueOfflineItem, getOfflineQueue } = await import('../utils/offlineSync.js');
+    const item = await enqueueOfflineItem({ stationId: 'PS-MOMBASA-001', testVal: 42 });
+    assert.ok(item, 'Item enqueued successfully');
+    assert.ok(item.clientSubmissionUuid.startsWith('UUID-'), 'Client UUID generated using secure format');
+
+    const queue = getOfflineQueue();
+    assert.ok(Array.isArray(queue), 'Queue retrieved as array');
+    assert.ok(queue.some(q => q.logicalRecordId === 'PS-MOMBASA-001'), 'Queue contains enqueued station item');
   });
 
 });

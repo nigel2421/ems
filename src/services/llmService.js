@@ -3,26 +3,47 @@
 // LLM Service (Google Gemini / OpenAI / Custom LLM Integration)
 // ====================================================================
 
+let inMemoryLlmKey = '';
+
 /**
- * Retrieves configured LLM API Key from localStorage or Vite environment
+ * Retrieves configured LLM API Key from in-memory, session storage, or Vite environment
  */
 export const getLLMApiKey = () => {
-  if (typeof localStorage !== 'undefined') {
-    const saved = localStorage.getItem('ems_gemini_api_key');
-    if (saved) return saved;
-  }
+  if (inMemoryLlmKey) return inMemoryLlmKey;
+
   if (typeof import.meta !== 'undefined' && import.meta.env) {
-    return import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_LLM_API_KEY || '';
+    const envKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_LLM_API_KEY || '';
+    if (envKey) return envKey;
+  }
+
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    try {
+      const saved = window.sessionStorage.getItem('ems_gemini_api_key');
+      if (saved) {
+        return decodeURIComponent(escape(atob(saved)));
+      }
+    } catch {
+      // ignore
+    }
   }
   return '';
 };
 
 export const setLLMApiKey = (key) => {
-  if (typeof localStorage !== 'undefined') {
-    if (key) {
-      localStorage.setItem('ems_gemini_api_key', key.trim());
-    } else {
-      localStorage.removeItem('ems_gemini_api_key');
+  inMemoryLlmKey = (key && key.trim()) || '';
+  if (typeof window !== 'undefined') {
+    try {
+      if (window.localStorage) window.localStorage.removeItem('ems_gemini_api_key');
+      if (window.sessionStorage) {
+        if (key && key.trim()) {
+          const encoded = btoa(unescape(encodeURIComponent(key.trim())));
+          window.sessionStorage.setItem('ems_gemini_api_key', encoded);
+        } else {
+          window.sessionStorage.removeItem('ems_gemini_api_key');
+        }
+      }
+    } catch {
+      // ignore
     }
   }
 };

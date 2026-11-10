@@ -187,6 +187,8 @@ export const fetchLivePoliticalFeeds = async () => {
   return allStories;
 };
 
+const escapeRegExp = (str) => String(str || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /**
  * Analyzes stories specifically relevant to a County/Territory
  */
@@ -200,7 +202,9 @@ export const computeCountyIntelligence = (county = 'Mombasa', stories = []) => {
     defaultBaseline: { sentiment: 60, opponentPressure: 50, messageReach: 60 }
   };
 
-  const countyPattern = new RegExp(`\\b(${normCounty}|${profile.keyFigures.join('|')})\\b`, 'i');
+  const escapedTerms = [escapeRegExp(normCounty), ...(profile.keyFigures || []).map(escapeRegExp)]
+    .filter(Boolean);
+  const countyPattern = new RegExp(`\\b(${escapedTerms.join('|')})\\b`, 'i');
 
   // Filter stories mentioning this county or its key political figures
   const relevantStories = stories.filter(s =>

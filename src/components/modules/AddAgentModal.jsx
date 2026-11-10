@@ -4,6 +4,7 @@ import { useData } from '../../context/DataContext';
 import { UserPlus, X, Camera, MapPin, Filter, AlertTriangle, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { ScopedLocationSieve } from './ScopedLocationSieve';
 import { checkPasswordComplexity, passwordsMatch } from '../../utils/passwordPolicy';
+import { sanitizeMediaUrl } from '../../utils/urlSanitizer';
 
 export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
   const { addUser, currentUser, users } = useAuth();
@@ -143,7 +144,7 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {/* Photo Preview & Upload */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '12px' }}>
-            <img src={avatar} alt="Agent Preview" style={{ width: '54px', height: '54px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
+            <img src={sanitizeMediaUrl(avatar)} alt="Agent Preview" style={{ width: '54px', height: '54px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: '0.85rem', fontWeight: '600' }}>Agent Profile Photo</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Upload portrait photo</div>

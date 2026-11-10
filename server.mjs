@@ -170,10 +170,31 @@ const sanitizeUser = (user) => {
   return safe;
 };
 
+const isAllowedOrigin = (origin, hostHeader) => {
+  if (!origin) return false;
+  try {
+    const parsed = new URL(origin);
+    const hostname = parsed.hostname.toLowerCase();
+    if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
+    if (hostname === 'kuratech.site' || hostname.endsWith('.kuratech.site')) return true;
+    if (hostHeader && hostname === hostHeader.split(':')[0].toLowerCase()) return true;
+  } catch {
+    return false;
+  }
+  return false;
+};
+
 const server = http.createServer((req, res) => {
-  const origin = req.headers.origin || '*';
-  res.setHeader('Access-Control-Allow-Origin', origin);
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  const origin = req.headers.origin;
+  const hostHeader = req.headers['x-forwarded-host'] || req.headers.host || '';
+
+  if (origin && isAllowedOrigin(origin, hostHeader)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  } else if (!origin) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-EMS-Realm');
 
@@ -183,7 +204,6 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  const hostHeader = req.headers['x-forwarded-host'] || req.headers.host || '';
   const explicitRealm = (req.headers['x-ems-realm'] || '').toLowerCase().trim();
   const referer = req.headers['referer'] || '';
   const isRefererAdmin = referer.includes('/admin.html');

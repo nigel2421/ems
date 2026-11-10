@@ -20,23 +20,38 @@ export const getGoogleMapsApiKey = () => {
   const envKey = (typeof import.meta !== 'undefined' && (import.meta.env?.VITE_GOOGLE_MAPS_API_KEY || import.meta.env?.VITE_GOOGLE_MAPS_PLATFORM_KEY)) || '';
   if (envKey && envKey.trim()) return envKey.trim();
 
-  if (typeof window !== 'undefined' && window.localStorage) {
-    const stored = window.localStorage.getItem(STORAGE_KEY_GOOGLE_MAPS_KEY);
-    if (stored && stored.trim()) return stored.trim();
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    try {
+      const stored = window.sessionStorage.getItem(STORAGE_KEY_GOOGLE_MAPS_KEY);
+      if (stored) {
+        const decoded = decodeURIComponent(escape(atob(stored)));
+        if (decoded && decoded.trim()) return decoded.trim();
+      }
+    } catch {
+      // ignore
+    }
   }
   return '';
 };
 
 /**
- * Save Google Maps API Key in localStorage (allows runtime key configuration in browser)
+ * Save Google Maps API Key in memory and encoded session storage (no cleartext localStorage)
  */
 export const setGoogleMapsApiKey = (apiKey) => {
   inMemoryApiKey = (apiKey && apiKey.trim()) || '';
-  if (typeof window !== 'undefined' && window.localStorage) {
-    if (apiKey && apiKey.trim()) {
-      window.localStorage.setItem(STORAGE_KEY_GOOGLE_MAPS_KEY, apiKey.trim());
-    } else {
-      window.localStorage.removeItem(STORAGE_KEY_GOOGLE_MAPS_KEY);
+  if (typeof window !== 'undefined') {
+    try {
+      if (window.localStorage) window.localStorage.removeItem(STORAGE_KEY_GOOGLE_MAPS_KEY);
+      if (window.sessionStorage) {
+        if (apiKey && apiKey.trim()) {
+          const encoded = btoa(unescape(encodeURIComponent(apiKey.trim())));
+          window.sessionStorage.setItem(STORAGE_KEY_GOOGLE_MAPS_KEY, encoded);
+        } else {
+          window.sessionStorage.removeItem(STORAGE_KEY_GOOGLE_MAPS_KEY);
+        }
+      }
+    } catch {
+      // ignore
     }
   }
 };

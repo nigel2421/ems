@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, CheckCircle2, XCircle, ShieldCheck, FileSpreadsheet, MapPin, Smartphone, Hash } from 'lucide-react';
+import { sanitizeMediaUrl } from '../../utils/urlSanitizer';
 
 export const ApprovalWorkflowModal = ({ submission, onClose, onApprove, onReject }) => {
   const [comment, setComment] = useState('Form 34A evidence reviewed against physical carbon copy.');
@@ -30,7 +31,7 @@ export const ApprovalWorkflowModal = ({ submission, onClose, onApprove, onReject
             <h4 style={{ fontSize: '0.9rem', fontWeight: '700', marginBottom: '0.5rem' }}>Form 34A Photo Evidence</h4>
             <div style={{ borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-color)', marginBottom: '0.75rem' }}>
               <img 
-                src={submission.evidence.form34AUrl} 
+                src={sanitizeMediaUrl(submission.evidence?.form34AUrl)} 
                 alt="Form 34A Evidence" 
                 style={{ width: '100%', height: '220px', objectFit: 'cover' }} 
               />

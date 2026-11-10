@@ -21,10 +21,8 @@ import {
   Maximize2,
   Download,
   Radio,
-  BatteryCharging,
   CheckCircle2,
   AlertCircle,
-  Signal,
   Activity,
   ShieldCheck
 } from 'lucide-react';
@@ -558,30 +556,7 @@ const PollingStationIntelligenceInner = ({ onOpenModule }) => {
             </div>
           </div>
 
-          {/* Card 3: Device & Connectivity Telemetry */}
-          <div className="psi-telemetry-card">
-            <div className="psi-telemetry-card-top">
-              <span className="psi-card-label">Device & Signal</span>
-              <span className="psi-card-pct">{agentHealth.telemetry.strongSignalPct}% Strong</span>
-            </div>
-            <div className="psi-pill-row">
-              <span className="psi-agent-pill is-signal" title="4G / Network Signal">
-                <Signal size={11} /> {agentHealth.telemetry.strongSignalPct}% Signal
-              </span>
-              <span className="psi-agent-pill is-battery" title="Battery Status">
-                <BatteryCharging size={11} /> {agentHealth.telemetry.healthyBatteryPct}% Battery OK
-              </span>
-            </div>
-            <div className="psi-telemetry-card-sub">
-              <span>
-                {agentHealth.telemetry.lowBatteryAlerts > 0
-                  ? `⚠️ ${agentHealth.telemetry.lowBatteryAlerts} low battery alerts`
-                  : '⚡ All device batteries healthy'}
-              </span>
-            </div>
-          </div>
-
-          {/* Card 4: Intelligence Intake Feed */}
+          {/* Card 3: Intelligence Intake Feed */}
           <div className="psi-telemetry-card">
             <div className="psi-telemetry-card-top">
               <span className="psi-card-label">Intelligence Intake</span>

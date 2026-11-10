@@ -9,6 +9,7 @@ import {
   MapPin,
   ShieldCheck
 } from 'lucide-react';
+import { sanitizeMediaUrl } from '../../utils/urlSanitizer';
 import './DashboardShared.css';
 
 export const AgentDashboard = ({ onOpenModule }) => {
@@ -25,10 +26,10 @@ export const AgentDashboard = ({ onOpenModule }) => {
       <header className="admin-page-head">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
           <img
-            src={
-              currentUser?.avatar ||
+            src={sanitizeMediaUrl(
+              currentUser?.avatar,
               'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80'
-            }
+            )}
             alt=""
             style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', border: '2px solid #006B3F' }}
           />

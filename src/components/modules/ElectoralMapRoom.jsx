@@ -903,20 +903,6 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
             <span>Risk Level</span>
           </button>
         </div>
-
-        {/* API Key Controls */}
-        <div className="map-zoom-controls">
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            onClick={() => setShowKeyModal(true)}
-            title="Google Maps API Key Configuration"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', padding: '0.35rem 0.65rem' }}
-          >
-            <Key size={13} color={apiKey ? '#10b981' : '#f59e0b'} />
-            <span>{apiKey ? 'API Key Active' : 'Set Maps Key'}</span>
-          </button>
-        </div>
       </header>
 
       {/* Main Map Canvas Area */}

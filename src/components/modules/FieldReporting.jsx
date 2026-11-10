@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { compressImageSimulation } from '../../services/api';
+import { sanitizeMediaUrl } from '../../utils/urlSanitizer';
 import {
   FileText,
   Plus,
@@ -175,7 +176,7 @@ export const FieldReporting = ({ onClose }) => {
               {rep.media && rep.media.length > 0 && (
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
                   {rep.media.map(med => (
-                    <img key={med.id} src={med.thumbnailUrl || med.mediaUrl} alt={med.fileName} style={{ width: '56px', height: '56px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border-color)' }} />
+                    <img key={med.id} src={sanitizeMediaUrl(med.thumbnailUrl || med.mediaUrl)} alt={med.fileName} style={{ width: '56px', height: '56px', borderRadius: '8px', objectFit: 'cover', border: '1px solid var(--border-color)' }} />
                   ))}
                 </div>
               )}
@@ -255,7 +256,7 @@ export const FieldReporting = ({ onClose }) => {
                 {compressedPreviews.map((prev, idx) => (
                   <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem', background: 'rgba(0,0,0,0.2)', padding: '0.5rem 0.75rem', borderRadius: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <img src={prev.previewUrl} alt="prev" style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover' }} />
+                      <img src={sanitizeMediaUrl(prev.previewUrl)} alt="prev" style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover' }} />
                       <span>{prev.name}</span>
                     </div>
                     <div style={{ color: '#34d399', fontWeight: '700' }}>
@@ -298,7 +299,7 @@ export const FieldReporting = ({ onClose }) => {
                 <div style={{ fontSize: '0.8rem', fontWeight: '700', marginBottom: '0.5rem', color: '#a5b4fc' }}>Attached Compressed Photo Evidence:</div>
                 <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto' }}>
                   {viewingReport.media.map(med => (
-                    <img key={med.id} src={med.mediaUrl || med.thumbnailUrl} alt={med.fileName} style={{ width: '100%', maxHeight: '240px', borderRadius: '12px', objectFit: 'cover', border: '1px solid var(--border-color)' }} />
+                    <img key={med.id} src={sanitizeMediaUrl(med.mediaUrl || med.thumbnailUrl)} alt={med.fileName} style={{ width: '100%', maxHeight: '240px', borderRadius: '12px', objectFit: 'cover', border: '1px solid var(--border-color)' }} />
                   ))}
                 </div>
               </div>

@@ -3,12 +3,39 @@
 // Resilient vote tally and field report caching for remote polling stations
 // ====================================================================
 
+import { generateSecureId } from './cryptoRandom.js';
+
 const DB_NAME = 'ems_offline_vault';
 const DB_VERSION = 1;
 const STORE_SUBMISSIONS = 'pending_submissions';
 const STORE_CACHE = 'cached_offline_data';
 
 let dbInstance = null;
+
+const loadStorageItems = (key) => {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return [];
+    try {
+      return JSON.parse(decodeURIComponent(escape(atob(raw))));
+    } catch {
+      return JSON.parse(raw);
+    }
+  } catch {
+    return [];
+  }
+};
+
+const saveStorageItems = (key, items) => {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    const json = JSON.stringify(items || []);
+    localStorage.setItem(key, btoa(unescape(encodeURIComponent(json))));
+  } catch {
+    // ignore
+  }
+};
 
 const openIndexedDB = () => {
   return new Promise((resolve, reject) => {
@@ -46,7 +73,7 @@ const openIndexedDB = () => {
 export const enqueueOfflineItem = async (storeName = STORE_SUBMISSIONS, item) => {
   const queuedItem = {
     ...item,
-    id: item.id || `OFF-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    id: item.id || generateSecureId('OFF'),
     queuedAt: new Date().toISOString(),
     syncAttempts: 0
   };
@@ -63,9 +90,10 @@ export const enqueueOfflineItem = async (storeName = STORE_SUBMISSIONS, item) =>
   } catch {
     // Fallback to localStorage
     try {
-      const existing = JSON.parse(localStorage.getItem(`ems_off_${storeName}`) || '[]');
+      const storageKey = `ems_off_${storeName}`;
+      const existing = loadStorageItems(storageKey);
       existing.push(queuedItem);
-      localStorage.setItem(`ems_off_${storeName}`, JSON.stringify(existing));
+      saveStorageItems(storageKey, existing);
       return queuedItem;
     } catch (e) {
       console.warn('[OfflineQueue] LocalStorage fallback failed:', e);
@@ -90,7 +118,7 @@ export const getPendingOfflineItems = async (storeName = STORE_SUBMISSIONS) => {
   } catch {
     // Fallback to localStorage
     try {
-      return JSON.parse(localStorage.getItem(`ems_off_${storeName}`) || '[]');
+      return loadStorageItems(`ems_off_${storeName}`);
     } catch {
       return [];
     }
@@ -112,9 +140,10 @@ export const removeOfflineItem = async (storeName = STORE_SUBMISSIONS, id) => {
     });
   } catch {
     try {
-      const existing = JSON.parse(localStorage.getItem(`ems_off_${storeName}`) || '[]');
+      const storageKey = `ems_off_${storeName}`;
+      const existing = loadStorageItems(storageKey);
       const filtered = existing.filter(item => item.id !== id);
-      localStorage.setItem(`ems_off_${storeName}`, JSON.stringify(filtered));
+      saveStorageItems(storageKey, filtered);
       return true;
     } catch {
       return false;

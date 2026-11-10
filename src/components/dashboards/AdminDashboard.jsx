@@ -43,6 +43,7 @@ import {
 } from 'chart.js';
 import { Pie, Line } from 'react-chartjs-2';
 import { AddAgentModal } from '../modules/AddAgentModal';
+import { sanitizeMediaUrl } from '../../utils/urlSanitizer';
 import './AdminDashboard.css';
 
 ChartJS.register(
@@ -547,7 +548,7 @@ export const AdminDashboard = ({
               <div className="admin-list">
                 {stats.recentUsers.map((user) => (
                   <div key={user.id} className="admin-list-item">
-                    <img src={user.avatar} alt="" />
+                    <img src={sanitizeMediaUrl(user.avatar)} alt="" />
                     <div>
                       <strong>{user.name}</strong>
                       <span>{user.entityName || 'Unassigned'}</span>
@@ -934,7 +935,7 @@ export const AdminDashboard = ({
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <img
-                          src={cand.avatar}
+                          src={sanitizeMediaUrl(cand.avatar)}
                           alt=""
                           style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--admin-mint)' }}
                         />
@@ -1127,7 +1128,7 @@ export const AdminDashboard = ({
                       return (
                         <tr key={u.id}>
                           <td style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                            <img src={u.avatar} alt="" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
+                            <img src={sanitizeMediaUrl(u.avatar)} alt="" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
                             <div>
                               <div>{u.name}</div>
                               {lockState.locked && (
@@ -1335,7 +1336,7 @@ export const AdminDashboard = ({
 
             {accountModal.mode === 'view' ? (
               <div className="admin-account-detail">
-                <img src={accountModal.user.avatar} alt="" />
+                <img src={sanitizeMediaUrl(accountModal.user.avatar)} alt="" />
                 <div className="admin-account-detail-grid">
                   <div><span>Name</span><strong>{accountModal.user.name}</strong></div>
                   <div><span>Role</span><strong>{accountModal.user.role}</strong></div>

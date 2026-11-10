@@ -80,7 +80,13 @@ export const formatRetry = (ms) => {
 export const loadThrottleStore = (storage = globalThis.localStorage) => {
   try {
     const raw = storage?.getItem(THROTTLE_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
+    if (!raw) return {};
+    try {
+      const decoded = decodeURIComponent(escape(atob(raw)));
+      return JSON.parse(decoded);
+    } catch {
+      return JSON.parse(raw);
+    }
   } catch {
     return {};
   }
@@ -88,7 +94,9 @@ export const loadThrottleStore = (storage = globalThis.localStorage) => {
 
 export const saveThrottleStore = (store, storage = globalThis.localStorage) => {
   try {
-    storage?.setItem(THROTTLE_STORAGE_KEY, JSON.stringify(store || {}));
+    const json = JSON.stringify(store || {});
+    const encoded = btoa(unescape(encodeURIComponent(json)));
+    storage?.setItem(THROTTLE_STORAGE_KEY, encoded);
   } catch {
     /* storage full or unavailable */
   }

@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { Award, CheckCircle2, UserPlus, Users } from 'lucide-react';
 import { AddAgentModal } from '../modules/AddAgentModal';
+import { sanitizeMediaUrl } from '../../utils/urlSanitizer';
 import './DashboardShared.css';
 
 export const MPDashboard = () => {
@@ -84,7 +85,7 @@ export const MPDashboard = () => {
         <div className="admin-agent-grid">
           {scopedAgents.map(ag => (
             <div key={ag.id} className="admin-agent-tile">
-              <img src={ag.avatar} alt={ag.name} />
+              <img src={sanitizeMediaUrl(ag.avatar)} alt={ag.name} />
               <strong>{ag.name}</strong>
               <span>{ag.entityName}</span>
               <span>{ag.email}</span>
