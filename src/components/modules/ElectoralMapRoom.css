@@ -96,6 +96,29 @@
   background: rgba(15, 23, 42, 1);
 }
 
+.map-filter-select:disabled,
+.map-filter-select.is-locked {
+  background: rgba(15, 23, 42, 0.55);
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.25);
+  cursor: not-allowed;
+  opacity: 0.88;
+  box-shadow: none;
+}
+
+.map-breadcrumb-locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+}
+
 /* Engine Mode Selector */
 .map-mode-selector {
   display: flex;

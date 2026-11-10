@@ -305,6 +305,27 @@ export const resolveGoogleMapFraming = (user, geography, selectedCounty = null, 
   const assignedEntity = String(user.assignedEntity || '');
   const userCounty = String(user.county || '').toLowerCase();
   const userConst = String(user.constituency || '').toLowerCase();
+  const userWard = String(user.ward || '').toLowerCase();
+
+  // Check Ward Scope (MCA, Ward Coordinator)
+  if (user.role === 'MCA' || user.role === 'Ward Coordinator' || userWard) {
+    const wardStations = (geography?.pollingStations || []).filter(ps => {
+      const psWard = String(ps.wardName || ps.ward || '').toLowerCase().trim();
+      return psWard === userWard || (userWard && (psWard.includes(userWard) || userWard.includes(psWard)));
+    }).filter(ps => typeof ps.latitude === 'number' && typeof ps.longitude === 'number');
+
+    if (wardStations.length > 0) {
+      const avgLat = wardStations.reduce((acc, s) => acc + s.latitude, 0) / wardStations.length;
+      const avgLng = wardStations.reduce((acc, s) => acc + s.longitude, 0) / wardStations.length;
+      return {
+        center: { lat: avgLat, lng: avgLng },
+        zoom: 14,
+        isScoped: true,
+        wardName: user.ward,
+        title: `${user.ward || 'Ward'} Command`
+      };
+    }
+  }
 
   // Check Constituency Scope
   if (user.role === 'MP' || user.constituency || assignedEntity.startsWith('CONST-')) {

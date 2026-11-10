@@ -4718,6 +4718,85 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     assert.ok(css.includes('[data-theme="light"]'), 'CSS must contain light theme attribute rules');
   });
 
+  test('361. ElectoralMapRoom & jurisdictionAnalytics: MCA/scoped roles have hasNationalGeographyAccess === false and stations strictly clamped to assigned Ward', async () => {
+    const { resolveJurisdiction, hasNationalGeographyAccess, filterStationsByJurisdiction } = await import('../utils/jurisdictionAnalytics.js');
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+
+    const mcaUser = {
+      id: 'USR-MCA-001',
+      username: 'mca_parklands',
+      role: 'MCA',
+      county: 'Nairobi City',
+      constituency: 'Westlands',
+      ward: 'Parklands/Highridge Ward',
+      assignedEntity: 'WARD-001'
+    };
+
+    const mockGeography = {
+      counties: [{ id: 'C-047', name: 'Nairobi City' }],
+      constituencies: [{ id: 'CONST-001', countyId: 'C-047', name: 'Westlands' }],
+      wards: [
+        { id: 'WARD-001', constituencyId: 'CONST-001', countyId: 'C-047', name: 'Parklands/Highridge Ward' },
+        { id: 'WARD-002', constituencyId: 'CONST-001', countyId: 'C-047', name: 'Kitisuru Ward' }
+      ],
+      pollingStations: [
+        { id: 'PS-001', name: 'Parklands Primary Stream 1', wardId: 'WARD-001', wardName: 'Parklands/Highridge Ward', constituencyId: 'CONST-001', countyId: 'C-047' },
+        { id: 'PS-002', name: 'Parklands Primary Stream 2', wardId: 'WARD-001', wardName: 'Parklands/Highridge Ward', constituencyId: 'CONST-001', countyId: 'C-047' },
+        { id: 'PS-003', name: 'Kitisuru Primary Stream 1', wardId: 'WARD-002', wardName: 'Kitisuru Ward', constituencyId: 'CONST-001', countyId: 'C-047' },
+        { id: 'PS-004', name: 'Kitisuru Primary Stream 2', wardId: 'WARD-002', wardName: 'Kitisuru Ward', constituencyId: 'CONST-001', countyId: 'C-047' }
+      ]
+    };
+
+    // 1. National access check
+    assert.strictEqual(hasNationalGeographyAccess(mcaUser), false, 'MCA must not have national geography access');
+
+    // 2. Resolve jurisdiction
+    const scope = resolveJurisdiction(mcaUser, mockGeography);
+    assert.strictEqual(scope.level, 'ward');
+    assert.strictEqual(scope.ward.name, 'Parklands/Highridge Ward');
+
+    // 3. Filter stations strictly to ward (zero leakage to other Westlands wards)
+    const filtered = filterStationsByJurisdiction(mockGeography.pollingStations, scope);
+    assert.strictEqual(filtered.length, 2, 'Only 2 Parklands stations should be visible to MCA');
+    assert.ok(filtered.every(ps => ps.wardId === 'WARD-001'), 'All stations must belong strictly to WARD-001');
+
+    // 4. Verify ElectoralMapRoom.jsx contains locked dropdowns and locked breadcrumbs
+    const jsxPath = path.resolve(process.cwd(), 'src/components/modules/ElectoralMapRoom.jsx');
+    const jsx = fs.readFileSync(jsxPath, 'utf8');
+    assert.ok(jsx.includes('map-filter-select is-locked'), 'Must render locked select dropdown for non-national users');
+    assert.ok(jsx.includes('map-breadcrumb-locked'), 'Must render locked breadcrumb badge for non-national users');
+    assert.ok(jsx.includes('Strictly Gated'), 'Must show strictly gated text indicator in breadcrumb');
+  });
+
+  test('362. resolveGoogleMapFraming: computes ward centroid and zoom for MCA/Ward Coordinator roles', async () => {
+    const { resolveGoogleMapFraming } = await import('../services/googleMapsService.js');
+
+    const mcaUser = {
+      role: 'MCA',
+      county: 'Nairobi City',
+      constituency: 'Westlands',
+      ward: 'Parklands/Highridge Ward'
+    };
+
+    const mockGeography = {
+      counties: [{ id: 'C-047', name: 'Nairobi City', centerLat: -1.286389, centerLng: 36.817223 }],
+      constituencies: [{ id: 'CONST-001', name: 'Westlands' }],
+      wards: [{ id: 'WARD-001', name: 'Parklands/Highridge Ward' }],
+      pollingStations: [
+        { id: 'PS-001', wardName: 'Parklands/Highridge Ward', latitude: -1.2650, longitude: 36.8200 },
+        { id: 'PS-002', wardName: 'Parklands/Highridge Ward', latitude: -1.2670, longitude: 36.8220 }
+      ]
+    };
+
+    const framing = resolveGoogleMapFraming(mcaUser, mockGeography);
+    assert.ok(framing, 'Framing must be returned');
+    assert.strictEqual(framing.zoom, 14, 'Ward-level framing should zoom to 14');
+    assert.ok(framing.title.includes('Parklands/Highridge Ward Command'), 'Title should reflect ward command');
+    assert.ok(Math.abs(framing.center.lat - (-1.2660)) < 0.001, 'Latitude centroid should be average of ward stations');
+    assert.ok(Math.abs(framing.center.lng - 36.8210) < 0.001, 'Longitude centroid should be average of ward stations');
+  });
+
 });
 
 

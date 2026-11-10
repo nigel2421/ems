@@ -25,6 +25,11 @@ import {
 import { FORMATION_COLORS, MAP_LAYERS, buildRegionMetricsIndex } from '../../utils/mapAnalytics';
 import { canAccessLocation, resolveCanonicalCounty, resolveCanonicalConstituency } from '../../utils/rbac';
 import {
+  resolveJurisdiction,
+  hasNationalGeographyAccess,
+  filterStationsByJurisdiction
+} from '../../utils/jurisdictionAnalytics';
+import {
   Map as MapIcon,
   ChevronRight,
   X,
@@ -48,6 +53,13 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
   const { geography, tallyResults = [], stationIntelligence = {}, agents = [] } = useData();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+
+  // Geographic RBAC resolution
+  const isNational = hasNationalGeographyAccess(currentUser);
+  const userJurisdiction = useMemo(
+    () => resolveJurisdiction(currentUser, geography),
+    [currentUser, geography]
+  );
 
   // Engine Mode: 'google_hybrid' (Satellite + Roads) | 'google_roadmap' (Clean Streets)
   const [mapMode, setMapMode] = useState('google_hybrid');
@@ -136,6 +148,13 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
     if (!currentUser || !geography) return;
     if (initialCountyId || initialConstituencyId) return;
 
+    // For non-national users, lock initial administrative selection strictly to assigned scope
+    if (!isNational && userJurisdiction) {
+      if (userJurisdiction.county) setSelectedCounty(userJurisdiction.county);
+      if (userJurisdiction.constituency) setSelectedConstituency(userJurisdiction.constituency);
+      return;
+    }
+
     // 1. MP or Constituency-level role
     if (currentUser.constituency || (currentUser.role && currentUser.role.includes('MP'))) {
       const canonicalConst = resolveCanonicalConstituency(currentUser.constituency || currentUser.assignedEntity);
@@ -165,7 +184,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
         setSelectedConstituency(null);
       }
     }
-  }, [currentUser, geography]);
+  }, [currentUser, geography, isNational, userJurisdiction, initialCountyId, initialConstituencyId]);
 
   // Google Maps Framing (center & zoom)
   const googleFraming = useMemo(
@@ -187,6 +206,12 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
   const scopedStations = useMemo(() => {
     const stations = geography?.pollingStations || [];
     if (!stations.length) return [];
+
+    // Strictly enforce geographic RBAC for scoped (non-national) accounts
+    // (e.g. MCA gets ONLY stations in their specific ward, MP in constituency)
+    if (!isNational) {
+      return filterStationsByJurisdiction(stations, userJurisdiction);
+    }
 
     // 1. If a constituency is selected, filter stations to that constituency
     if (selectedConstituency) {
@@ -210,7 +235,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
       );
     }
 
-    // 3. If authenticated user has restricted role scope, filter strictly
+    // 3. Fallback check for any other role scope
     if (currentUser && currentUser.role !== 'Super Admin' && currentUser.role !== 'Admin' && currentUser.assignedEntity !== 'GLOBAL') {
       return stations.filter(ps => canAccessLocation(currentUser, {
         county: ps.countyName || ps.county,
@@ -223,7 +248,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
 
     // 4. Default National View
     return stations;
-  }, [geography, currentUser, selectedCounty, selectedConstituency]);
+  }, [geography, currentUser, isNational, userJurisdiction, selectedCounty, selectedConstituency]);
 
   // --------------------------------------------------------------------
   // POLLING CENTRE HUBS (Super-Imposed Stream Aggregation)
@@ -643,6 +668,15 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
   };
 
   const handleResetToNational = () => {
+    if (!isNational) {
+      // Re-frame strictly to user's assigned jurisdiction bounds
+      if (googleMapInstance && googleFraming?.center) {
+        googleMapInstance.panTo(googleFraming.center);
+        googleMapInstance.setZoom(googleFraming.zoom);
+      }
+      setDrawerOpen(false);
+      return;
+    }
     setSelectedCounty(null);
     setSelectedConstituency(null);
     setDrawerOpen(false);
@@ -691,16 +725,23 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
           <div>
             <h2>Electoral Map Room</h2>
             <div className="map-room-breadcrumbs">
-              <button type="button" onClick={handleResetToNational}>
-                Kenya National
-              </button>
-              {selectedCounty && (
+              {isNational ? (
+                <button type="button" onClick={handleResetToNational}>
+                  Kenya National
+                </button>
+              ) : (
+                <span className="map-breadcrumb-locked" title="Strictly Gated Operational Scope">
+                  <Lock size={12} style={{ marginRight: 3, verticalAlign: 'middle' }} />
+                  {userJurisdiction?.title || 'Operational Scope'} (Strictly Gated)
+                </span>
+              )}
+              {selectedCounty && isNational && (
                 <>
                   <ChevronRight size={12} />
                   <span>{selectedCounty.name}</span>
                 </>
               )}
-              {selectedConstituency && (
+              {selectedConstituency && isNational && (
                 <>
                   <ChevronRight size={12} />
                   <span>{selectedConstituency.name}</span>
@@ -711,53 +752,96 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
 
           {/* Quick County / Constituency Filter Dropdowns */}
           <div className="map-quick-filter">
-            <select
-              value={selectedCounty?.id || ''}
-              onChange={(e) => {
-                const cId = e.target.value;
-                if (!cId) {
-                  handleResetToNational();
-                } else {
-                  const found = (geography?.counties || []).find(c => c.id === cId);
-                  if (found) {
-                    setSelectedCounty(found);
-                    setSelectedConstituency(null);
-                  }
-                }
-              }}
-              className="map-filter-select"
-              title="Filter by County"
-            >
-              <option value="">All 47 Counties</option>
-              {(geography?.counties || []).map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-
-            {selectedCounty && (
-              <select
-                value={selectedConstituency?.id || ''}
-                onChange={(e) => {
-                  const constId = e.target.value;
-                  if (!constId) {
-                    setSelectedConstituency(null);
-                  } else {
-                    const found = (geography?.constituencies || []).find(c => c.id === constId);
-                    if (found) {
-                      setSelectedConstituency(found);
+            {isNational ? (
+              <>
+                <select
+                  value={selectedCounty?.id || ''}
+                  onChange={(e) => {
+                    const cId = e.target.value;
+                    if (!cId) {
+                      handleResetToNational();
+                    } else {
+                      const found = (geography?.counties || []).find(c => c.id === cId);
+                      if (found) {
+                        setSelectedCounty(found);
+                        setSelectedConstituency(null);
+                      }
                     }
-                  }
-                }}
-                className="map-filter-select"
-                title="Filter by Constituency"
-              >
-                <option value="">All Constituencies</option>
-                {(geography?.constituencies || [])
-                  .filter(c => c.countyId === selectedCounty.id)
-                  .map(c => (
+                  }}
+                  className="map-filter-select"
+                  title="Filter by County"
+                >
+                  <option value="">All 47 Counties</option>
+                  {(geography?.counties || []).map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
-              </select>
+                </select>
+
+                {selectedCounty && (
+                  <select
+                    value={selectedConstituency?.id || ''}
+                    onChange={(e) => {
+                      const constId = e.target.value;
+                      if (!constId) {
+                        setSelectedConstituency(null);
+                      } else {
+                        const found = (geography?.constituencies || []).find(c => c.id === constId);
+                        if (found) {
+                          setSelectedConstituency(found);
+                        }
+                      }
+                    }}
+                    className="map-filter-select"
+                    title="Filter by Constituency"
+                  >
+                    <option value="">All Constituencies</option>
+                    {(geography?.constituencies || [])
+                      .filter(c => c.countyId === selectedCounty.id)
+                      .map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                  </select>
+                )}
+              </>
+            ) : (
+              <>
+                <select
+                  disabled
+                  value={userJurisdiction?.county?.id || ''}
+                  className="map-filter-select is-locked"
+                  title="Assigned County (Locked)"
+                >
+                  <option value={userJurisdiction?.county?.id || ''}>
+                    {userJurisdiction?.county?.name || currentUser.county || 'Assigned County'} 🔒
+                  </option>
+                </select>
+
+                {userJurisdiction?.constituency && (
+                  <select
+                    disabled
+                    value={userJurisdiction?.constituency?.id || ''}
+                    className="map-filter-select is-locked"
+                    title="Assigned Constituency (Locked)"
+                  >
+                    <option value={userJurisdiction?.constituency?.id || ''}>
+                      {userJurisdiction?.constituency?.name || currentUser.constituency || 'Assigned Constituency'} 🔒
+                    </option>
+                  </select>
+                )}
+
+                {userJurisdiction?.ward && (
+                  <select
+                    disabled
+                    value={userJurisdiction?.ward?.id || ''}
+                    className="map-filter-select is-locked"
+                    title="Assigned Ward (Locked)"
+                  >
+                    <option value={userJurisdiction?.ward?.id || ''}>
+                      {userJurisdiction?.ward?.name || currentUser.ward || 'Assigned Ward'} 🔒
+                    </option>
+                  </select>
+                )}
+              </>
             )}
           </div>
         </div>

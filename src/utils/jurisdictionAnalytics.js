@@ -195,15 +195,48 @@ export const filterStationsByJurisdiction = (stations, scope) => {
   const list = Array.isArray(stations) ? stations : [];
   if (!scope) return [];
 
-  if (scope.level === 'ward' && scope.ward?.id) {
-    return list.filter((ps) => ps && ps.wardId === scope.ward.id);
+  if (scope.level === 'ward') {
+    const wId = scope.ward?.id;
+    const wName = String(scope.ward?.name || '').toLowerCase().trim();
+    return list.filter((ps) => {
+      if (!ps) return false;
+      if (wId && (ps.wardId === wId || String(ps.wardId).toLowerCase() === String(wId).toLowerCase())) return true;
+      const psWard = String(ps.wardName || ps.ward || '').toLowerCase().trim();
+      if (wName && psWard) {
+        return psWard === wName || psWard.includes(wName) || wName.includes(psWard);
+      }
+      return false;
+    });
   }
-  if (scope.level === 'constituency' && scope.constituency?.id) {
-    return list.filter((ps) => ps && ps.constituencyId === scope.constituency.id);
+
+  if (scope.level === 'constituency') {
+    const cId = scope.constituency?.id;
+    const cName = String(scope.constituency?.name || '').toLowerCase().trim();
+    return list.filter((ps) => {
+      if (!ps) return false;
+      if (cId && (ps.constituencyId === cId || String(ps.constituencyId).toLowerCase() === String(cId).toLowerCase())) return true;
+      const psConst = String(ps.constituencyName || ps.constituency || '').toLowerCase().trim();
+      if (cName && psConst) {
+        return psConst === cName || psConst.includes(cName) || cName.includes(psConst);
+      }
+      return false;
+    });
   }
-  if (scope.level === 'county' && scope.county?.id) {
-    return list.filter((ps) => ps && ps.countyId === scope.county.id);
+
+  if (scope.level === 'county') {
+    const coId = scope.county?.id;
+    const coName = String(scope.county?.name || '').toLowerCase().trim();
+    return list.filter((ps) => {
+      if (!ps) return false;
+      if (coId && (ps.countyId === coId || String(ps.countyId).toLowerCase() === String(coId).toLowerCase())) return true;
+      const psCounty = String(ps.countyName || ps.county || '').toLowerCase().trim();
+      if (coName && psCounty) {
+        return psCounty === coName || psCounty.includes(coName) || coName.includes(psCounty);
+      }
+      return false;
+    });
   }
+
   return [];
 };
 
