@@ -44,9 +44,9 @@ export const SystemHealthPanel = () => {
 
     const checks = [
       {
-        id: 'healthz',
+        id: 'health',
         title: 'Backend Health & Liveness Heartbeat',
-        endpoint: '/healthz',
+        endpoint: '/api/health',
         method: 'GET',
         expectedStatus: 200,
         evaluator: (data) => data.status === 'HEALTHY' ? 'Liveness heartbeat healthy' : 'Unexpected status: ' + data.status

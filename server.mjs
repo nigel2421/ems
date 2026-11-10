@@ -209,7 +209,7 @@ const server = http.createServer((req, res) => {
   }
 
   // System Health
-  if (pathname === '/api/health' || pathname === '/ems/api/health') {
+  if (pathname === '/api/health' || pathname === '/healthz' || pathname === '/api/healthz' || pathname === '/ems/api/health' || pathname === '/ems/healthz') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: 'HEALTHY',
@@ -230,7 +230,7 @@ const server = http.createServer((req, res) => {
         currentDb.googleMapsApiKey ||
         '';
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ apiKey: activeKey }));
+      res.end(JSON.stringify({ apiKey: activeKey, configured: Boolean(activeKey) }));
       return;
     }
 

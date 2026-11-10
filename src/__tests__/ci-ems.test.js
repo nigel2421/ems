@@ -4655,7 +4655,7 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     const scriptPath = path.resolve(process.cwd(), 'scripts/verify_live_system.mjs');
     const content = fs.readFileSync(scriptPath, 'utf8');
     assert.ok(content.includes("HTTPS Connectivity & TLS Handshake"));
-    assert.ok(content.includes("/healthz"));
+    assert.ok(content.includes("/api/health"));
     assert.ok(content.includes("POST /api/admin/users"));
     assert.ok(content.includes("DELETE /api/admin/users"));
     assert.ok(content.includes("VERIFICATION SCORECARD SUMMARY"));

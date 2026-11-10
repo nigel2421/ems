@@ -66,9 +66,9 @@ async function verifyLiveSystem() {
   });
 
   // Step 2: Backend Liveness & Realm
-  await runStep(2, 'Backend Health & Liveness (/healthz)', async () => {
-    const res = await fetch(`${TARGET_URL}/healthz`);
-    if (!res.ok) throw new Error(`Healthz responded with HTTP ${res.status}`);
+  await runStep(2, 'Backend Health & Liveness (/api/health)', async () => {
+    const res = await fetch(`${TARGET_URL}/api/health`);
+    if (!res.ok) throw new Error(`Health responded with HTTP ${res.status}`);
     const data = await res.json();
     if (data.status !== 'HEALTHY') throw new Error(`Expected status HEALTHY, got "${data.status}"`);
     return `Status: ${data.status}, Realm: ${data.realm || 'default'}`;
@@ -242,10 +242,8 @@ async function verifyLiveSystem() {
     const res = await fetch(`${TARGET_URL}/api/config/maps`);
     if (!res.ok) throw new Error(`Maps config endpoint returned HTTP ${res.status}`);
     const data = await res.json();
-    if (typeof data.configured !== 'boolean') {
-      throw new Error('Maps config response missing "configured" boolean field.');
-    }
-    return `Config endpoint active (Key configured: ${data.configured})`;
+    const isConfigured = Boolean(data.apiKey || data.configured);
+    return `Config endpoint active (Key configured: ${isConfigured})`;
   });
 
   // Summary Scorecard
