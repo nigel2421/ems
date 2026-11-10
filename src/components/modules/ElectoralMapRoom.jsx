@@ -16,6 +16,8 @@ import {
   formatInfoWindowHtml,
   getGoogleMapsApiKey,
   setGoogleMapsApiKey,
+  fetchGoogleMapsApiKeyFromServer,
+  saveGoogleMapsApiKeyToServer,
   loadGoogleMaps,
   onGoogleMapsAuthFailure
 } from '../../services/googleMapsService';
@@ -87,6 +89,19 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
       setAuthFailed(true);
     });
   }, []);
+
+  // Auto-resolve Google Maps API key from VPS backend config if not set locally
+  useEffect(() => {
+    if (!apiKey) {
+      let isMounted = true;
+      fetchGoogleMapsApiKeyFromServer().then((serverKey) => {
+        if (isMounted && serverKey) {
+          setApiKey(serverKey);
+        }
+      });
+      return () => { isMounted = false; };
+    }
+  }, [apiKey]);
 
   // Handle explicit initial framing passed from Polling Station Intelligence or deep-links
   useEffect(() => {
@@ -605,13 +620,22 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
     };
   }, [mapMode, apiKey, activeLayer, pollingCentreHubs, constituencyHubs, selectedConstituency, googleFraming, agents]);
 
-  // Handle saving API key in localStorage
-  const handleSaveApiKey = () => {
-    if (apiKeyInput.trim()) {
-      setGoogleMapsApiKey(apiKeyInput.trim());
-      setApiKey(apiKeyInput.trim());
+  // Handle saving API key in localStorage and persisting globally on server for admins
+  const handleSaveApiKey = async () => {
+    const key = apiKeyInput.trim();
+    if (key) {
+      setGoogleMapsApiKey(key);
+      setApiKey(key);
       setShowKeyModal(false);
       setMapMode('google_hybrid');
+
+      if (currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') {
+        try {
+          await saveGoogleMapsApiKeyToServer(key);
+        } catch (err) {
+          console.warn('[ElectoralMapRoom] Failed to persist key to server:', err);
+        }
+      }
     }
   };
 
@@ -844,6 +868,11 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
               value={apiKeyInput}
               onChange={(e) => setApiKeyInput(e.target.value)}
             />
+            {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
+              <p style={{ fontSize: '0.76rem', color: '#10b981', margin: '0.5rem 0 0 0' }}>
+                Administrator notice: Saving this key here will automatically configure it on the live server for all users.
+              </p>
+            )}
             <div className="google-maps-actions">
               <button type="button" className="btn btn-primary btn-sm" onClick={handleSaveApiKey} disabled={!apiKeyInput.trim()}>
                 <CheckCircle size={14} />

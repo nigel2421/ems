@@ -4591,6 +4591,30 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     assert.ok(content.includes("ensureBaselineUsers"));
   });
 
+  test('351. server.mjs: exposes /api/config/maps with role-checked updates', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const serverPath = path.resolve(process.cwd(), 'server.mjs');
+    const content = fs.readFileSync(serverPath, 'utf8');
+    assert.ok(content.includes('/api/config/maps'));
+    assert.ok(content.includes('googleMapsApiKey'));
+    assert.ok(content.includes('ADMIN_UPDATE_MAPS_KEY'));
+  });
+
+  test('352. googleMapsService.js: exports fetchGoogleMapsApiKeyFromServer and saveGoogleMapsApiKeyToServer', async () => {
+    const { fetchGoogleMapsApiKeyFromServer, saveGoogleMapsApiKeyToServer } = await import('../../src/services/googleMapsService.js');
+    assert.equal(typeof fetchGoogleMapsApiKeyFromServer, 'function');
+    assert.equal(typeof saveGoogleMapsApiKeyToServer, 'function');
+  });
+
+  test('353. deploy.yml: embeds VITE_GOOGLE_MAPS_API_KEY into build environment', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const deployPath = path.resolve(process.cwd(), '.github/workflows/deploy.yml');
+    const content = fs.readFileSync(deployPath, 'utf8');
+    assert.ok(content.includes('VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}'));
+  });
+
 });
 
 

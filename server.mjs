@@ -219,6 +219,59 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Google Maps Configuration: GET /api/config/maps & POST /api/config/maps
+  if (pathname === '/api/config/maps' || pathname === '/ems/api/config/maps') {
+    if (req.method === 'GET') {
+      const activeKey = process.env.GOOGLE_MAPS_API_KEY ||
+        process.env.VITE_GOOGLE_MAPS_API_KEY ||
+        process.env.VITE_GOOGLE_MAPS_PLATFORM_KEY ||
+        currentDb.googleMapsApiKey ||
+        '';
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ apiKey: activeKey }));
+      return;
+    }
+
+    if (req.method === 'POST') {
+      const rawToken = extractTokenFromReq(req, 'admin');
+      const decoded = verifyToken(rawToken);
+
+      if (!decoded || !isAdminRole(decoded.role)) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Access denied: Super Admin credentials required to configure maps.' }));
+        return;
+      }
+
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const { apiKey } = JSON.parse(body || '{}');
+          const cleanKey = String(apiKey || '').trim();
+          currentDb.googleMapsApiKey = cleanKey;
+          currentDb.updatedAt = new Date().toISOString();
+          saveDb(currentDb);
+
+          appendServerAuditLog({
+            userId: decoded.uid,
+            userName: decoded.name,
+            role: decoded.role,
+            action: 'ADMIN_UPDATE_MAPS_KEY',
+            details: cleanKey ? `Updated Google Maps API key (length: ${cleanKey.length})` : 'Cleared Google Maps API key',
+            ipAddress: clientIp
+          });
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, message: 'Google Maps API key saved successfully.' }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: err.message }));
+        }
+      });
+      return;
+    }
+  }
+
   // ====================================================================
   // AUTHENTICATION ROUTES (Realm & Domain Enforced)
   // ====================================================================

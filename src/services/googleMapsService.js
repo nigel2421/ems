@@ -48,6 +48,51 @@ export const isGoogleMapsConfigured = () => {
   return Boolean(getGoogleMapsApiKey());
 };
 
+/**
+ * Asynchronously fetch Google Maps API key from the server runtime configuration
+ */
+export const fetchGoogleMapsApiKeyFromServer = async () => {
+  const existing = getGoogleMapsApiKey();
+  if (existing) return existing;
+
+  try {
+    const res = await fetch('/api/config/maps', { credentials: 'include' });
+    if (!res.ok) return '';
+    const data = await res.json().catch(() => ({}));
+    if (data && data.apiKey && data.apiKey.trim()) {
+      const key = data.apiKey.trim();
+      inMemoryApiKey = key;
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(STORAGE_KEY_GOOGLE_MAPS_KEY, key);
+      }
+      return key;
+    }
+  } catch (err) {
+    console.warn('[GoogleMapsService] Could not fetch maps config from server:', err);
+  }
+  return '';
+};
+
+/**
+ * Save Google Maps API Key to the server (persists globally for all users)
+ */
+export const saveGoogleMapsApiKeyToServer = async (apiKey) => {
+  try {
+    const res = await fetch('/api/config/maps', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-EMS-Realm': 'admin'
+      },
+      credentials: 'include',
+      body: JSON.stringify({ apiKey: (apiKey || '').trim() })
+    });
+    return await res.json().catch(() => ({ success: false }));
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+};
+
 // Listeners for Google Maps Authentication Failure (gm_authFailure)
 const authFailureListeners = new Set();
 
