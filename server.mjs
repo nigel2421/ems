@@ -39,6 +39,84 @@ const PORT = process.env.PORT || 5000;
 // Active Server-Sent Event (SSE) clients for real-time live sync
 const sseClients = new Set();
 
+// Server-side Kenyan political RSS news cache (eliminates browser CORS blocks)
+const NEWS_CACHE_TTL_MS = 3 * 60 * 1000;
+let serverNewsCache = { items: null, fetchedAt: 0 };
+
+const SERVER_NEWS_FEEDS = [
+  { source: 'The Standard', url: 'https://www.standardmedia.co.ke/rss/politics.php' },
+  { source: 'Capital FM', url: 'https://www.capitalfm.co.ke/news/feed/' }
+];
+
+function extractXmlTag(block, tag) {
+  const re = new RegExp(
+    `<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`,
+    'i'
+  );
+  const match = block.match(re);
+  return String(match?.[1] || match?.[2] || '')
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .trim();
+}
+
+function parseServerRssXml(xml = '') {
+  const items = [];
+  const chunks = String(xml).match(/<item[\s\S]*?<\/item>/gi) || [];
+  for (const chunk of chunks) {
+    items.push({
+      title: extractXmlTag(chunk, 'title'),
+      description: extractXmlTag(chunk, 'description') || extractXmlTag(chunk, 'content:encoded'),
+      link: extractXmlTag(chunk, 'link'),
+      pubDate: extractXmlTag(chunk, 'pubDate') || extractXmlTag(chunk, 'dc:date'),
+      guid: extractXmlTag(chunk, 'guid') || extractXmlTag(chunk, 'link')
+    });
+  }
+  return items;
+}
+
+async function fetchServerNewsFeeds(force = false) {
+  if (!force && serverNewsCache.items && Date.now() - serverNewsCache.fetchedAt < NEWS_CACHE_TTL_MS) {
+    return { items: serverNewsCache.items, fetchedAt: new Date(serverNewsCache.fetchedAt).toISOString(), cached: true };
+  }
+
+  const results = [];
+  await Promise.all(
+    SERVER_NEWS_FEEDS.map(async (feed) => {
+      try {
+        const res = await fetch(feed.url, {
+          headers: {
+            'User-Agent': 'KuraTech-EMS-NewsProxy/1.0 (+https://kuratech.site)',
+            'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+          },
+          signal: AbortSignal.timeout(4500)
+        });
+        if (!res.ok) return;
+        const xml = await res.text();
+        const parsed = parseServerRssXml(xml);
+        parsed.forEach((item) => {
+          results.push({ ...item, source: feed.source });
+        });
+      } catch {
+        // Ignore individual feed network timeout
+      }
+    })
+  );
+
+  if (results.length > 0) {
+    serverNewsCache = { items: results, fetchedAt: Date.now() };
+  }
+  return {
+    items: results,
+    fetchedAt: new Date(serverNewsCache.fetchedAt || Date.now()).toISOString(),
+    cached: false
+  };
+}
+
 function broadcastEvent(type, payload) {
   const message = `event: ${type}\ndata: ${JSON.stringify(payload)}\n\n`;
   for (const client of sseClients) {
@@ -310,6 +388,21 @@ const server = http.createServer((req, res) => {
     }
   }
 
+  // Kenyan Political News RSS Proxy: GET /api/news & /ems/api/news
+  if (req.method === 'GET' && (pathname === '/api/news' || pathname === '/ems/api/news')) {
+    const force = url.searchParams.get('force') === '1';
+    fetchServerNewsFeeds(force)
+      .then((payload) => {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, ...payload }));
+      })
+      .catch((err) => {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, items: [], error: err.message }));
+      });
+    return;
+  }
+
   // ====================================================================
   // AUTHENTICATION ROUTES (Realm & Domain Enforced)
   // ====================================================================
@@ -420,7 +513,11 @@ const server = http.createServer((req, res) => {
           role: user.role,
           realm: userIsAdmin ? 'admin' : 'user',
           name: user.name,
-          email: user.email
+          email: user.email,
+          county: user.county || null,
+          constituency: user.constituency || null,
+          ward: user.ward || null,
+          party: user.party || null
         });
 
         // Set Host-Only HttpOnly cookies (NO Domain attribute ensures isolation)
@@ -503,18 +600,20 @@ const server = http.createServer((req, res) => {
 
   // GET /api/auth/me
   if (req.method === 'GET' && (pathname === '/api/auth/me' || pathname === '/ems/api/auth/me')) {
+    const isSilentProbe = url.searchParams.get('silent') === '1';
+    const unauthStatus = isSilentProbe ? 200 : 401;
     const rawToken = extractTokenFromReq(req, currentRealm);
     const decoded = verifyToken(rawToken);
 
     if (!decoded) {
-      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.writeHead(unauthStatus, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ authenticated: false }));
       return;
     }
 
     // Verify token realm matches current host realm, allowing admin tokens across views
     if (decoded.realm && decoded.realm !== currentRealm && !(isAdminRole(decoded.role) && decoded.realm === 'admin')) {
-      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.writeHead(unauthStatus, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ authenticated: false, reason: 'REALM_MISMATCH' }));
       return;
     }
@@ -545,9 +644,9 @@ const server = http.createServer((req, res) => {
     const isAdm = Boolean(decoded && decoded.realm === 'admin' && isAdminRole(decoded.role));
     const isAsp = Boolean(decoded && isAspirantRole(decoded.role));
 
-    // Aspirants are permitted to create agents and read agents scoped to their ticket
+    // Aspirants and Coordinators are permitted to create agents and read agents scoped to their jurisdiction
     const isAgentCreation = req.method === 'POST' && (isAdminUserEndpoint || isAgentEndpoint);
-    const isAgentRead = req.method === 'GET' && isAgentEndpoint;
+    const isAgentRead = req.method === 'GET' && (isAgentEndpoint || isAdminUserEndpoint);
 
     if (!decoded || (!isAdm && !(isAsp && (isAgentCreation || isAgentRead)))) {
       appendServerAuditLog({
@@ -563,24 +662,57 @@ const server = http.createServer((req, res) => {
       return;
     }
 
+    const cleanJurisdictionField = (val) => {
+      if (!val || typeof val !== 'string') return null;
+      const t = val.trim();
+      if (!t || ['all', 'global', 'national', 'kenya', 'none', 'n/a'].includes(t.toLowerCase())) return null;
+      return t;
+    };
+
+    const normalizeServerGeo = (val) => {
+      if (!val) return '';
+      return String(val)
+        .toLowerCase()
+        .replace(/\b(county|constituency|ward|city)\b/gi, '')
+        .trim()
+        .replace(/[^a-z0-9]/g, '');
+    };
+
+    const serverGeoMatches = (a, b) => {
+      const na = normalizeServerGeo(a);
+      const nb = normalizeServerGeo(b);
+      if (!na || !nb) return false;
+      return na === nb || na.includes(nb) || nb.includes(na);
+    };
+
     // Users & Agents Management: GET & POST
     if (isAdminUserEndpoint || isAgentEndpoint) {
+      const allRawUsers = loadUsers();
+      const creatorUser = (decoded && (findUserById(decoded.uid, allRawUsers) || findUserByEmail(decoded.email, allRawUsers))) || decoded || {};
+      const creatorCounty = cleanJurisdictionField(creatorUser.county || decoded?.county);
+      const creatorConst = cleanJurisdictionField(creatorUser.constituency || decoded?.constituency);
+      const creatorWard = cleanJurisdictionField(creatorUser.ward || decoded?.ward);
+
       if (req.method === 'GET') {
-        const allUsers = loadUsers().map(sanitizeUser);
+        const allUsers = allRawUsers.map(sanitizeUser);
         if (isAdm && isAdminUserEndpoint) {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(allUsers));
           return;
         }
-        // Aspirant or agent endpoint: filter to agents scoped to candidate
+        // Aspirant/Coordinator or agent endpoint: filter to agents scoped to caller's jurisdiction
         const scopedAgents = allUsers.filter(u => {
           if (u.role !== 'Agent' && u.role !== 'Field Agent') return false;
           if (isAdm) return true;
           if (u.candidateId && u.candidateId === decoded.uid) return true;
           if (u.creatorId && u.creatorId === decoded.uid) return true;
-          if (decoded.ward && u.ward && decoded.ward.toLowerCase() === u.ward.toLowerCase()) return true;
-          if (decoded.constituency && u.constituency && decoded.constituency.toLowerCase() === u.constituency.toLowerCase()) return true;
-          if (decoded.county && u.county && decoded.county.toLowerCase() === u.county.toLowerCase()) return true;
+          if (u.supervisorId && u.supervisorId === decoded.uid) return true;
+          if (creatorWard) return serverGeoMatches(u.ward, creatorWard);
+          if (creatorConst) return serverGeoMatches(u.constituency, creatorConst);
+          if (creatorCounty) return serverGeoMatches(u.county, creatorCounty);
+          if (['Presidential', 'President', 'Candidate/Campaign Admin', 'Candidate Admin'].includes(creatorUser.role || decoded.role)) {
+            return true;
+          }
           return false;
         });
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -593,17 +725,57 @@ const server = http.createServer((req, res) => {
         req.on('data', chunk => { body += chunk; });
         req.on('end', () => {
           try {
-            const { name, email, phone, role, password, county, constituency, ward, party, assignedEntity, entityName } = JSON.parse(body || '{}');
+            const {
+              id: requestedId,
+              name,
+              email,
+              phone,
+              role,
+              password,
+              county,
+              constituency,
+              ward,
+              party,
+              assignedEntity,
+              entityName,
+              pollingStationId,
+              pollingStationCode,
+              pollingStationName,
+              assignedStations,
+              supervisorId,
+              supervisor
+            } = JSON.parse(body || '{}');
 
             const cleanEmail = String(email || '').trim().toLowerCase();
             const cleanPhone = String(phone || '').replace(/\s+/g, '').toLowerCase();
 
-            // When an Aspirant is creating an agent:
+            // When an Aspirant or Coordinator is creating an agent:
             if (isAsp && !isAdm) {
               const targetRole = String(role || 'Agent').trim();
               if (targetRole !== 'Agent' && targetRole !== 'Field Agent') {
                 res.writeHead(403, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, error: 'Aspirants are only authorized to provision Agent accounts.' }));
+                res.end(JSON.stringify({ success: false, error: 'Aspirants and Coordinators are only authorized to provision Agent accounts.' }));
+                return;
+              }
+
+              // Validate requested geography does not escape creator's locked jurisdiction
+              const reqCounty = cleanJurisdictionField(county);
+              const reqConst = cleanJurisdictionField(constituency);
+              const reqWard = cleanJurisdictionField(ward);
+
+              if (creatorCounty && reqCounty && !serverGeoMatches(reqCounty, creatorCounty)) {
+                res.writeHead(403, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: `Geographic Scope Violation: Cannot provision agent outside your assigned county (${creatorCounty}).` }));
+                return;
+              }
+              if (creatorConst && reqConst && !serverGeoMatches(reqConst, creatorConst)) {
+                res.writeHead(403, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: `Geographic Scope Violation: Cannot provision agent outside your assigned constituency (${creatorConst}).` }));
+                return;
+              }
+              if (creatorWard && reqWard && !serverGeoMatches(reqWard, creatorWard)) {
+                res.writeHead(403, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: `Geographic Scope Violation: Cannot provision agent outside your assigned ward (${creatorWard}).` }));
                 return;
               }
             }
@@ -636,15 +808,30 @@ const server = http.createServer((req, res) => {
               }
             }
 
-            // Geographic scoping: lock to Aspirant's jurisdiction if caller is Aspirant
+            // Geographic scoping: merge specific selected sub-jurisdiction with creator's locked jurisdiction
             const effectiveRole = isAsp && !isAdm ? 'Agent' : String(role || 'Agent').trim();
-            const effectiveCounty = (isAsp && !isAdm && decoded.county) ? decoded.county : (county || null);
-            const effectiveConst = (isAsp && !isAdm && decoded.constituency) ? decoded.constituency : (constituency || null);
-            const effectiveWard = (isAsp && !isAdm && decoded.ward) ? decoded.ward : (ward || null);
-            const effectiveParty = (isAsp && !isAdm && decoded.party) ? decoded.party : (party || 'Independent');
+            const effectiveCounty = (isAsp && !isAdm && creatorCounty)
+              ? creatorCounty
+              : (cleanJurisdictionField(county) || creatorCounty || null);
+            const effectiveConst = (isAsp && !isAdm && creatorConst)
+              ? creatorConst
+              : (cleanJurisdictionField(constituency) || creatorConst || null);
+            const effectiveWard = (isAsp && !isAdm && creatorWard)
+              ? creatorWard
+              : (cleanJurisdictionField(ward) || creatorWard || null);
+            const effectiveParty = (isAsp && !isAdm && (creatorUser.party || decoded.party))
+              ? (creatorUser.party || decoded.party)
+              : (party || 'Independent');
+
+            const resolvedStationId = pollingStationId || assignedEntity || null;
+            const resolvedStations = Array.isArray(assignedStations) && assignedStations.length > 0
+              ? assignedStations
+              : (resolvedStationId ? [resolvedStationId] : []);
 
             const newUser = {
-              id: `USR-${effectiveRole.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3)}-${Date.now().toString().slice(-5)}`,
+              id: requestedId && String(requestedId).startsWith('USR-')
+                ? String(requestedId)
+                : `USR-${effectiveRole.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3)}-${Date.now().toString().slice(-5)}`,
               name: String(name || 'Campaign User').trim(),
               role: effectiveRole,
               email: cleanEmail,
@@ -654,10 +841,16 @@ const server = http.createServer((req, res) => {
               constituency: effectiveConst,
               ward: effectiveWard,
               party: effectiveParty,
-              assignedEntity: assignedEntity || effectiveWard || 'PS-1',
-              entityName: entityName || 'Assigned Polling Station',
-              candidateId: isAsp ? decoded.uid : null,
-              candidateName: isAsp ? decoded.name : null,
+              assignedEntity: assignedEntity || pollingStationId || effectiveWard || 'PS-1',
+              entityName: entityName || pollingStationName || 'Assigned Polling Station',
+              pollingStationId: resolvedStationId,
+              pollingStationCode: pollingStationCode || resolvedStationId,
+              pollingStationName: pollingStationName || entityName || 'Assigned Polling Station',
+              assignedStations: resolvedStations,
+              supervisorId: supervisorId || (isAsp ? decoded.uid : null),
+              supervisor: supervisor || (isAsp ? decoded.name : null),
+              candidateId: isAsp ? decoded.uid : (supervisorId || null),
+              candidateName: isAsp ? decoded.name : (supervisor || null),
               creatorId: decoded.uid,
               status: 'Active',
               isSuspended: false,
@@ -670,6 +863,58 @@ const server = http.createServer((req, res) => {
             currentUsers.unshift(newUser);
             saveUsers(currentUsers);
 
+            // Unified Dual-Persistence: Sync Field Agent into operational currentDb.agents (ems_server_db.json)
+            if (effectiveRole === 'Agent' || effectiveRole === 'Field Agent') {
+              const operationalAgent = {
+                id: newUser.id,
+                name: newUser.name,
+                fullName: newUser.name,
+                role: 'Field Agent',
+                email: newUser.email,
+                phone: newUser.phone,
+                county: newUser.county,
+                constituency: newUser.constituency,
+                ward: newUser.ward,
+                region: [newUser.ward, newUser.constituency, newUser.county].filter(Boolean).join(', ') || 'Assigned Jurisdiction',
+                assignedEntity: newUser.assignedEntity,
+                entityName: newUser.entityName,
+                pollingStationId: newUser.pollingStationId,
+                pollingStationCode: newUser.pollingStationCode,
+                pollingStationName: newUser.pollingStationName,
+                assignedStations: newUser.assignedStations,
+                supervisorId: newUser.supervisorId,
+                supervisor: newUser.supervisor,
+                candidateId: newUser.candidateId,
+                candidateName: newUser.candidateName,
+                creatorId: newUser.creatorId,
+                status: 'Active',
+                batteryLevel: 100,
+                signalStrength: 100,
+                lastCheckIn: newUser.createdAt,
+                reportsSubmittedCount: 0,
+                surveysCompletedCount: 0,
+                avatar: newUser.avatar,
+                createdAt: newUser.createdAt
+              };
+
+              if (!Array.isArray(currentDb.agents)) {
+                currentDb.agents = [];
+              }
+              const existingAgentIdx = currentDb.agents.findIndex(
+                a => a.id === operationalAgent.id || (a.email && a.email.toLowerCase() === operationalAgent.email.toLowerCase())
+              );
+              if (existingAgentIdx >= 0) {
+                currentDb.agents[existingAgentIdx] = { ...currentDb.agents[existingAgentIdx], ...operationalAgent };
+              } else {
+                currentDb.agents.unshift(operationalAgent);
+              }
+              saveDb(currentDb);
+              broadcastEvent('state_updated', {
+                updatedKeys: ['agents'],
+                timestamp: new Date().toISOString()
+              });
+            }
+
             appendServerAuditLog({
               userId: decoded.uid,
               userName: decoded.name,
@@ -677,7 +922,7 @@ const server = http.createServer((req, res) => {
               action: isAdm ? 'ADMIN_CREATE_USER' : 'ASPIRANT_CREATE_AGENT',
               details: isAdm
                 ? `Admin created user account "${cleanEmail}" with role "${newUser.role}"`
-                : `${decoded.role} "${decoded.name}" registered Agent account "${cleanEmail}" for ${newUser.assignedEntity || newUser.ward || newUser.constituency || newUser.county}`,
+                : `${decoded.role} "${decoded.name}" registered Agent account "${cleanEmail}" for ${newUser.entityName || newUser.assignedEntity || newUser.ward || newUser.constituency || newUser.county}`,
               ipAddress: clientIp
             });
 
@@ -731,6 +976,20 @@ const server = http.createServer((req, res) => {
 
         currentUsers.splice(userIndex, 1);
         saveUsers(currentUsers);
+
+        if (Array.isArray(currentDb.agents)) {
+          const prevLen = currentDb.agents.length;
+          currentDb.agents = currentDb.agents.filter(
+            a => a.id !== targetUser.id && (!a.email || !targetUser.email || a.email.toLowerCase() !== targetUser.email.toLowerCase())
+          );
+          if (currentDb.agents.length !== prevLen) {
+            saveDb(currentDb);
+            broadcastEvent('state_updated', {
+              updatedKeys: ['agents'],
+              timestamp: new Date().toISOString()
+            });
+          }
+        }
 
         appendServerAuditLog({
           userId: decoded.uid,

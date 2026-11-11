@@ -8,13 +8,26 @@ import { sanitizeMediaUrl } from '../../utils/urlSanitizer';
 
 export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
   const { addUser, currentUser, users } = useAuth();
-  const { geography, logAuditAction, agents } = useData();
+  const { geography, logAuditAction, agents, createAgent } = useData();
 
   // Cascading Selection State: County -> Constituency -> Ward -> Polling Station
   const [countyId, setCountyId] = useState(() => geography.counties[0]?.id || '');
   const [constituencyId, setConstituencyId] = useState('');
   const [wardId, setWardId] = useState('');
   const [pollingStationId, setPollingStationId] = useState('');
+  const [locationMeta, setLocationMeta] = useState({
+    countyId: '',
+    countyName: '',
+    constituencyId: '',
+    constituencyName: '',
+    wardId: '',
+    wardName: '',
+    pollingCentreName: '',
+    pollingStationId: '',
+    pollingStationCode: '',
+    pollingStationName: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Initial auto-scoping based on logged in user's jurisdiction
   useEffect(() => {
@@ -84,32 +97,83 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
       return;
     }
 
-    const targetAspirantId = defaultAspirantId || currentUser.id;
+    const targetAspirantId = defaultAspirantId || currentUser?.id;
     const resolvedEmail = email.trim() || `${cleanPhone.replace(/[^0-9]/g, '') || Date.now()}@agent.ems.ke`;
 
+    const effectiveStationId = locationMeta.pollingStationId || pollingStationId || '';
+    const resolvedPs = (geography.pollingStations || []).find(ps => ps.id === effectiveStationId) ||
+      (locationMeta.wardId ? (geography.pollingStations || []).find(ps => ps.wardId === locationMeta.wardId) : null) ||
+      selectedPs;
+
+    const finalStationId = resolvedPs?.id || effectiveStationId || 'PS-1';
+    const finalCounty = locationMeta.countyName || resolvedPs?.countyName || currentUser?.county || null;
+    const finalConst = locationMeta.constituencyName || resolvedPs?.constituencyName || currentUser?.constituency || null;
+    const finalWard = locationMeta.wardName || resolvedPs?.wardName || currentUser?.ward || null;
+    const finalEntityName = resolvedPs
+      ? `${resolvedPs.code || resolvedPs.id} - ${resolvedPs.name}`
+      : (locationMeta.pollingStationName || locationMeta.pollingCentreName || finalWard || 'Assigned Polling Station');
+
     const newAgent = {
-      id: `USR-AGENT-${Date.now().toString().slice(-4)}`,
-      name,
+      id: `USR-AGENT-${Date.now().toString().slice(-5)}`,
+      name: name.trim(),
       role: 'Agent',
       email: resolvedEmail,
-      phone,
-      assignedEntity: pollingStationId || 'PS-1',
-      entityName: selectedPs ? `${selectedPs.code} - ${selectedPs.name}` : 'Assigned Polling Station',
+      phone: phone.trim(),
+      county: finalCounty,
+      constituency: finalConst,
+      ward: finalWard,
+      assignedEntity: finalStationId,
+      entityName: finalEntityName,
+      pollingStationId: finalStationId,
+      pollingStationCode: resolvedPs?.code || finalStationId,
+      pollingStationName: resolvedPs?.name || finalEntityName,
+      assignedStations: finalStationId ? [finalStationId] : [],
+      supervisorId: targetAspirantId,
+      supervisor: currentUser ? `${currentUser.name} (${currentUser.role})` : 'Campaign HQ',
       aspirantId: targetAspirantId,
-      creatorId: currentUser.id,
+      creatorId: currentUser?.id,
       twoFactorEnabled: false,
       status: 'Active',
       avatar
     };
 
-    const res = await addUser(newAgent, password || 'dev-local-only-password');
-    if (res && res.success === false) {
-      setSubmitError(res.error || 'Failed to register agent on server.');
-      return;
-    }
+    setIsSubmitting(true);
+    try {
+      const res = await addUser(newAgent, password || 'dev-local-only-password');
+      if (res && res.success === false) {
+        setSubmitError(res.error || 'Failed to register agent on server.');
+        setIsSubmitting(false);
+        return;
+      }
 
-    logAuditAction(currentUser, 'AGENT_REGISTERED', `Added new agent ${name} bound to polling station ${selectedPs?.name || pollingStationId} (Phone: ${phone})`);
-    onClose();
+      const persistedUser = res?.user || newAgent;
+      if (typeof createAgent === 'function') {
+        createAgent(
+          {
+            ...newAgent,
+            ...persistedUser,
+            id: persistedUser.id || newAgent.id,
+            userId: persistedUser.id || newAgent.id,
+            role: 'Field Agent',
+            county: persistedUser.county || finalCounty,
+            constituency: persistedUser.constituency || finalConst,
+            ward: persistedUser.ward || finalWard,
+            assignedEntity: finalStationId,
+            entityName: finalEntityName,
+            pollingStationId: finalStationId,
+            pollingStationCode: resolvedPs?.code || finalStationId,
+            pollingStationName: resolvedPs?.name || finalEntityName,
+            assignedStations: finalStationId ? [finalStationId] : []
+          },
+          currentUser
+        );
+      }
+
+      logAuditAction(currentUser, 'AGENT_REGISTERED', `Added new agent ${name} bound to polling station ${resolvedPs?.name || finalStationId} (Phone: ${phone})`);
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -205,6 +269,18 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
             geography={geography}
             purpose="Agent Registration"
             onSelectionChange={(sel) => {
+              setLocationMeta({
+                countyId: sel.countyId || '',
+                countyName: sel.countyName || '',
+                constituencyId: sel.constituencyId || '',
+                constituencyName: sel.constituencyName || '',
+                wardId: sel.wardId || '',
+                wardName: sel.wardName || '',
+                pollingCentreName: sel.pollingCentreName || '',
+                pollingStationId: sel.pollingStationId || '',
+                pollingStationCode: sel.pollingStationCode || '',
+                pollingStationName: sel.pollingStationName || ''
+              });
               if (sel.pollingStationId) {
                 setPollingStationId(sel.pollingStationId);
               }
@@ -252,11 +328,11 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={Boolean(duplicateUser || (password && (!passwordComplexity.isValid || !isMatch)))}
-            style={{ padding: '0.75rem', marginTop: '0.25rem', background: duplicateUser ? '#64748b' : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', cursor: duplicateUser ? 'not-allowed' : 'pointer' }}
+            disabled={Boolean(isSubmitting || duplicateUser || (password && (!passwordComplexity.isValid || !isMatch)))}
+            style={{ padding: '0.75rem', marginTop: '0.25rem', background: (duplicateUser || isSubmitting) ? '#64748b' : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', cursor: (duplicateUser || isSubmitting) ? 'not-allowed' : 'pointer' }}
           >
             <UserPlus style={{ width: '16px', height: '16px' }} />
-            <span>Confirm Agent Registration</span>
+            <span>{isSubmitting ? 'Registering Agent...' : 'Confirm Agent Registration'}</span>
           </button>
         </form>
       </div>

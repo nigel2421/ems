@@ -164,6 +164,124 @@ export const loadGoogleMaps = async (customKey = '') => {
   return googleMapsPromise;
 };
 
+// Singleton Leaflet fallback loader tracking
+let leafletPromise = null;
+
+/**
+ * Dynamically load Leaflet 1.9.4 CSS & JS for automatic fallback when Google Maps key is unavailable or restricted
+ */
+export const loadLeaflet = async () => {
+  if (typeof window === 'undefined') {
+    throw new Error('Leaflet requires a browser window environment.');
+  }
+  if (window.L && typeof window.L.map === 'function') {
+    return window.L;
+  }
+
+  if (!leafletPromise) {
+    leafletPromise = new Promise((resolve, reject) => {
+      // Ensure Leaflet stylesheet is injected
+      if (!document.getElementById('ems-leaflet-css')) {
+        const link = document.createElement('link');
+        link.id = 'ems-leaflet-css';
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        link.crossOrigin = '';
+        document.head.appendChild(link);
+      }
+
+      if (window.L && typeof window.L.map === 'function') {
+        resolve(window.L);
+        return;
+      }
+
+      const loadScript = (src, onFallback) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.async = true;
+        script.crossOrigin = '';
+        script.onload = () => {
+          if (window.L && typeof window.L.map === 'function') {
+            resolve(window.L);
+          } else if (onFallback) {
+            onFallback();
+          } else {
+            leafletPromise = null;
+            reject(new Error('Leaflet SDK loaded but window.L was not initialized.'));
+          }
+        };
+        script.onerror = () => {
+          if (onFallback) {
+            onFallback();
+          } else {
+            leafletPromise = null;
+            reject(new Error('Failed to load fallback map engine from CDN.'));
+          }
+        };
+        document.head.appendChild(script);
+      };
+
+      loadScript(
+        'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+        () => loadScript('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js')
+      );
+    });
+  }
+
+  return leafletPromise;
+};
+
+/**
+ * Create a Leaflet marker with the exact same SVG pin and stream count badge as Google Maps
+ */
+export const createLeafletPin = ({ L, map, position, title, pinColor = '#EAB308', streamsCount = 1, popupHtml = '', onClick }) => {
+  if (!L || !map) return null;
+  const badgeHtml = streamsCount > 1
+    ? `<span style="position: absolute; top: -6px; right: -8px; background: #0f172a; color: #ffffff; border: 1.5px solid ${pinColor}; border-radius: 10px; font-size: 10px; font-weight: 800; padding: 1px 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.45); line-height: 1.2;">${streamsCount}</span>`
+    : '';
+
+  const html = `
+    <div style="position: relative; width: 34px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 36 46">
+        <defs>
+          <filter id="ems-pin-shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="3" stdDeviation="2" flood-color="#000" flood-opacity="0.45"/>
+          </filter>
+        </defs>
+        <path d="M18 0 C8.06 0 0 8.06 0 18 C0 31.5 18 46 18 46 C18 46 36 31.5 36 18 C36 8.06 27.94 0 18 0 Z"
+              fill="${pinColor}" stroke="#0F172A" stroke-width="2" filter="url(#ems-pin-shadow)"/>
+        <circle cx="18" cy="18" r="7" fill="#ffffff" />
+      </svg>
+      ${badgeHtml}
+    </div>
+  `.trim();
+
+  const icon = L.divIcon({
+    className: 'ems-leaflet-pin-icon',
+    html,
+    iconSize: [34, 44],
+    iconAnchor: [17, 44],
+    popupAnchor: [0, -40]
+  });
+
+  const marker = L.marker([Number(position.lat), Number(position.lng)], {
+    icon,
+    title: streamsCount > 1 ? `${title} [${streamsCount} Streams]` : title
+  }).addTo(map);
+
+  if (popupHtml && typeof marker.bindPopup === 'function') {
+    marker.bindPopup(popupHtml, { maxWidth: 340, className: 'ems-leaflet-popup' });
+  }
+
+  if (onClick && typeof marker.on === 'function') {
+    marker.on('click', () => {
+      onClick();
+    });
+  }
+
+  return marker;
+};
+
 // ====================================================================
 // REAL KENYAN GEOGRAPHIC COORDINATES & ADMINISTRATIVE CENTROIDS
 // ====================================================================

@@ -14,12 +14,14 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   resolveGoogleMapFraming,
   createMapPin,
+  createLeafletPin,
   formatInfoWindowHtml,
   getGoogleMapsApiKey,
   setGoogleMapsApiKey,
   fetchGoogleMapsApiKeyFromServer,
   saveGoogleMapsApiKeyToServer,
   loadGoogleMaps,
+  loadLeaflet,
   onGoogleMapsAuthFailure
 } from '../../services/googleMapsService';
 import { FORMATION_COLORS, MAP_LAYERS, buildRegionMetricsIndex } from '../../utils/mapAnalytics';
@@ -64,11 +66,13 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
   // Engine Mode: 'google_hybrid' (Satellite + Roads) | 'google_roadmap' (Clean Streets)
   const [mapMode, setMapMode] = useState('google_hybrid');
   const [apiKey, setApiKey] = useState(getGoogleMapsApiKey());
+  const [serverKeyChecked, setServerKeyChecked] = useState(() => Boolean(getGoogleMapsApiKey()));
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [mapLoadError, setMapLoadError] = useState(null);
   const [authFailed, setAuthFailed] = useState(false);
   const [googleMapInstance, setGoogleMapInstance] = useState(null);
+  const [leafletMapInstance, setLeafletMapInstance] = useState(null);
 
   // Active Map Layer
   const [activeLayer, setActiveLayer] = useState(MAP_LAYERS.LEAD);
@@ -83,9 +87,15 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
 
   // DOM refs
   const googleMapRef = useRef(null);
+  const leafletMapRef = useRef(null);
+  const leafletLayersRef = useRef([]);
+  const leafletMarkersRef = useRef([]);
   const markersRef = useRef([]);
   const infoWindowRef = useRef(null);
   const tooltipRef = useRef(null);
+
+  // Determine whether to render the automatic OpenStreetMap / Esri Satellite fallback engine
+  const useFallbackMap = (serverKeyChecked && !apiKey) || authFailed || Boolean(mapLoadError);
 
   // High-performance single-pass pre-indexed metrics for all 47 counties & constituencies
   const regionMetricsIndex = useMemo(() => {
@@ -109,12 +119,20 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
   useEffect(() => {
     if (!apiKey) {
       let isMounted = true;
-      fetchGoogleMapsApiKeyFromServer().then((serverKey) => {
-        if (isMounted && serverKey) {
-          setApiKey(serverKey);
-        }
-      });
+      fetchGoogleMapsApiKeyFromServer()
+        .then((serverKey) => {
+          if (isMounted && serverKey) {
+            setApiKey(serverKey);
+          }
+        })
+        .finally(() => {
+          if (isMounted) {
+            setServerKeyChecked(true);
+          }
+        });
       return () => { isMounted = false; };
+    } else {
+      setServerKeyChecked(true);
     }
   }, [apiKey]);
 
@@ -198,7 +216,14 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
       googleMapInstance.panTo(googleFraming.center);
       googleMapInstance.setZoom(googleFraming.zoom);
     }
-  }, [googleMapInstance, googleFraming]);
+    if (leafletMapInstance && googleFraming?.center) {
+      leafletMapInstance.setView(
+        [googleFraming.center.lat, googleFraming.center.lng],
+        googleFraming.zoom || 12,
+        { animate: true }
+      );
+    }
+  }, [googleMapInstance, leafletMapInstance, googleFraming]);
 
   // --------------------------------------------------------------------
   // SCOPED POLLING STATIONS (Role-Gated & Filter-Aware)
@@ -648,12 +673,220 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
     };
   }, [mapMode, apiKey, activeLayer, pollingCentreHubs, constituencyHubs, selectedConstituency, googleFraming, agents]);
 
+  // --------------------------------------------------------------------
+  // AUTOMATIC HYBRID FALLBACK ENGINE (Leaflet: Esri Satellite + OSM Roadmap)
+  // Activates seamlessly when Google Maps API Key is unconfigured or restricted
+  // --------------------------------------------------------------------
+  useEffect(() => {
+    if (!useFallbackMap || !leafletMapRef.current) return;
+
+    let isMounted = true;
+    let moveEndHandler = null;
+    let activeMap = leafletMapInstance;
+
+    loadLeaflet()
+      .then((L) => {
+        if (!isMounted || !leafletMapRef.current) return;
+
+        if (!activeMap) {
+          activeMap = L.map(leafletMapRef.current, {
+            center: [googleFraming.center.lat, googleFraming.center.lng],
+            zoom: googleFraming.zoom || 12,
+            zoomControl: true,
+            attributionControl: true
+          });
+          setLeafletMapInstance(activeMap);
+        }
+
+        // Remove previous tile layers
+        leafletLayersRef.current.forEach((layer) => {
+          try { activeMap.removeLayer(layer); } catch { /* ignore */ }
+        });
+        leafletLayersRef.current = [];
+
+        if (mapMode === 'google_roadmap') {
+          const tileUrl = isDark
+            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+            : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+          const roadLayer = L.tileLayer(tileUrl, {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+          }).addTo(activeMap);
+          leafletLayersRef.current.push(roadLayer);
+        } else {
+          // Satellite + Hybrid Labels (Esri World Imagery + Carto Reference Labels)
+          const satLayer = L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            {
+              maxZoom: 19,
+              attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+            }
+          ).addTo(activeMap);
+          const labelsLayer = L.tileLayer(
+            'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
+            {
+              maxZoom: 19,
+              subdomains: 'abcd',
+              pane: 'overlayPane'
+            }
+          ).addTo(activeMap);
+          leafletLayersRef.current.push(satLayer, labelsLayer);
+        }
+
+        setTimeout(() => {
+          if (isMounted && activeMap) {
+            activeMap.invalidateSize();
+          }
+        }, 120);
+
+        const updateLeafletMarkers = () => {
+          if (!activeMap || !isMounted) return;
+          const currentZoom = activeMap.getZoom() || googleFraming.zoom || 8;
+          const bounds = activeMap.getBounds();
+
+          leafletMarkersRef.current.forEach((m) => {
+            try { activeMap.removeLayer(m); } catch { /* ignore */ }
+          });
+          leafletMarkersRef.current = [];
+
+          // 1. High-Level Overview (Zoom <= 10 and no specific constituency chosen)
+          if (currentZoom <= 10 && !selectedConstituency && constituencyHubs.length > 1) {
+            constituencyHubs.forEach((cHub) => {
+              let pinColor = FORMATION_COLORS.CAND_A;
+              if (activeLayer === MAP_LAYERS.REPORTING) {
+                pinColor = cHub.reportingPct === 100 ? '#10b981' : cHub.reportingPct > 0 ? '#0891b2' : '#d97706';
+              } else if (activeLayer === MAP_LAYERS.TURNOUT) {
+                pinColor = cHub.turnoutPct > 65 ? '#10b981' : cHub.turnoutPct > 40 ? '#0284c7' : '#475569';
+              } else {
+                pinColor = cHub.leadColor;
+              }
+
+              const marker = createLeafletPin({
+                L,
+                map: activeMap,
+                position: { lat: Number(cHub.latitude), lng: Number(cHub.longitude) },
+                title: `${cHub.name} (${cHub.streamsCount} stations)`,
+                pinColor,
+                streamsCount: cHub.streamsCount,
+                onClick: () => {
+                  activeMap.setView([Number(cHub.latitude), Number(cHub.longitude)], 12, { animate: true });
+                  setSelectedConstituency(cHub.constituency);
+                }
+              });
+              if (marker) leafletMarkersRef.current.push(marker);
+            });
+            return;
+          }
+
+          // 2. Local Drill-Down: zoom >= 11 or selectedConstituency chosen
+          let candidates = pollingCentreHubs;
+          if (bounds) {
+            const inBounds = candidates.filter((hub) => {
+              if (hub.latitude == null || hub.longitude == null) return false;
+              return bounds.contains([Number(hub.latitude), Number(hub.longitude)]);
+            });
+            if (inBounds.length > 0) candidates = inBounds;
+          }
+
+          const clampedHubs = [...candidates]
+            .sort((a, b) => {
+              const riskScore = (r) => (r === 'Severe' ? 3 : r === 'High' ? 2 : r === 'Medium' ? 1 : 0);
+              const rDiff = riskScore(b.riskLevel) - riskScore(a.riskLevel);
+              if (rDiff !== 0) return rDiff;
+              return (b.registeredVoters || 0) - (a.registeredVoters || 0);
+            })
+            .slice(0, 35);
+
+          clampedHubs.forEach((hub) => {
+            const lat = hub.latitude != null ? hub.latitude : googleFraming.center.lat;
+            const lng = hub.longitude != null ? hub.longitude : googleFraming.center.lng;
+
+            let pinColor = FORMATION_COLORS.MUTED;
+            if (activeLayer === MAP_LAYERS.RISK) {
+              pinColor = hub.riskLevel === 'Severe' ? '#ef4444' : hub.riskLevel === 'High' ? '#f97316' : hub.riskLevel === 'Medium' ? '#eab308' : '#10b981';
+            } else if (activeLayer === MAP_LAYERS.REPORTING) {
+              pinColor = hub.reportingPct === 100 ? '#10b981' : hub.reportingPct > 0 ? '#0891b2' : '#d97706';
+            } else if (activeLayer === MAP_LAYERS.TURNOUT) {
+              pinColor = hub.turnoutPct > 65 ? '#10b981' : hub.turnoutPct > 40 ? '#0284c7' : '#475569';
+            } else {
+              pinColor = hub.leadColor;
+            }
+
+            const primaryAgent = (agents || []).find((a) =>
+              hub.streams.some((s) => s.id === a.assignedStationId)
+            );
+
+            const popupHtml = formatInfoWindowHtml(
+              hub,
+              { reportingPct: hub.reportingPct, streamsCount: hub.streamsCount, streams: hub.streams },
+              { riskLevel: hub.riskLevel },
+              primaryAgent
+            );
+
+            const marker = createLeafletPin({
+              L,
+              map: activeMap,
+              position: { lat: Number(lat), lng: Number(lng) },
+              title: `${hub.name} (${hub.streamsCount} streams)`,
+              pinColor,
+              streamsCount: hub.streamsCount,
+              popupHtml,
+              onClick: () => {
+                setDrawerData({
+                  region: hub,
+                  level: 'Polling Centre Hub',
+                  metrics: {
+                    registeredVoters: hub.totalRegisteredVoters,
+                    stationsCount: hub.streamsCount,
+                    talliesCount: hub.talliesCount,
+                    reportingPct: hub.reportingPct,
+                    turnoutPct: hub.turnoutPct,
+                    totalVotesCast: hub.totalVotesCast,
+                    candAVotes: hub.candAVotes,
+                    candBVotes: hub.candBVotes,
+                    candCVotes: hub.candCVotes,
+                    leader: hub.leader,
+                    leadColor: pinColor,
+                    margin: hub.margin
+                  },
+                  streams: hub.streams
+                });
+                setDrawerOpen(true);
+              }
+            });
+
+            if (marker) leafletMarkersRef.current.push(marker);
+          });
+        };
+
+        updateLeafletMarkers();
+        moveEndHandler = updateLeafletMarkers;
+        activeMap.on('moveend', moveEndHandler);
+      })
+      .catch((err) => {
+        console.warn('[ElectoralMapRoom] Fallback map failed to initialize:', err);
+      });
+
+    return () => {
+      isMounted = false;
+      if (activeMap && moveEndHandler) {
+        try { activeMap.off('moveend', moveEndHandler); } catch { /* ignore */ }
+      }
+      leafletMarkersRef.current.forEach((m) => {
+        try { if (activeMap) activeMap.removeLayer(m); } catch { /* ignore */ }
+      });
+      leafletMarkersRef.current = [];
+    };
+  }, [useFallbackMap, leafletMapInstance, mapMode, isDark, activeLayer, pollingCentreHubs, constituencyHubs, selectedConstituency, googleFraming, agents]);
+
   // Handle saving API key in localStorage and persisting globally on server for admins
   const handleSaveApiKey = async () => {
     const key = apiKeyInput.trim();
     if (key) {
       setGoogleMapsApiKey(key);
       setApiKey(key);
+      setAuthFailed(false);
+      setMapLoadError(null);
       setShowKeyModal(false);
       setMapMode('google_hybrid');
 
@@ -674,6 +907,13 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
         googleMapInstance.panTo(googleFraming.center);
         googleMapInstance.setZoom(googleFraming.zoom);
       }
+      if (leafletMapInstance && googleFraming?.center) {
+        leafletMapInstance.setView(
+          [googleFraming.center.lat, googleFraming.center.lng],
+          googleFraming.zoom || 12,
+          { animate: true }
+        );
+      }
       setDrawerOpen(false);
       return;
     }
@@ -683,6 +923,9 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
     if (googleMapInstance) {
       googleMapInstance.setCenter({ lat: 0.0236, lng: 37.9062 });
       googleMapInstance.setZoom(6);
+    }
+    if (leafletMapInstance) {
+      leafletMapInstance.setView([0.0236, 37.9062], 6, { animate: true });
     }
   };
 
@@ -846,13 +1089,13 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
           </div>
         </div>
 
-        {/* Engine Switcher (Google Satellite vs Roadmap) */}
+        {/* Engine Switcher (Satellite vs Roadmap + Key Config) */}
         <div className="map-mode-selector">
           <button
             type="button"
             className={`map-mode-btn ${mapMode === 'google_hybrid' ? 'active' : ''}`}
             onClick={() => setMapMode('google_hybrid')}
-            title="Google Satellite & Roads"
+            title="Satellite & Roads"
           >
             <Satellite size={14} />
             <span>Satellite / Hybrid</span>
@@ -861,10 +1104,22 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
             type="button"
             className={`map-mode-btn ${mapMode === 'google_roadmap' ? 'active' : ''}`}
             onClick={() => setMapMode('google_roadmap')}
-            title="Google Street Roadmap"
+            title="Street Roadmap"
           >
             <Globe size={14} />
             <span>Roadmap</span>
+          </button>
+          <button
+            type="button"
+            className="map-mode-btn"
+            onClick={() => {
+              setApiKeyInput(apiKey || '');
+              setShowKeyModal(true);
+            }}
+            title="Configure Google Maps API Key"
+            aria-label="Configure Google Maps API Key"
+          >
+            <Key size={13} />
           </button>
         </div>
 
@@ -952,21 +1207,18 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
         )}
 
         {/* Authoritative Google Map Canvas */}
-        <div ref={googleMapRef} className="google-map-canvas" />
+        <div
+          ref={googleMapRef}
+          className="google-map-canvas"
+          style={{ display: useFallbackMap ? 'none' : 'block' }}
+        />
 
-        {/* Error display if Google Maps fails to load */}
-        {mapLoadError && (
-          <div className="google-maps-setup-card" style={{ borderColor: '#ef4444' }}>
-            <AlertTriangle size={32} color="#ef4444" style={{ marginBottom: '0.75rem' }} />
-            <h3>Google Maps Notice</h3>
-            <p style={{ color: '#f87171' }}>{mapLoadError}</p>
-            <div className="google-maps-actions">
-              <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowKeyModal(true)}>
-                Update API Key
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Automatic Hybrid Satellite / OpenStreetMap Fallback Canvas */}
+        <div
+          ref={leafletMapRef}
+          className="leaflet-map-canvas"
+          style={{ display: useFallbackMap ? 'block' : 'none' }}
+        />
 
         {/* Floating Legend */}
         <div className="map-legend">
@@ -1193,14 +1445,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
               <button
                 type="button"
                 className="btn btn-primary btn-sm"
-                onClick={() => {
-                  if (apiKeyInput.trim()) {
-                    setGoogleMapsApiKey(apiKeyInput.trim());
-                    setApiKey(apiKeyInput.trim());
-                    setShowKeyModal(false);
-                    setMapMode('google_hybrid');
-                  }
-                }}
+                onClick={handleSaveApiKey}
               >
                 Save Key
               </button>

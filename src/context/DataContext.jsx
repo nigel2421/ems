@@ -126,7 +126,10 @@ export const DataProvider = ({ children }) => {
 
   // Persist State to LocalStorage (Safely caught) & Central Server DB
   useEffect(() => { safeSetLocalStorage('ems_station_intelligence', stationIntelligence); }, [stationIntelligence]);
-  useEffect(() => { safeSetLocalStorage('ems_agent_directory', agents); }, [agents]);
+  useEffect(() => {
+    safeSetLocalStorage('ems_agent_directory', agents);
+    syncStateToServer({ agents });
+  }, [agents]);
   useEffect(() => { safeSetLocalStorage('ems_surveys', surveys); }, [surveys]);
   useEffect(() => { safeSetLocalStorage('ems_field_reports', fieldReports); }, [fieldReports]);
   useEffect(() => { safeSetLocalStorage('ems_stakeholders', stakeholders); }, [stakeholders]);
@@ -161,13 +164,87 @@ export const DataProvider = ({ children }) => {
             setStrategyMembers(data.strategyMembers);
           }
           if (Array.isArray(data.agents) && data.agents.length > 0) {
-            setAgents(data.agents);
+            setAgents(prev => {
+              const map = new Map();
+              prev.forEach(a => map.set(a.id || (a.email || '').toLowerCase(), a));
+              data.agents.forEach(sa => {
+                const key = sa.id || (sa.email || '').toLowerCase();
+                map.set(key, { ...(map.get(key) || {}), ...sa });
+              });
+              return Array.from(map.values());
+            });
+            setGeography(prevGeo => {
+              const stationAgentMap = new Map();
+              data.agents.forEach(ag => {
+                const stIds = Array.isArray(ag.assignedStations) && ag.assignedStations.length > 0
+                  ? ag.assignedStations
+                  : (ag.pollingStationId ? [ag.pollingStationId] : []);
+                stIds.forEach(stId => {
+                  if (stId && ag.id) stationAgentMap.set(stId, ag.id);
+                });
+              });
+              if (stationAgentMap.size === 0) return prevGeo;
+              return {
+                ...prevGeo,
+                pollingStations: (prevGeo.pollingStations || []).map(ps =>
+                  stationAgentMap.has(ps.id) ? { ...ps, agentAssigned: stationAgentMap.get(ps.id) } : ps
+                )
+              };
+            });
           }
           if (Array.isArray(data.tallyResults) && data.tallyResults.length > 0) {
             setTallyResults(data.tallyResults);
           }
           if (Array.isArray(data.fieldReports) && data.fieldReports.length > 0) {
             setFieldReports(data.fieldReports);
+          }
+        }
+
+        // Also hydrate scoped agents from /api/agents (users.json) for authenticated user accounts
+        const agentsRes = await fetch(`${window.location.origin}/api/agents`, { credentials: 'include' });
+        if (agentsRes.ok) {
+          const serverAgents = await agentsRes.json().catch(() => []);
+          if (Array.isArray(serverAgents) && serverAgents.length > 0) {
+            setAgents(prev => {
+              const map = new Map();
+              prev.forEach(a => map.set(a.id || (a.email || '').toLowerCase(), a));
+              serverAgents.forEach(u => {
+                const key = u.id || (u.email || '').toLowerCase();
+                const stId = u.pollingStationId || u.assignedEntity || null;
+                const normalized = {
+                  id: u.id,
+                  userId: u.id,
+                  name: u.name || u.fullName || 'Field Agent',
+                  fullName: u.fullName || u.name || 'Field Agent',
+                  role: 'Field Agent',
+                  email: u.email,
+                  phone: u.phone,
+                  county: u.county,
+                  constituency: u.constituency,
+                  ward: u.ward,
+                  region: u.region || [u.ward, u.constituency, u.county].filter(v => v && String(v).toLowerCase() !== 'all').join(', ') || 'Assigned Jurisdiction',
+                  assignedEntity: u.assignedEntity,
+                  entityName: u.entityName,
+                  pollingStationId: stId,
+                  pollingStationCode: u.pollingStationCode || stId,
+                  pollingStationName: u.pollingStationName || u.entityName,
+                  assignedStations: Array.isArray(u.assignedStations) && u.assignedStations.length > 0
+                    ? u.assignedStations
+                    : (stId ? [stId] : []),
+                  supervisorId: u.supervisorId || u.candidateId || u.creatorId,
+                  supervisor: u.supervisor || u.candidateName || 'Campaign HQ',
+                  aspirantId: u.candidateId || u.supervisorId,
+                  candidateId: u.candidateId,
+                  creatorId: u.creatorId,
+                  status: u.status || 'Active',
+                  batteryLevel: u.batteryLevel ?? 100,
+                  signalStrength: u.signalStrength ?? 100,
+                  avatar: u.avatar
+                };
+                map.set(key, { ...(map.get(key) || {}), ...normalized });
+              });
+              return Array.from(map.values());
+            });
           }
         }
       } catch (err) {
@@ -298,6 +375,65 @@ export const DataProvider = ({ children }) => {
   const updateAgentStatus = (agentId, newStatus, user) => {
     setAgents(prev => prev.map(a => a.id === agentId ? { ...a, status: newStatus } : a));
     logAuditAction(user, 'AGENT_STATUS_CHANGE', `Updated agent ${agentId} status to ${newStatus}`);
+  };
+
+  const createAgent = (agentData = {}, user = null) => {
+    const stationId = agentData.pollingStationId || (Array.isArray(agentData.assignedStations) && agentData.assignedStations[0]) || agentData.assignedEntity || null;
+    const assignedStations = Array.isArray(agentData.assignedStations) && agentData.assignedStations.length > 0
+      ? agentData.assignedStations
+      : (stationId ? [stationId] : []);
+
+    const newAgentRecord = {
+      id: agentData.id || `AGT-${Date.now().toString().slice(-5)}`,
+      userId: agentData.userId || agentData.id || null,
+      name: agentData.name || agentData.fullName || 'Field Agent',
+      fullName: agentData.fullName || agentData.name || 'Field Agent',
+      role: agentData.role || 'Field Agent',
+      email: agentData.email || '',
+      phone: agentData.phone || '',
+      county: agentData.county || user?.county || null,
+      constituency: agentData.constituency || user?.constituency || null,
+      ward: agentData.ward || user?.ward || null,
+      region: agentData.region || [agentData.ward || user?.ward, agentData.constituency || user?.constituency, agentData.county || user?.county].filter(v => v && String(v).toLowerCase() !== 'all').join(', ') || 'Assigned Jurisdiction',
+      assignedEntity: agentData.assignedEntity || stationId || '',
+      entityName: agentData.entityName || agentData.pollingStationName || 'Assigned Polling Station',
+      pollingStationId: stationId,
+      pollingStationCode: agentData.pollingStationCode || stationId,
+      pollingStationName: agentData.pollingStationName || agentData.entityName || '',
+      assignedStations,
+      supervisorId: agentData.supervisorId || agentData.aspirantId || user?.id || null,
+      supervisor: agentData.supervisor || (user ? `${user.name} (${user.role})` : 'Campaign HQ'),
+      aspirantId: agentData.aspirantId || agentData.supervisorId || user?.id || null,
+      candidateId: agentData.candidateId || agentData.aspirantId || user?.id || null,
+      creatorId: agentData.creatorId || user?.id || null,
+      status: agentData.status || 'Active',
+      batteryLevel: agentData.batteryLevel ?? 100,
+      signalStrength: agentData.signalStrength ?? 100,
+      lastCheckIn: agentData.lastCheckIn || new Date().toISOString(),
+      reportsSubmittedCount: agentData.reportsSubmittedCount ?? 0,
+      surveysCompletedCount: agentData.surveysCompletedCount ?? 0,
+      avatar: agentData.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+      createdAt: agentData.createdAt || new Date().toISOString()
+    };
+
+    setAgents(prev => {
+      const filtered = prev.filter(
+        a => a.id !== newAgentRecord.id && (!a.email || !newAgentRecord.email || a.email.toLowerCase() !== newAgentRecord.email.toLowerCase())
+      );
+      return [newAgentRecord, ...filtered];
+    });
+
+    if (stationId) {
+      setGeography(prev => ({
+        ...prev,
+        pollingStations: (prev.pollingStations || []).map(ps =>
+          ps.id === stationId ? { ...ps, agentAssigned: newAgentRecord.id } : ps
+        )
+      }));
+    }
+
+    logAuditAction(user, 'AGENT_PROVISIONED', `Provisioned field agent ${newAgentRecord.name} (${newAgentRecord.email || newAgentRecord.phone}) for ${newAgentRecord.entityName}`);
+    return newAgentRecord;
   };
 
   // Module 3: Survey Engine
@@ -519,7 +655,7 @@ export const DataProvider = ({ children }) => {
     const targetAgents = customAgentList || agents;
 
     // National executive roles see all agents nationally
-    if (['Super Admin', 'Admin', 'Strategy Team', 'Governor', 'Senator'].includes(user.role)) {
+    if (['Super Admin', 'Admin', 'Strategy Team', 'Presidential', 'President', 'Governor', 'Senator', 'Woman Rep'].includes(user.role)) {
       return targetAgents;
     }
 
@@ -535,27 +671,37 @@ export const DataProvider = ({ children }) => {
       user.county
     ]
       .filter(Boolean)
-      .map(t => String(t).toLowerCase().trim())
-      .filter(t => t !== 'global' && t.length > 2);
+      .map(t => String(t).toLowerCase().replace(/\b(county|constituency|ward|city)\b/gi, '').trim())
+      .filter(t => t !== 'global' && t !== 'all' && t.length > 2);
 
     return targetAgents.filter(ag => {
-      // 1. Direct ID binding match (Supervisor ID, Creator ID, Aspirant ID, or User ID)
+      // 1. Direct ID binding match (Supervisor ID, Creator ID, Aspirant ID, Candidate ID, or User ID)
       if (ag.supervisorId && ag.supervisorId === userId) return true;
       if (ag.creatorId && ag.creatorId === userId) return true;
       if (ag.aspirantId && ag.aspirantId === userId) return true;
+      if (ag.candidateId && ag.candidateId === userId) return true;
       if (ag.userId && ag.userId === userId) return true;
 
       // 2. Supervisor string match (e.g., "moha (MCA)", "David Ochieng")
       const agSupervisorLower = (ag.supervisor || ag.name || '').toLowerCase();
       if (userNameLower && agSupervisorLower.includes(userNameLower)) return true;
 
-      // 3. Match agent region or assigned entity against user jurisdiction tokens
-      const agRegionLower = (ag.region || ag.entityName || '').toLowerCase();
-      const agAssignedLower = (ag.assignedEntity || '').toLowerCase();
+      // 3. Match agent region, ward, constituency, county, or assigned entity against user jurisdiction tokens
+      const agFieldsLower = [
+        ag.region,
+        ag.entityName,
+        ag.assignedEntity,
+        ag.ward,
+        ag.constituency,
+        ag.county,
+        ag.pollingStationName
+      ]
+        .filter(Boolean)
+        .map(f => String(f).toLowerCase().replace(/\b(county|constituency|ward|city)\b/gi, '').trim())
+        .filter(Boolean);
 
-      return tokens.some(token => 
-        agRegionLower.includes(token) || token.includes(agRegionLower) ||
-        agAssignedLower.includes(token) || token.includes(agAssignedLower)
+      return tokens.some(token =>
+        agFieldsLower.some(field => field.includes(token) || token.includes(field))
       );
     });
   };
@@ -650,6 +796,7 @@ export const DataProvider = ({ children }) => {
         bulkImportPollingStations,
         agents,
         setAgents,
+        createAgent,
         assignAgentToPollingStation,
         updateAgentStatus,
         surveys,

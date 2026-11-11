@@ -3,9 +3,27 @@
 // Contest-Aware Geographic Scope Gating & Smart Location Sieve Component
 // ====================================================================
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { AlertTriangle, Lock, MapPin } from 'lucide-react';
 import { resolveEffectiveGeographicScope } from '../../utils/scopeResolver.js';
+
+const normalizeGeoToken = (val) => {
+  if (!val) return '';
+  return String(val)
+    .toLowerCase()
+    .replace(/\b(county|constituency|ward|city)\b/gi, '')
+    .trim()
+    .replace(/[^a-z0-9]/g, '');
+};
+
+const matchGeoName = (a, b) => {
+  if (!a || !b) return false;
+  if (String(a) === String(b)) return true;
+  const normA = normalizeGeoToken(a);
+  const normB = normalizeGeoToken(b);
+  if (!normA || !normB) return false;
+  return normA === normB || normA.includes(normB) || normB.includes(normA);
+};
 
 export const ScopedLocationSieve = ({
   user = null,
@@ -16,6 +34,11 @@ export const ScopedLocationSieve = ({
   purpose = 'Location Selection',
   className = ''
 }) => {
+  const onSelectionChangeRef = useRef(onSelectionChange);
+  useEffect(() => {
+    onSelectionChangeRef.current = onSelectionChange;
+  }, [onSelectionChange]);
+
   // 1. Resolve Effective Scope
   const effectiveScope = useMemo(() => {
     return resolveEffectiveGeographicScope({
@@ -40,9 +63,7 @@ export const ScopedLocationSieve = ({
 
     if (locked.county && Array.isArray(geography.counties)) {
       const matchCounty = geography.counties.find(
-        c => c.name.toLowerCase().includes(locked.county.toLowerCase()) ||
-          locked.county.toLowerCase().includes(c.name.toLowerCase()) ||
-          c.id === locked.county
+        c => c.id === locked.county || matchGeoName(c.name, locked.county)
       );
       if (matchCounty) {
         setSelectedCountyId(matchCounty.id);
@@ -51,9 +72,7 @@ export const ScopedLocationSieve = ({
 
     if (locked.constituency && Array.isArray(geography.constituencies)) {
       const matchConst = geography.constituencies.find(
-        c => c.name.toLowerCase().includes(locked.constituency.toLowerCase()) ||
-          locked.constituency.toLowerCase().includes(c.name.toLowerCase()) ||
-          c.id === locked.constituency
+        c => c.id === locked.constituency || matchGeoName(c.name, locked.constituency)
       );
       if (matchConst) {
         setSelectedConstituencyId(matchConst.id);
@@ -62,9 +81,7 @@ export const ScopedLocationSieve = ({
 
     if (locked.ward && Array.isArray(geography.wards)) {
       const matchWard = geography.wards.find(
-        w => w.name.toLowerCase().includes(locked.ward.toLowerCase()) ||
-          locked.ward.toLowerCase().includes(w.name.toLowerCase()) ||
-          w.id === locked.ward
+        w => w.id === locked.ward || matchGeoName(w.name, locked.ward)
       );
       if (matchWard) {
         setSelectedWardId(matchWard.id);
@@ -78,7 +95,7 @@ export const ScopedLocationSieve = ({
     if (!selectedCountyId && !lockedCounty) return geography.constituencies || [];
 
     const activeCountyObj = (geography.counties || []).find(
-      c => c.id === selectedCountyId || (lockedCounty && (c.name.toLowerCase().includes(lockedCounty.toLowerCase()) || lockedCounty.toLowerCase().includes(c.name.toLowerCase())))
+      c => c.id === selectedCountyId || (lockedCounty && matchGeoName(c.name, lockedCounty))
     );
 
     const targetCountyId = activeCountyObj?.id || selectedCountyId || lockedCounty;
@@ -86,7 +103,7 @@ export const ScopedLocationSieve = ({
     return (geography.constituencies || []).filter(c => {
       if (activeCountyObj && c.countyId === activeCountyObj.id) return true;
       if (c.countyId === targetCountyId) return true;
-      if (lockedCounty && c.countyName && (c.countyName.toLowerCase().includes(lockedCounty.toLowerCase()) || lockedCounty.toLowerCase().includes(c.countyName.toLowerCase()))) return true;
+      if (lockedCounty && c.countyName && matchGeoName(c.countyName, lockedCounty)) return true;
       return false;
     });
   }, [geography, selectedCountyId, effectiveScope]);
@@ -97,7 +114,7 @@ export const ScopedLocationSieve = ({
     if (!selectedConstituencyId && !lockedConst) return [];
 
     const activeConstObj = (geography.constituencies || []).find(
-      c => c.id === selectedConstituencyId || (lockedConst && (c.name.toLowerCase().includes(lockedConst.toLowerCase()) || lockedConst.toLowerCase().includes(c.name.toLowerCase())))
+      c => c.id === selectedConstituencyId || (lockedConst && matchGeoName(c.name, lockedConst))
     );
 
     const targetConstId = activeConstObj?.id || selectedConstituencyId || lockedConst;
@@ -105,7 +122,7 @@ export const ScopedLocationSieve = ({
     return (geography.wards || []).filter(w => {
       if (activeConstObj && w.constituencyId === activeConstObj.id) return true;
       if (w.constituencyId === targetConstId) return true;
-      if (lockedConst && w.constituencyName && (w.constituencyName.toLowerCase().includes(lockedConst.toLowerCase()) || lockedConst.toLowerCase().includes(w.constituencyName.toLowerCase()))) return true;
+      if (lockedConst && w.constituencyName && matchGeoName(w.constituencyName, lockedConst)) return true;
       return false;
     });
   }, [geography, selectedConstituencyId, effectiveScope]);
@@ -116,7 +133,7 @@ export const ScopedLocationSieve = ({
     if (!selectedWardId && !lockedWard) return [];
 
     const activeWardObj = (geography.wards || []).find(
-      w => w.id === selectedWardId || (lockedWard && (w.name.toLowerCase().includes(lockedWard.toLowerCase()) || lockedWard.toLowerCase().includes(w.name.toLowerCase())))
+      w => w.id === selectedWardId || (lockedWard && matchGeoName(w.name, lockedWard))
     );
 
     const targetWardId = activeWardObj?.id || selectedWardId || lockedWard;
@@ -124,7 +141,7 @@ export const ScopedLocationSieve = ({
     return (geography.pollingStations || []).filter(ps => {
       if (activeWardObj && ps.wardId === activeWardObj.id) return true;
       if (ps.wardId === targetWardId) return true;
-      if (lockedWard && ps.wardName && (ps.wardName.toLowerCase().includes(lockedWard.toLowerCase()) || lockedWard.toLowerCase().includes(ps.wardName.toLowerCase()))) return true;
+      if (lockedWard && ps.wardName && matchGeoName(ps.wardName, lockedWard)) return true;
       return false;
     });
   }, [geography, selectedWardId, effectiveScope]);
@@ -182,11 +199,17 @@ export const ScopedLocationSieve = ({
 
   // 5. Notify Parent Component on Selection Change
   useEffect(() => {
-    if (!onSelectionChange || !effectiveScope.isConfigured) return;
+    if (!onSelectionChangeRef.current || !effectiveScope.isConfigured) return;
 
-    const currentCounty = (geography.counties || []).find(c => c.id === selectedCountyId) || { name: effectiveScope.locked?.county || '' };
-    const currentConst = (geography.constituencies || []).find(c => c.id === selectedConstituencyId) || { name: effectiveScope.locked?.constituency || '' };
-    const currentWard = (geography.wards || []).find(w => w.id === selectedWardId) || { name: effectiveScope.locked?.ward || '' };
+    const currentCounty = (geography.counties || []).find(
+      c => c.id === selectedCountyId || (effectiveScope.locked?.county && matchGeoName(c.name, effectiveScope.locked.county))
+    ) || { name: effectiveScope.locked?.county || '' };
+    const currentConst = (geography.constituencies || []).find(
+      c => c.id === selectedConstituencyId || (effectiveScope.locked?.constituency && matchGeoName(c.name, effectiveScope.locked.constituency))
+    ) || { name: effectiveScope.locked?.constituency || '' };
+    const currentWard = (geography.wards || []).find(
+      w => w.id === selectedWardId || (effectiveScope.locked?.ward && matchGeoName(w.name, effectiveScope.locked.ward))
+    ) || { name: effectiveScope.locked?.ward || '' };
     const currentStation = (geography.pollingStations || []).find(ps => ps.id === selectedStationId);
 
     const isComplete = Boolean(
@@ -195,12 +218,12 @@ export const ScopedLocationSieve = ({
       (effectiveScope.locked?.ward || selectedWardId)
     );
 
-    onSelectionChange({
-      countyId: selectedCountyId || effectiveScope.locked?.county,
+    onSelectionChangeRef.current({
+      countyId: selectedCountyId || currentCounty.id || effectiveScope.locked?.county,
       countyName: currentCounty.name,
-      constituencyId: selectedConstituencyId || effectiveScope.locked?.constituency,
+      constituencyId: selectedConstituencyId || currentConst.id || effectiveScope.locked?.constituency,
       constituencyName: currentConst.name,
-      wardId: selectedWardId || effectiveScope.locked?.ward,
+      wardId: selectedWardId || currentWard.id || effectiveScope.locked?.ward,
       wardName: currentWard.name,
       pollingCentreName: selectedCentreName,
       pollingStationId: selectedStationId,
@@ -209,7 +232,7 @@ export const ScopedLocationSieve = ({
       complete: isComplete,
       effectiveScope
     });
-  }, [selectedCountyId, selectedConstituencyId, selectedWardId, selectedCentreName, selectedStationId, effectiveScope, geography, onSelectionChange]);
+  }, [selectedCountyId, selectedConstituencyId, selectedWardId, selectedCentreName, selectedStationId, effectiveScope, geography]);
 
   // 6. Fail-Closed UI State
   if (!effectiveScope.isConfigured || effectiveScope.failClosed) {

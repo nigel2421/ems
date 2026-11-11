@@ -21,7 +21,13 @@ export const ASPIRANT_ROLES = new Set([
   'Presidential',
   'President',
   'Aspirant',
-  'Candidate/Campaign Admin'
+  'Candidate/Campaign Admin',
+  'Candidate Admin',
+  'County Coordinator',
+  'Constituency Coordinator',
+  'Ward Coordinator',
+  'Polling Coordinator',
+  'Strategy Team'
 ]);
 
 export const isAspirantRole = (role) => ASPIRANT_ROLES.has(role);

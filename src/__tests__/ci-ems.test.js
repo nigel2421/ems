@@ -4932,7 +4932,7 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     assert.strictEqual(womanRepScope.county, 'Nairobi City');
   });
 
-  test('370. isAspirantRole recognizes candidate roles for agent provisioning', async () => {
+  test('370. isAspirantRole recognizes candidate and coordinator roles for agent provisioning', async () => {
     const { isAspirantRole } = await import('../../server/auth.js');
     assert.strictEqual(isAspirantRole('MCA'), true);
     assert.strictEqual(isAspirantRole('MP'), true);
@@ -4941,6 +4941,11 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     assert.strictEqual(isAspirantRole('Woman Rep'), true);
     assert.strictEqual(isAspirantRole('Presidential'), true);
     assert.strictEqual(isAspirantRole('President'), true);
+    assert.strictEqual(isAspirantRole('County Coordinator'), true);
+    assert.strictEqual(isAspirantRole('Constituency Coordinator'), true);
+    assert.strictEqual(isAspirantRole('Ward Coordinator'), true);
+    assert.strictEqual(isAspirantRole('Polling Coordinator'), true);
+    assert.strictEqual(isAspirantRole('Strategy Team'), true);
     assert.strictEqual(isAspirantRole('Agent'), false);
     assert.strictEqual(isAspirantRole('Super Admin'), false);
   });
@@ -4988,6 +4993,136 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     assert.ok(appContent.includes('ems-bottom-floating-stack'), 'App.jsx utilizes unified floating stack');
     assert.ok(cssContent.includes('.ems-bottom-floating-stack'), 'index.css defines floating column flex stack');
     assert.ok(cssContent.includes('flex-direction: column'), 'Stack is aligned vertically');
+  });
+
+  test('375. Hybrid Map Engine: ElectoralMapRoom & googleMapsService provide Leaflet Esri Satellite + OSM fallback when Google Maps key is missing or restricted', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const { loadLeaflet, createLeafletPin } = await import('../services/googleMapsService.js');
+    assert.equal(typeof loadLeaflet, 'function');
+    assert.equal(typeof createLeafletPin, 'function');
+
+    let clicked = false;
+    let boundPopup = null;
+    const mockL = {
+      divIcon: (opts) => opts,
+      marker: (latlng, opts) => ({
+        latlng,
+        opts,
+        addTo() { return this; },
+        bindPopup(html) { boundPopup = html; return this; },
+        on(evt, cb) { if (evt === 'click') this.clickCb = cb; return this; }
+      })
+    };
+
+    const pin = createLeafletPin({
+      L: mockL,
+      map: {},
+      position: { lat: -1.2612, lng: 36.8245 },
+      title: 'PARKLANDS PRIMARY SCHOOL',
+      pinColor: '#EAB308',
+      streamsCount: 7,
+      popupHtml: '<div>Parklands Hub</div>',
+      onClick: () => { clicked = true; }
+    });
+
+    assert.ok(pin, 'createLeafletPin returns marker instance');
+    assert.deepEqual(pin.latlng, [-1.2612, 36.8245]);
+    assert.ok(pin.opts.title.includes('[7 Streams]'));
+    assert.equal(boundPopup, '<div>Parklands Hub</div>');
+    pin.clickCb();
+    assert.equal(clicked, true);
+
+    const mapRoomContent = fs.readFileSync(path.resolve(process.cwd(), 'src/components/modules/ElectoralMapRoom.jsx'), 'utf8');
+    assert.ok(mapRoomContent.includes('useFallbackMap'), 'ElectoralMapRoom computes useFallbackMap state');
+    assert.ok(mapRoomContent.includes('leaflet-map-canvas'), 'ElectoralMapRoom renders fallback leaflet-map-canvas');
+    assert.ok(mapRoomContent.includes('World_Imagery/MapServer/tile'), 'Includes Esri World Imagery satellite tiles');
+  });
+
+  test('376. Political News Proxy: server.mjs exposes /api/news and kenyaPoliticalNews.js avoids CORS-blocked allorigins.win', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const serverContent = fs.readFileSync(path.resolve(process.cwd(), 'server.mjs'), 'utf8');
+    const newsServiceContent = fs.readFileSync(path.resolve(process.cwd(), 'src/services/kenyaPoliticalNews.js'), 'utf8');
+
+    assert.ok(serverContent.includes("pathname === '/api/news'"), 'server.mjs exposes /api/news');
+    assert.ok(newsServiceContent.includes("fetchRssViaServerProxy"), 'kenyaPoliticalNews.js queries server proxy first');
+    assert.ok(!newsServiceContent.includes('api.allorigins.win'), 'Removed CORS-blocked api.allorigins.win browser calls');
+  });
+
+  test('377. Silent Session Probe: AuthContext.jsx uses /api/auth/me?silent=1 and server.mjs returns 200 for silent unauthenticated probes', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const serverContent = fs.readFileSync(path.resolve(process.cwd(), 'server.mjs'), 'utf8');
+    const authContent = fs.readFileSync(path.resolve(process.cwd(), 'src/context/AuthContext.jsx'), 'utf8');
+
+    assert.ok(authContent.includes("fetch('/api/auth/me?silent=1'"), 'AuthContext probes /api/auth/me?silent=1');
+    assert.ok(serverContent.includes("url.searchParams.get('silent') === '1'"), 'server.mjs checks silent query param');
+    assert.ok(serverContent.includes('const unauthStatus = isSilentProbe ? 200 : 401;'), 'Returns 200 on silent probe while preserving 401 for direct checks');
+  });
+
+  test('378. Scope Resolver & ScopedLocationSieve: normalizes administrative suffixes (Ward/County/Constituency) and strips All sentinels', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const { resolveEffectiveGeographicScope, validateGeographicSubmission, cleanScopeValue } = await import('../utils/scopeResolver.js');
+
+    assert.strictEqual(cleanScopeValue('All'), null);
+    assert.strictEqual(cleanScopeValue('GLOBAL'), null);
+    assert.strictEqual(cleanScopeValue('Parklands/Highridge Ward'), 'Parklands/Highridge Ward');
+
+    // Live baseline persona shape for Parklands Ward Coordinator
+    const parklandsCoord = {
+      id: 'USR-MCA-01',
+      role: 'Ward Coordinator',
+      county: 'Nairobi City',
+      constituency: 'Westlands',
+      ward: 'Parklands/Highridge Ward'
+    };
+    const scope = resolveEffectiveGeographicScope({ authenticatedUser: parklandsCoord });
+    assert.strictEqual(scope.isConfigured, true);
+    assert.strictEqual(scope.failClosed, false);
+    assert.strictEqual(scope.startingLevel, 'POLLING_CENTRE');
+
+    // Validate against IEBC Gazette ward name ("PARKLANDS/HIGHRIDGE" without "Ward")
+    const validation = validateGeographicSubmission(
+      { county: 'Nairobi', constituency: 'Westlands', ward: 'PARKLANDS/HIGHRIDGE' },
+      scope,
+      parklandsCoord
+    );
+    assert.strictEqual(validation.valid, true, 'Must match PARKLANDS/HIGHRIDGE against Parklands/Highridge Ward');
+
+    // Live baseline persona shape for Governor with "All" sub-jurisdictions
+    const govLive = {
+      id: 'USR-GOV-01',
+      role: 'Governor',
+      county: 'Nairobi City',
+      constituency: 'All',
+      ward: 'All'
+    };
+    const govScope = resolveEffectiveGeographicScope({ authenticatedUser: govLive });
+    assert.strictEqual(govScope.locked.county, 'Nairobi City');
+    assert.strictEqual(govScope.locked.constituency, null, 'Must strip "All" sentinel from locked constituency');
+    assert.strictEqual(govScope.locked.ward, null, 'Must strip "All" sentinel from locked ward');
+    assert.strictEqual(govScope.startingLevel, 'CONSTITUENCY');
+
+    const sieveContent = fs.readFileSync(path.resolve(process.cwd(), 'src/components/modules/ScopedLocationSieve.jsx'), 'utf8');
+    assert.ok(sieveContent.includes('onSelectionChangeRef'), 'ScopedLocationSieve uses ref to prevent infinite re-render loop');
+    assert.ok(sieveContent.includes('matchGeoName'), 'ScopedLocationSieve uses normalized geo token matching');
+  });
+
+  test('379. Unified Agent Provisioning: AddAgentModal, DataContext, and server.mjs dual-persist agents to AuthContext.users and DataContext.agents', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+
+    const modalContent = fs.readFileSync(path.resolve(process.cwd(), 'src/components/modules/AddAgentModal.jsx'), 'utf8');
+    const dataContent = fs.readFileSync(path.resolve(process.cwd(), 'src/context/DataContext.jsx'), 'utf8');
+    const serverContent = fs.readFileSync(path.resolve(process.cwd(), 'server.mjs'), 'utf8');
+
+    assert.ok(modalContent.includes('createAgent('), 'AddAgentModal invokes DataContext.createAgent after addUser');
+    assert.ok(modalContent.includes('setLocationMeta'), 'AddAgentModal captures full location metadata from ScopedLocationSieve');
+    assert.ok(dataContent.includes('const createAgent ='), 'DataContext defines createAgent');
+    assert.ok(dataContent.includes("fetch(`${window.location.origin}/api/agents`"), 'DataContext hydrates scoped agents from /api/agents');
+    assert.ok(serverContent.includes('const operationalAgent ='), 'server.mjs dual-persists created Agent into currentDb.agents');
   });
 
 });

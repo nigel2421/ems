@@ -117,6 +117,19 @@ const VERIFIED_FALLBACK_NEWS = [
   }
 ];
 
+async function fetchRssViaServerProxy(force = false, ms = FETCH_MS) {
+  try {
+    const endpoint = `/api/news${force ? '?force=1' : ''}`;
+    const res = await fetch(endpoint, { credentials: 'include', signal: withTimeout(ms) }).catch(() => null);
+    if (!res || !res.ok) return [];
+    const data = await res.json().catch(() => null);
+    if (!Array.isArray(data?.items)) return [];
+    return data.items;
+  } catch {
+    return [];
+  }
+}
+
 async function fetchRssViaRss2Json(feedUrl, ms = FETCH_MS) {
   try {
     const endpoint = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`;
@@ -132,26 +145,10 @@ async function fetchRssViaRss2Json(feedUrl, ms = FETCH_MS) {
   }
 }
 
-async function fetchRssViaAllOrigins(feedUrl, ms = FETCH_MS) {
-  try {
-    const endpoint = `https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`;
-    const res = await fetch(endpoint, { signal: withTimeout(ms) }).catch(() => null);
-    if (!res || !res.ok) return [];
-    const xml = await res.text().catch(() => '');
-    const items = parseRssXml(xml);
-    return items || [];
-  } catch {
-    return [];
-  }
-}
-
-/** Race both proxies — first success wins, fallback cleanly if CORS blocked */
+/** Fetch via CORS-friendly JSON proxy fallback if first-party server proxy is offline */
 async function fetchFeedItems(feedUrl) {
   try {
-    const items = await Promise.any([
-      fetchRssViaRss2Json(feedUrl).then(res => res && res.length ? res : Promise.reject('empty')),
-      fetchRssViaAllOrigins(feedUrl).then(res => res && res.length ? res : Promise.reject('empty'))
-    ]);
+    const items = await fetchRssViaRss2Json(feedUrl);
     return items || [];
   } catch {
     return [];
@@ -254,27 +251,40 @@ export async function fetchKenyaPoliticalNewsLast24h(options = {}) {
   const errors = [];
   const collected = [];
 
-  await Promise.all(
-    KENYA_POLITICAL_FEEDS.map(async (feed) => {
-      try {
-        const raw = await fetchFeedItems(feed.url);
-        const mapped = normaliseItems(raw, feed, cutoff);
-        collected.push(...mapped);
-        if (typeof onPartial === 'function' && mapped.length) {
-          onPartial({
-            items: dedupeSort([...collected]),
-            fetchedAt: new Date().toISOString(),
-            sourcesTried: KENYA_POLITICAL_FEEDS.length,
-            errors: [...errors],
-            partial: true
-          });
+  // 1. Try first-party server RSS proxy (/api/news) to avoid browser CORS blocks
+  const serverRaw = await fetchRssViaServerProxy(force);
+  if (serverRaw && serverRaw.length) {
+    KENYA_POLITICAL_FEEDS.forEach((feed) => {
+      const feedItems = serverRaw.filter((i) => i.source === feed.source);
+      const mapped = normaliseItems(feedItems, feed, cutoff);
+      collected.push(...mapped);
+    });
+  }
+
+  // 2. Fallback to JSON proxy only if server proxy returned no items (e.g. offline/static preview)
+  if (!collected.length) {
+    await Promise.all(
+      KENYA_POLITICAL_FEEDS.map(async (feed) => {
+        try {
+          const raw = await fetchFeedItems(feed.url);
+          const mapped = normaliseItems(raw, feed, cutoff);
+          collected.push(...mapped);
+          if (typeof onPartial === 'function' && mapped.length) {
+            onPartial({
+              items: dedupeSort([...collected]),
+              fetchedAt: new Date().toISOString(),
+              sourcesTried: KENYA_POLITICAL_FEEDS.length,
+              errors: [...errors],
+              partial: true
+            });
+          }
+        } catch (err) {
+          const reason = err?.errors?.[0]?.message || err?.message || 'failed';
+          errors.push(`${feed.source}: ${reason}`);
         }
-      } catch (err) {
-        const reason = err?.errors?.[0]?.message || err?.message || 'failed';
-        errors.push(`${feed.source}: ${reason}`);
-      }
-    })
-  );
+      })
+    );
+  }
 
   const items = collected.length ? dedupeSort(collected) : VERIFIED_FALLBACK_NEWS;
   const payload = {

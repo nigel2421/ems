@@ -182,7 +182,7 @@ export const AuthProvider = ({ children }) => {
     let active = true;
     const isAdm = isInAdminRealm();
     const headers = isAdm ? { 'X-EMS-Realm': 'admin' } : {};
-    fetch('/api/auth/me', { credentials: 'include', headers })
+    fetch('/api/auth/me?silent=1', { credentials: 'include', headers })
       .then(res => (res.ok ? res.json() : null))
       .then(data => {
         if (!active) return;
@@ -191,7 +191,7 @@ export const AuthProvider = ({ children }) => {
           setIsAuthenticated(true);
           safeStorage.setItem('ems_current_user', data.user);
           safeStorage.setItem('ems_is_authenticated', true);
-          if (data.user.role === 'Super Admin' || data.user.role === 'Admin' || isAdm) {
+          if (data.user.role !== 'Agent' && data.user.role !== 'Field Agent') {
             fetchServerUsers();
           }
         } else if (data && !data.authenticated) {
@@ -302,6 +302,9 @@ export const AuthProvider = ({ children }) => {
         sessionStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
         safeStorage.setItem('ems_current_user', authedUser);
         safeStorage.setItem('ems_is_authenticated', true);
+        if (authedUser.role !== 'Agent' && authedUser.role !== 'Field Agent') {
+          fetchServerUsers();
+        }
         return { success: true, user: authedUser, redirectTo: data.redirectTo };
       }
 
@@ -421,7 +424,13 @@ export const AuthProvider = ({ children }) => {
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success && data.user) {
         const persistedUser = data.user;
-        setUsers(prev => [persistedUser, ...prev.filter(u => u.email !== persistedUser.email)]);
+        setUsers(prev => {
+          const updated = [persistedUser, ...prev.filter(u => u.email !== persistedUser.email && u.id !== persistedUser.id)];
+          try {
+            safeStorage.setItem('ems_users', updated);
+          } catch {}
+          return updated;
+        });
         return { success: true, user: persistedUser };
       }
       if (!res.ok) {
@@ -432,7 +441,13 @@ export const AuthProvider = ({ children }) => {
     }
 
     // Local fallback for offline/test environments
-    setUsers(prev => [newUser, ...prev]);
+    setUsers(prev => {
+      const updated = [newUser, ...prev.filter(u => u.email !== newUser.email && u.id !== newUser.id)];
+      try {
+        safeStorage.setItem('ems_users', updated);
+      } catch {}
+      return updated;
+    });
     return { success: true, user: newUser };
   };
 

@@ -60,10 +60,13 @@ jobs:
 
       - name: Restart backend on VPS
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
           fingerprint: ${{ secrets.VPS_FINGERPRINT }}
+          envs: VITE_GOOGLE_MAPS_API_KEY
           script: bash /var/www/kutatech-api/deploy/restart-backend.sh

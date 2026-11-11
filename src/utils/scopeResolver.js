@@ -30,7 +30,28 @@ export const CONTEST_JURISDICTION_POLICY = {
 
 const normalizeGeo = (str) => {
   if (!str) return '';
-  return String(str).toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+  return String(str)
+    .toLowerCase()
+    .replace(/\b(county|constituency|ward|city)\b/gi, '')
+    .trim()
+    .replace(/[^a-z0-9]/g, '');
+};
+
+export const cleanScopeValue = (val) => {
+  if (!val || typeof val !== 'string') return null;
+  const trimmed = val.trim();
+  if (!trimmed) return null;
+  if (['all', 'global', 'national', 'kenya', 'none', 'n/a'].includes(trimmed.toLowerCase())) {
+    return null;
+  }
+  return trimmed;
+};
+
+const geoMatches = (a, b) => {
+  const normA = normalizeGeo(a);
+  const normB = normalizeGeo(b);
+  if (!normA || !normB) return false;
+  return normA === normB || normA.includes(normB) || normB.includes(normA);
 };
 
 export const getContestPolicy = (contestOrCampaign) => {
@@ -73,12 +94,12 @@ export const resolveEffectiveGeographicScope = ({
 
   // Default user scope extraction if user exists
   const role = authenticatedUser?.role;
-  const userCounty = authenticatedUser?.county;
-  const userConst = authenticatedUser?.constituency;
-  const userWard = authenticatedUser?.ward;
+  const userCounty = cleanScopeValue(authenticatedUser?.county);
+  const userConst = cleanScopeValue(authenticatedUser?.constituency);
+  const userWard = cleanScopeValue(authenticatedUser?.ward);
 
   let userScopeLevel = SCOPE_LEVELS.NATIONAL;
-  if (['County Coordinator', 'Governor', 'Senator'].includes(role)) {
+  if (['County Coordinator', 'Governor', 'Senator', 'Woman Rep'].includes(role)) {
     userScopeLevel = SCOPE_LEVELS.COUNTY;
   } else if (['Constituency Coordinator', 'MP'].includes(role)) {
     userScopeLevel = SCOPE_LEVELS.CONSTITUENCY;
@@ -92,9 +113,9 @@ export const resolveEffectiveGeographicScope = ({
     userScopeLevel = policy.level || SCOPE_LEVELS.COUNTY;
   }
 
-  const campaignCounty = campaign?.county || campaign?.jurisdiction?.county || authenticatedUser?.county || null;
-  const campaignConst = campaign?.constituency || campaign?.jurisdiction?.constituency || authenticatedUser?.constituency || null;
-  const campaignWard = campaign?.ward || campaign?.jurisdiction?.ward || authenticatedUser?.ward || null;
+  const campaignCounty = cleanScopeValue(campaign?.county || campaign?.jurisdiction?.county) || userCounty || null;
+  const campaignConst = cleanScopeValue(campaign?.constituency || campaign?.jurisdiction?.constituency) || userConst || null;
+  const campaignWard = cleanScopeValue(campaign?.ward || campaign?.jurisdiction?.ward) || userWard || null;
 
   let campaignLockedCounty = null;
   let campaignLockedConst = null;
@@ -117,7 +138,7 @@ export const resolveEffectiveGeographicScope = ({
   let effectiveWard = campaignLockedWard;
 
   if (userCounty && userScopeLevel !== SCOPE_LEVELS.NATIONAL) {
-    if (effectiveCounty && normalizeGeo(effectiveCounty) !== normalizeGeo(userCounty)) {
+    if (effectiveCounty && !geoMatches(effectiveCounty, userCounty)) {
       return {
         isConfigured: false,
         failClosed: true,
@@ -128,7 +149,7 @@ export const resolveEffectiveGeographicScope = ({
   }
 
   if (userConst && [SCOPE_LEVELS.CONSTITUENCY, SCOPE_LEVELS.WARD, SCOPE_LEVELS.POLLING_CENTRE, SCOPE_LEVELS.STATION].includes(userScopeLevel)) {
-    if (effectiveConst && normalizeGeo(effectiveConst) !== normalizeGeo(userConst)) {
+    if (effectiveConst && !geoMatches(effectiveConst, userConst)) {
       return {
         isConfigured: false,
         failClosed: true,
@@ -139,7 +160,7 @@ export const resolveEffectiveGeographicScope = ({
   }
 
   if (userWard && [SCOPE_LEVELS.WARD, SCOPE_LEVELS.POLLING_CENTRE, SCOPE_LEVELS.STATION].includes(userScopeLevel)) {
-    if (effectiveWard && normalizeGeo(effectiveWard) !== normalizeGeo(userWard)) {
+    if (effectiveWard && !geoMatches(effectiveWard, userWard)) {
       return {
         isConfigured: false,
         failClosed: true,
@@ -190,7 +211,7 @@ export const validateGeographicSubmission = (submissionLocation = {}, effectiveS
 
   if (locked.county) {
     const subCounty = submissionLocation.county || submissionLocation.countyName || submissionLocation.countyId || '';
-    if (!subCounty || (normalizeGeo(subCounty) !== normalizeGeo(locked.county) && !normalizeGeo(subCounty).includes(normalizeGeo(locked.county)))) {
+    if (!subCounty || !geoMatches(subCounty, locked.county)) {
       const details = `Submitted county '${subCounty}' is outside locked campaign county '${locked.county}'`;
       if (logAuditAction) {
         logAuditAction(user, 'SECURITY_DENIAL_GEOGRAPHY', details);
@@ -201,7 +222,7 @@ export const validateGeographicSubmission = (submissionLocation = {}, effectiveS
 
   if (locked.constituency) {
     const subConst = submissionLocation.constituency || submissionLocation.constituencyName || submissionLocation.constituencyId || '';
-    if (!subConst || (normalizeGeo(subConst) !== normalizeGeo(locked.constituency) && !normalizeGeo(subConst).includes(normalizeGeo(locked.constituency)))) {
+    if (!subConst || !geoMatches(subConst, locked.constituency)) {
       const details = `Submitted constituency '${subConst}' is outside locked constituency '${locked.constituency}'`;
       if (logAuditAction) {
         logAuditAction(user, 'SECURITY_DENIAL_GEOGRAPHY', details);
@@ -212,7 +233,7 @@ export const validateGeographicSubmission = (submissionLocation = {}, effectiveS
 
   if (locked.ward) {
     const subWard = submissionLocation.ward || submissionLocation.wardName || submissionLocation.wardId || '';
-    if (!subWard || (normalizeGeo(subWard) !== normalizeGeo(locked.ward) && !normalizeGeo(subWard).includes(normalizeGeo(locked.ward)))) {
+    if (!subWard || !geoMatches(subWard, locked.ward)) {
       const details = `Submitted ward '${subWard}' is outside locked ward '${locked.ward}'`;
       if (logAuditAction) {
         logAuditAction(user, 'SECURITY_DENIAL_GEOGRAPHY', details);
