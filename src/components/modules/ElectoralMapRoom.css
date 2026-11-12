@@ -685,3 +685,15 @@ html:not(.dark) .google-maps-key-input,
   border: 1px solid #cbd5e1;
   color: #0f172a;
 }
+
+.ems-map-boundary-label-wrapper {
+  background: transparent !important;
+  border: none !important;
+  pointer-events: none !important;
+}
+
+.ems-map-boundary-label {
+  pointer-events: none !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}

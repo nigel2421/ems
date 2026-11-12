@@ -45,6 +45,7 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [emailTouched, setEmailTouched] = useState(false);
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -53,16 +54,7 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
 
   const selectedPs = geography.pollingStations.find(ps => ps.id === pollingStationId);
 
-  // Strict Duplicate Phone Validation
   const cleanPhone = phone.trim().replace(/\s+/g, '');
-  const duplicateUser = useMemo(() => {
-    if (!cleanPhone || cleanPhone.length < 7) return null;
-    const allAccounts = [...(users || []), ...(agents || [])];
-    return allAccounts.find(u => {
-      const p = (u.phone || '').trim().replace(/\s+/g, '');
-      return p && p.length >= 7 && (p === cleanPhone || p.endsWith(cleanPhone.slice(-9)) || cleanPhone.endsWith(p.slice(-9)));
-    });
-  }, [cleanPhone, users, agents]);
 
   const passwordComplexity = useMemo(() => checkPasswordComplexity(password), [password]);
   const isMatch = useMemo(() => passwordsMatch(password, passwordConfirm), [password, passwordConfirm]);
@@ -82,11 +74,6 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
     e.preventDefault();
     setSubmitError('');
 
-    if (duplicateUser) {
-      setSubmitError(`Duplicate Phone: ${phone} is already registered to ${duplicateUser.name || duplicateUser.fullName || 'another agent'}. Duplicate registrations are strictly prohibited.`);
-      return;
-    }
-
     if (password && !passwordComplexity.isValid) {
       setSubmitError(passwordComplexity.errors.join(' · '));
       return;
@@ -98,7 +85,16 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
     }
 
     const targetAspirantId = defaultAspirantId || currentUser?.id;
-    const resolvedEmail = email.trim() || `${cleanPhone.replace(/[^0-9]/g, '') || Date.now()}@agent.ems.ke`;
+    const rawTypedEmail = emailTouched ? email.trim() : '';
+    const isCreatorEmailAutofill = Boolean(
+      rawTypedEmail &&
+      currentUser?.email &&
+      rawTypedEmail.toLowerCase() === currentUser.email.toLowerCase()
+    );
+    const phoneDigits = cleanPhone.replace(/[^0-9]/g, '') || String(Date.now());
+    const resolvedEmail = (rawTypedEmail && !isCreatorEmailAutofill)
+      ? rawTypedEmail
+      : `${phoneDigits}@agent.ems.ke`;
 
     const effectiveStationId = locationMeta.pollingStationId || pollingStationId || '';
     const resolvedPs = (geography.pollingStations || []).find(ps => ps.id === effectiveStationId) ||
@@ -177,10 +173,10 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" style={{ zIndex: 10000 }} onClick={onClose}>
       <div 
         className="modal-content" 
-        style={{ maxWidth: '580px', padding: '1.75rem', borderRadius: '20px' }}
+        style={{ maxWidth: '580px', padding: '1.75rem', borderRadius: '20px', maxHeight: '92vh', overflowY: 'auto' }}
         onClick={e => e.stopPropagation()}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
@@ -190,7 +186,7 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
             </div>
             <div>
               <h3 style={{ fontSize: '1.2rem', fontWeight: '800' }}>Register Polling Station Agent</h3>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Phone-first agent onboarding with anti-duplicate validation</p>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Phone-first agent onboarding bound to your electoral scope</p>
             </div>
           </div>
           <button className="btn btn-secondary btn-sm" onClick={onClose} aria-label="Close">
@@ -199,13 +195,13 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
         </div>
 
         {submitError && (
-          <div style={{ padding: '0.75rem', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.35)', color: '#fca5a5', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+          <div style={{ padding: '0.75rem', borderRadius: '8px', background: 'rgba(220, 38, 38, 0.14)', border: '1px solid rgba(220, 38, 38, 0.45)', color: '#dc2626', fontWeight: 600, fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
             <AlertTriangle size={16} />
             <span>{submitError}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form onSubmit={handleSubmit} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {/* Photo Preview & Upload */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '12px' }}>
             <img src={sanitizeMediaUrl(avatar)} alt="Agent Preview" style={{ width: '54px', height: '54px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} />
@@ -222,7 +218,7 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
 
           <div className="form-group">
             <label className="form-label">Full Name</label>
-            <input type="text" className="form-input" placeholder="e.g. Samuel Mutua" value={name} onChange={e => setName(e.target.value)} required />
+            <input type="text" name="agent_full_name_popup" autoComplete="off" className="form-input" placeholder="e.g. Samuel Mutua" value={name} onChange={e => setName(e.target.value)} required />
           </div>
 
           <div className="responsive-form-grid">
@@ -233,19 +229,14 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
               </label>
               <input
                 type="tel"
-                className={`form-input${duplicateUser ? ' is-invalid' : ''}`}
-                style={duplicateUser ? { borderColor: '#ef4444', background: 'rgba(239,68,68,0.08)' } : {}}
+                name="agent_phone_popup"
+                autoComplete="off"
+                className="form-input"
                 placeholder="+254 7..."
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
                 required
               />
-              {duplicateUser && (
-                <div style={{ color: '#ef4444', fontSize: '0.74rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <ShieldAlert size={13} />
-                  <span>Duplicate: Registered to {duplicateUser.name || duplicateUser.fullName} ({duplicateUser.role || 'Agent'})</span>
-                </div>
-              )}
             </div>
 
             <div className="form-group">
@@ -255,10 +246,17 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
               </label>
               <input
                 type="email"
+                name="agent_contact_email_popup"
+                autoComplete="off"
+                readOnly={!emailTouched}
+                onFocus={() => setEmailTouched(true)}
                 className="form-input"
                 placeholder="samuel@agent.ke (optional)"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                value={emailTouched ? email : ''}
+                onChange={e => {
+                  setEmailTouched(true);
+                  setEmail(e.target.value);
+                }}
               />
             </div>
           </div>
@@ -328,8 +326,8 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={Boolean(isSubmitting || duplicateUser || (password && (!passwordComplexity.isValid || !isMatch)))}
-            style={{ padding: '0.75rem', marginTop: '0.25rem', background: (duplicateUser || isSubmitting) ? '#64748b' : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', cursor: (duplicateUser || isSubmitting) ? 'not-allowed' : 'pointer' }}
+            disabled={Boolean(isSubmitting || (password && (!passwordComplexity.isValid || !isMatch)))}
+            style={{ padding: '0.75rem', marginTop: '0.25rem', background: isSubmitting ? '#64748b' : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
           >
             <UserPlus style={{ width: '16px', height: '16px' }} />
             <span>{isSubmitting ? 'Registering Agent...' : 'Confirm Agent Registration'}</span>

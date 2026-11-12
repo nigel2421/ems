@@ -5125,6 +5125,72 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     assert.ok(serverContent.includes('const operationalAgent ='), 'server.mjs dual-persists created Agent into currentDb.agents');
   });
 
+  test('380. Watermark-Free Map Boundaries & Labels: removes basemaps.cartocdn.com and renders County/Constituency/Ward hulls and labels', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const { computeConvexHull, renderLeafletJurisdictionBoundaries } = await import('../services/googleMapsService.js');
+
+    const mapRoomContent = fs.readFileSync(path.resolve(process.cwd(), 'src/components/modules/ElectoralMapRoom.jsx'), 'utf8');
+    assert.ok(!mapRoomContent.includes('basemaps.cartocdn.com'), 'Must not use Carto tiles that stamp API KEY REQUIRED watermark');
+    assert.ok(mapRoomContent.includes('World_Boundaries_and_Places/MapServer/tile'), 'Uses Esri World Boundaries and Places overlay');
+    assert.ok(mapRoomContent.includes('renderLeafletJurisdictionBoundaries'), 'Renders County, Constituency, and Ward boundaries and labels');
+
+    const hull = computeConvexHull([
+      { lat: -1.261, lng: 36.815 },
+      { lat: -1.270, lng: 36.825 },
+      { lat: -1.265, lng: 36.835 },
+      { lat: -1.258, lng: 36.822 }
+    ]);
+    assert.ok(Array.isArray(hull) && hull.length >= 3, 'Convex hull generates polygon ring');
+
+    const polygons = [];
+    const markers = [];
+    const mockL = {
+      polygon: (pts, opts) => ({
+        pts,
+        opts,
+        addTo() { polygons.push(this); return this; }
+      }),
+      divIcon: (opts) => opts,
+      marker: (latlng, opts) => ({
+        latlng,
+        opts,
+        addTo() { markers.push(this); return this; }
+      })
+    };
+
+    const created = renderLeafletJurisdictionBoundaries({
+      L: mockL,
+      map: {},
+      scopedStations: [
+        { latitude: -1.261, longitude: 36.815, countyName: 'Nairobi City', constituencyName: 'Westlands', wardName: 'Parklands/Highridge' },
+        { latitude: -1.270, longitude: 36.825, countyName: 'Nairobi City', constituencyName: 'Westlands', wardName: 'Parklands/Highridge' },
+        { latitude: -1.265, longitude: 36.835, countyName: 'Nairobi City', constituencyName: 'Westlands', wardName: 'Parklands/Highridge' }
+      ],
+      currentZoom: 14
+    });
+
+    assert.ok(created.length >= 6, 'Creates County, Constituency, and Ward polygons + name labels');
+    assert.strictEqual(polygons.length, 3, 'Draws County, Constituency, and Ward boundary polygons');
+    assert.ok(markers.some(m => m.opts.icon.html.includes('NAIROBI CITY COUNTY')), 'Renders County boundary label');
+    assert.ok(markers.some(m => m.opts.icon.html.includes('WESTLANDS CONSTITUENCY')), 'Renders Constituency boundary label');
+    assert.ok(markers.some(m => m.opts.icon.html.includes('PARKLANDS/HIGHRIDGE WARD')), 'Renders Ward boundary label');
+  });
+
+  test('381. Conflict-Free Popup Agent Registration: blocks browser autofill and prevents 409 Conflict when registering agents', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+
+    const modalContent = fs.readFileSync(path.resolve(process.cwd(), 'src/components/modules/AddAgentModal.jsx'), 'utf8');
+    const serverContent = fs.readFileSync(path.resolve(process.cwd(), 'server.mjs'), 'utf8');
+
+    assert.ok(modalContent.includes('emailTouched'), 'AddAgentModal tracks emailTouched to prevent browser autofill');
+    assert.ok(modalContent.includes('readOnly={!emailTouched}'), 'Email input is readOnly until focused by user');
+    assert.ok(modalContent.includes('isCreatorEmailAutofill'), 'Ignores creator email if autofilled');
+    assert.ok(modalContent.includes('zIndex: 10000'), 'Modal overlay sits above floating bottom widgets');
+    assert.ok(serverContent.includes('const isAgentTarget ='), 'server.mjs handles Agent registration without throwing 409 on autofilled or existing agent records');
+  });
+
 });
 
 

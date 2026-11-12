@@ -15,6 +15,7 @@ import {
   resolveGoogleMapFraming,
   createMapPin,
   createLeafletPin,
+  renderLeafletJurisdictionBoundaries,
   formatInfoWindowHtml,
   getGoogleMapsApiKey,
   setGoogleMapsApiKey,
@@ -705,16 +706,13 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
         leafletLayersRef.current = [];
 
         if (mapMode === 'google_roadmap') {
-          const tileUrl = isDark
-            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-            : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-          const roadLayer = L.tileLayer(tileUrl, {
+          const roadLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+            attribution: '&copy; OpenStreetMap contributors'
           }).addTo(activeMap);
           leafletLayersRef.current.push(roadLayer);
         } else {
-          // Satellite + Hybrid Labels (Esri World Imagery + Carto Reference Labels)
+          // Satellite + Hybrid Labels & Boundaries (Esri World Imagery + Esri Reference Overlays — 100% watermark-free)
           const satLayer = L.tileLayer(
             'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             {
@@ -722,15 +720,22 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
               attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
             }
           ).addTo(activeMap);
-          const labelsLayer = L.tileLayer(
-            'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
+          const roadsOverlay = L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
             {
               maxZoom: 19,
-              subdomains: 'abcd',
+              pane: 'overlayPane',
+              opacity: 0.85
+            }
+          ).addTo(activeMap);
+          const labelsLayer = L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+            {
+              maxZoom: 19,
               pane: 'overlayPane'
             }
           ).addTo(activeMap);
-          leafletLayersRef.current.push(satLayer, labelsLayer);
+          leafletLayersRef.current.push(satLayer, roadsOverlay, labelsLayer);
         }
 
         setTimeout(() => {
@@ -749,6 +754,17 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
           });
           leafletMarkersRef.current = [];
 
+          // Render County, Constituency, and Ward boundaries + bold name labels
+          const boundaryLayers = renderLeafletJurisdictionBoundaries({
+            L,
+            map: activeMap,
+            scopedStations,
+            currentZoom
+          });
+          if (Array.isArray(boundaryLayers) && boundaryLayers.length > 0) {
+            leafletMarkersRef.current.push(...boundaryLayers);
+          }
+
           // 1. High-Level Overview (Zoom <= 10 and no specific constituency chosen)
           if (currentZoom <= 10 && !selectedConstituency && constituencyHubs.length > 1) {
             constituencyHubs.forEach((cHub) => {
@@ -766,6 +782,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
                 map: activeMap,
                 position: { lat: Number(cHub.latitude), lng: Number(cHub.longitude) },
                 title: `${cHub.name} (${cHub.streamsCount} stations)`,
+                labelText: cHub.name,
                 pinColor,
                 streamsCount: cHub.streamsCount,
                 onClick: () => {
@@ -828,6 +845,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
               map: activeMap,
               position: { lat: Number(lat), lng: Number(lng) },
               title: `${hub.name} (${hub.streamsCount} streams)`,
+              labelText: currentZoom >= 12 ? hub.name : '',
               pinColor,
               streamsCount: hub.streamsCount,
               popupHtml,

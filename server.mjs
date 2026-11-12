@@ -780,7 +780,13 @@ const server = http.createServer((req, res) => {
               }
             }
 
-            if (!cleanEmail || !password) {
+            const effectiveRole = isAsp && !isAdm ? 'Agent' : String(role || 'Agent').trim();
+            const isAgentTarget = effectiveRole === 'Agent' || effectiveRole === 'Field Agent';
+            const phoneDigits = cleanPhone.replace(/[^0-9]/g, '');
+
+            let resolvedEmail = cleanEmail || (isAgentTarget && phoneDigits ? `${phoneDigits}@agent.ems.ke` : '');
+
+            if (!resolvedEmail || !password) {
               res.writeHead(400, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ success: false, error: 'Email and password are required.' }));
               return;
@@ -792,15 +798,22 @@ const server = http.createServer((req, res) => {
               return;
             }
 
-            const existingByEmail = findUserByEmail(cleanEmail);
-            if (existingByEmail) {
-              res.writeHead(409, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ success: false, error: `Account with email "${cleanEmail}" already exists.` }));
-              return;
+            let existingByEmail = findUserByEmail(resolvedEmail);
+            // If registering an Agent and the email collides with a non-Agent account (e.g. browser autofilled creator's email),
+            // automatically scope the agent email using their phone number so registration succeeds from popup data.
+            if (existingByEmail && isAgentTarget && existingByEmail.role !== 'Agent' && existingByEmail.role !== 'Field Agent') {
+              resolvedEmail = `${phoneDigits || Date.now()}@agent.ems.ke`;
+              existingByEmail = findUserByEmail(resolvedEmail);
             }
 
-            if (cleanPhone) {
-              const existingByPhone = findUserByPhone(cleanPhone);
+            const existingByPhone = cleanPhone ? findUserByPhone(cleanPhone) : null;
+
+            if (!isAgentTarget) {
+              if (existingByEmail) {
+                res.writeHead(409, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: `Account with email "${resolvedEmail}" already exists.` }));
+                return;
+              }
               if (existingByPhone) {
                 res.writeHead(409, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: false, error: `Account with phone "${phone}" already exists.` }));
@@ -809,7 +822,6 @@ const server = http.createServer((req, res) => {
             }
 
             // Geographic scoping: merge specific selected sub-jurisdiction with creator's locked jurisdiction
-            const effectiveRole = isAsp && !isAdm ? 'Agent' : String(role || 'Agent').trim();
             const effectiveCounty = (isAsp && !isAdm && creatorCounty)
               ? creatorCounty
               : (cleanJurisdictionField(county) || creatorCounty || null);
@@ -828,14 +840,20 @@ const server = http.createServer((req, res) => {
               ? assignedStations
               : (resolvedStationId ? [resolvedStationId] : []);
 
+            const existingAgentRecord = isAgentTarget
+              ? ((existingByPhone && (existingByPhone.role === 'Agent' || existingByPhone.role === 'Field Agent'))
+                  ? existingByPhone
+                  : ((existingByEmail && (existingByEmail.role === 'Agent' || existingByEmail.role === 'Field Agent')) ? existingByEmail : null))
+              : null;
+
             const newUser = {
-              id: requestedId && String(requestedId).startsWith('USR-')
+              id: existingAgentRecord?.id || (requestedId && String(requestedId).startsWith('USR-')
                 ? String(requestedId)
-                : `USR-${effectiveRole.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3)}-${Date.now().toString().slice(-5)}`,
-              name: String(name || 'Campaign User').trim(),
+                : `USR-${effectiveRole.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3)}-${Date.now().toString().slice(-5)}`),
+              name: String(name || existingAgentRecord?.name || 'Campaign User').trim(),
               role: effectiveRole,
-              email: cleanEmail,
-              phone: phone ? String(phone).trim() : null,
+              email: resolvedEmail,
+              phone: phone ? String(phone).trim() : (existingAgentRecord?.phone || null),
               passwordHash: hashPassword(password),
               county: effectiveCounty,
               constituency: effectiveConst,
@@ -855,12 +873,21 @@ const server = http.createServer((req, res) => {
               status: 'Active',
               isSuspended: false,
               twoFactorEnabled: false,
-              avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-              createdAt: new Date().toISOString()
+              avatar: existingAgentRecord?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+              createdAt: existingAgentRecord?.createdAt || new Date().toISOString()
             };
 
             const currentUsers = loadUsers();
-            currentUsers.unshift(newUser);
+            const existingIdx = currentUsers.findIndex(u =>
+              u.id === newUser.id ||
+              (u.email && u.email.toLowerCase() === newUser.email.toLowerCase()) ||
+              (isAgentTarget && cleanPhone && u.phone && String(u.phone).replace(/\s+/g, '').toLowerCase() === cleanPhone && (u.role === 'Agent' || u.role === 'Field Agent'))
+            );
+            if (existingIdx >= 0) {
+              currentUsers[existingIdx] = { ...currentUsers[existingIdx], ...newUser };
+            } else {
+              currentUsers.unshift(newUser);
+            }
             saveUsers(currentUsers);
 
             // Unified Dual-Persistence: Sync Field Agent into operational currentDb.agents (ems_server_db.json)

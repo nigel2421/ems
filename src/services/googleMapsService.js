@@ -232,12 +232,18 @@ export const loadLeaflet = async () => {
 };
 
 /**
- * Create a Leaflet marker with the exact same SVG pin and stream count badge as Google Maps
+ * Create a Leaflet marker with the exact same SVG pin and stream count badge as Google Maps,
+ * plus an optional permanent Polling Centre name label underneath.
  */
-export const createLeafletPin = ({ L, map, position, title, pinColor = '#EAB308', streamsCount = 1, popupHtml = '', onClick }) => {
+export const createLeafletPin = ({ L, map, position, title, labelText = '', pinColor = '#EAB308', streamsCount = 1, popupHtml = '', onClick }) => {
   if (!L || !map) return null;
   const badgeHtml = streamsCount > 1
     ? `<span style="position: absolute; top: -6px; right: -8px; background: #0f172a; color: #ffffff; border: 1.5px solid ${pinColor}; border-radius: 10px; font-size: 10px; font-weight: 800; padding: 1px 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.45); line-height: 1.2;">${streamsCount}</span>`
+    : '';
+
+  const cleanLabel = String(labelText || '').trim();
+  const captionHtml = cleanLabel
+    ? `<div class="ems-pin-caption" style="position: absolute; top: 44px; left: 50%; transform: translateX(-50%); white-space: nowrap; background: rgba(15, 23, 42, 0.88); color: #f8fafc; border: 1px solid rgba(148, 163, 184, 0.35); border-radius: 5px; padding: 1px 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.02em; box-shadow: 0 2px 6px rgba(0,0,0,0.45); pointer-events: none; max-width: 150px; overflow: hidden; text-overflow: ellipsis;">${cleanLabel}</div>`
     : '';
 
   const html = `
@@ -253,6 +259,7 @@ export const createLeafletPin = ({ L, map, position, title, pinColor = '#EAB308'
         <circle cx="18" cy="18" r="7" fill="#ffffff" />
       </svg>
       ${badgeHtml}
+      ${captionHtml}
     </div>
   `.trim();
 
@@ -280,6 +287,207 @@ export const createLeafletPin = ({ L, map, position, title, pinColor = '#EAB308'
   }
 
   return marker;
+};
+
+/**
+ * Computes a 2D Monotone Chain convex hull from an array of { lat, lng } points
+ * and expands it slightly so the administrative boundary wraps cleanly around stations.
+ */
+export const computeConvexHull = (points = [], bufferDeg = 0.004) => {
+  const valid = points
+    .map(p => ({ lat: Number(p.lat ?? p.latitude), lng: Number(p.lng ?? p.longitude) }))
+    .filter(p => !Number.isNaN(p.lat) && !Number.isNaN(p.lng));
+
+  if (valid.length === 0) return [];
+
+  const cLat = valid.reduce((acc, p) => acc + p.lat, 0) / valid.length;
+  const cLng = valid.reduce((acc, p) => acc + p.lng, 0) / valid.length;
+
+  if (valid.length < 3) {
+    const r = Math.max(bufferDeg, 0.006);
+    const ring = [];
+    for (let i = 0; i < 8; i++) {
+      const angle = (Math.PI * 2 * i) / 8;
+      ring.push([cLat + Math.sin(angle) * r, cLng + Math.cos(angle) * r]);
+    }
+    return ring;
+  }
+
+  const sorted = [...valid].sort((a, b) => (a.lng === b.lng ? a.lat - b.lat : a.lng - b.lng));
+  const cross = (o, a, b) => (a.lng - o.lng) * (b.lat - o.lat) - (a.lat - o.lat) * (b.lng - o.lng);
+
+  const lower = [];
+  for (const p of sorted) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
+      lower.pop();
+    }
+    lower.push(p);
+  }
+
+  const upper = [];
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const p = sorted[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
+      upper.pop();
+    }
+    upper.push(p);
+  }
+
+  upper.pop();
+  lower.pop();
+  const hull = lower.concat(upper);
+
+  return hull.map(pt => {
+    const dLat = pt.lat - cLat;
+    const dLng = pt.lng - cLng;
+    const dist = Math.hypot(dLat, dLng) || 1;
+    return [
+      pt.lat + (dLat / dist) * bufferDeg,
+      pt.lng + (dLng / dist) * bufferDeg
+    ];
+  });
+};
+
+/**
+ * Renders County, Constituency, and Ward boundary polygons and bold name labels onto a Leaflet map.
+ * Returns an array of created Leaflet layers so the caller can clean them up on re-render.
+ */
+export const renderLeafletJurisdictionBoundaries = ({
+  L,
+  map,
+  scopedStations = [],
+  currentZoom = 12
+}) => {
+  if (!L || !map) return [];
+  const createdLayers = [];
+
+  const addBoundaryLabel = (lat, lng, text, subtitle, borderColor, bgColor = 'rgba(15, 23, 42, 0.86)') => {
+    if (typeof L.marker !== 'function' || typeof L.divIcon !== 'function') return;
+    const labelIcon = L.divIcon({
+      className: 'ems-map-boundary-label-wrapper',
+      html: `
+        <div class="ems-map-boundary-label" style="display: inline-flex; flex-direction: column; align-items: center; background: ${bgColor}; color: #ffffff; border: 1.5px solid ${borderColor}; border-radius: 8px; padding: 3px 9px; box-shadow: 0 4px 12px rgba(0,0,0,0.45); pointer-events: none; white-space: nowrap; transform: translate(-50%, -50%);">
+          <span style="font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: ${borderColor};">${text}</span>
+          ${subtitle ? `<span style="font-size: 9px; font-weight: 600; color: #cbd5e1;">${subtitle}</span>` : ''}
+        </div>
+      `.trim(),
+      iconSize: [0, 0],
+      iconAnchor: [0, 0]
+    });
+    const m = L.marker([Number(lat), Number(lng)], { icon: labelIcon, interactive: false }).addTo(map);
+    createdLayers.push(m);
+  };
+
+  // Group scoped stations by County, Constituency, and Ward
+  const countyGroups = new Map();
+  const constGroups = new Map();
+  const wardGroups = new Map();
+
+  scopedStations.forEach(st => {
+    const lat = Number(st.latitude ?? st.lat);
+    const lng = Number(st.longitude ?? st.lng);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+
+    const cName = st.countyName || st.county || '';
+    const csName = st.constituencyName || st.constituency || '';
+    const wName = st.wardName || st.ward || '';
+
+    if (cName) {
+      if (!countyGroups.has(cName)) countyGroups.set(cName, []);
+      countyGroups.get(cName).push({ lat, lng });
+    }
+    if (csName) {
+      if (!constGroups.has(csName)) constGroups.set(csName, []);
+      constGroups.get(csName).push({ lat, lng });
+    }
+    if (wName) {
+      if (!wardGroups.has(wName)) wardGroups.set(wName, []);
+      wardGroups.get(wName).push({ lat, lng });
+    }
+  });
+
+  // 1. National / Multi-County Overview (Zoom <= 9): Show County labels & boundaries
+  if (currentZoom <= 9) {
+    Object.values(COUNTY_COORDINATES).forEach(c => {
+      if (typeof map.getBounds === 'function') {
+        const b = map.getBounds();
+        if (b && typeof b.contains === 'function' && !b.contains([c.lat, c.lng])) return;
+      }
+      addBoundaryLabel(c.lat, c.lng, `${c.name} COUNTY`, '', '#38bdf8');
+    });
+  }
+
+  // 2. County Boundary Polygons (Zoom <= 12 or up to 3 counties in scope)
+  if (countyGroups.size > 0 && countyGroups.size <= 5) {
+    countyGroups.forEach((pts, cName) => {
+      const hull = computeConvexHull(pts, 0.012);
+      if (hull.length >= 3 && typeof L.polygon === 'function') {
+        const poly = L.polygon(hull, {
+          color: '#38bdf8',
+          weight: 2.5,
+          dashArray: '8, 6',
+          fillColor: '#0284c7',
+          fillOpacity: 0.04,
+          interactive: false
+        }).addTo(map);
+        createdLayers.push(poly);
+
+        const topPt = hull.reduce((best, cur) => (cur[0] > best[0] ? cur : best), hull[0]);
+        const cleanCounty = String(cName).replace(/\bcounty\b/gi, '').trim().toUpperCase();
+        addBoundaryLabel(topPt[0], topPt[1], `${cleanCounty} COUNTY`, 'County Boundary', '#38bdf8');
+      }
+    });
+  }
+
+  // 3. Constituency Boundary Polygons & Labels (Zoom >= 10)
+  if (currentZoom >= 10 && constGroups.size > 0 && constGroups.size <= 20) {
+    constGroups.forEach((pts, csName) => {
+      const hull = computeConvexHull(pts, 0.006);
+      if (hull.length >= 3 && typeof L.polygon === 'function') {
+        const poly = L.polygon(hull, {
+          color: '#10b981',
+          weight: 2,
+          dashArray: '5, 5',
+          fillColor: '#10b981',
+          fillOpacity: 0.05,
+          interactive: false
+        }).addTo(map);
+        createdLayers.push(poly);
+
+        const cLat = pts.reduce((a, p) => a + p.lat, 0) / pts.length;
+        const cLng = pts.reduce((a, p) => a + p.lng, 0) / pts.length;
+        const topLat = hull.reduce((maxL, cur) => Math.max(maxL, cur[0]), cLat);
+        const labelLat = currentZoom >= 13 ? topLat : cLat;
+        const cleanConst = String(csName).replace(/\bconstituency\b/gi, '').trim().toUpperCase();
+        addBoundaryLabel(labelLat, cLng, `${cleanConst} CONSTITUENCY`, `${pts.length} Streams`, '#10b981');
+      }
+    });
+  }
+
+  // 4. Ward Boundary Polygons & Labels (Zoom >= 12 or single ward scope)
+  if ((currentZoom >= 12 || wardGroups.size === 1) && wardGroups.size > 0 && wardGroups.size <= 15) {
+    wardGroups.forEach((pts, wName) => {
+      const hull = computeConvexHull(pts, 0.0035);
+      if (hull.length >= 3 && typeof L.polygon === 'function') {
+        const poly = L.polygon(hull, {
+          color: '#f59e0b',
+          weight: 2.2,
+          fillColor: '#f59e0b',
+          fillOpacity: 0.07,
+          interactive: false
+        }).addTo(map);
+        createdLayers.push(poly);
+
+        const cLat = pts.reduce((a, p) => a + p.lat, 0) / pts.length;
+        const cLng = pts.reduce((a, p) => a + p.lng, 0) / pts.length;
+        const southLat = hull.reduce((minL, cur) => Math.min(minL, cur[0]), cLat);
+        const cleanWard = String(wName).replace(/\bward\b/gi, '').trim().toUpperCase();
+        addBoundaryLabel(southLat, cLng, `${cleanWard} WARD`, `${pts.length} Polling Streams`, '#f59e0b');
+      }
+    });
+  }
+
+  return createdLayers;
 };
 
 // ====================================================================
