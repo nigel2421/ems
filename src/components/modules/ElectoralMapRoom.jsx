@@ -21,6 +21,7 @@ import {
   loadLeaflet,
   createLeafletPin,
   renderLeafletJurisdictionBoundaries,
+  COUNTY_COORDINATES,
   onGoogleMapsAuthFailure
 } from '../../services/googleMapsService';
 import { FORMATION_COLORS, MAP_LAYERS, buildRegionMetricsIndex } from '../../utils/mapAnalytics';
@@ -441,7 +442,9 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
               [googleFraming.center.lat, googleFraming.center.lng], googleFraming.zoom
             );
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
+              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
+              maxZoom: 19,
+              referrerPolicy: 'strict-origin-when-cross-origin'
             }).addTo(map);
             setLeafletMapInstance(map);
           } else {
@@ -450,13 +453,18 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
           markersRef.current.forEach(m => m.remove?.());
           boundaryLayersRef.current.forEach(layer => layer.remove?.());
           markersRef.current = [];
-          const visibleHubs = (pollingCentreHubs.length ? pollingCentreHubs : constituencyHubs)
+          const nationalCountyPins = Object.values(COUNTY_COORDINATES).map(county => ({
+            id: county.name, name: county.name, latitude: county.lat, longitude: county.lng,
+            streamsCount: 1, leadColor: FORMATION_COLORS.CAND_B
+          }));
+          const overview = !selectedCounty && !selectedConstituency;
+          const visibleHubs = (overview ? nationalCountyPins : selectedConstituency ? pollingCentreHubs : constituencyHubs)
             .filter(h => {
               const lat = Number(h.latitude ?? h.lat);
               const lng = Number(h.longitude ?? h.lng);
               return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && lat !== 0 && lng !== 0;
             })
-            .slice(0, 500);
+            .slice(0, overview ? 47 : 120);
           visibleHubs.forEach(hub => {
             const lat = Number(hub.latitude ?? hub.lat);
             const lng = Number(hub.longitude ?? hub.lng);
@@ -469,7 +477,9 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
             if (marker) markersRef.current.push(marker);
           });
           const bounds = L.latLngBounds(visibleHubs.map(h => [Number(h.latitude ?? h.lat), Number(h.longitude ?? h.lng)]));
-          if (visibleHubs.length > 1 && bounds.isValid()) map.fitBounds(bounds.pad(0.08), { maxZoom: 12 });
+          if (!leafletMapInstance && visibleHubs.length > 1 && bounds.isValid()) {
+            map.fitBounds(bounds.pad(0.08), { maxZoom: overview ? 7 : 12 });
+          }
           boundaryLayersRef.current = renderLeafletJurisdictionBoundaries({ L, map, scopedStations });
           setMapLoadError(null);
           return;
