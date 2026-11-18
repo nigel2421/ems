@@ -18,6 +18,9 @@ import {
   fetchGoogleMapsApiKeyFromServer,
   setGoogleMapsApiKey,
   loadGoogleMaps,
+  loadLeaflet,
+  createLeafletPin,
+  renderLeafletJurisdictionBoundaries,
   onGoogleMapsAuthFailure
 } from '../../services/googleMapsService';
 import { FORMATION_COLORS, MAP_LAYERS, buildRegionMetricsIndex } from '../../utils/mapAnalytics';
@@ -53,7 +56,9 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
   const [mapLoadError, setMapLoadError] = useState(null);
   const [isResolvingApiKey, setIsResolvingApiKey] = useState(() => !getGoogleMapsApiKey());
   const [authFailed, setAuthFailed] = useState(false);
+  const [useLeafletFallback, setUseLeafletFallback] = useState(() => !getGoogleMapsApiKey());
   const [googleMapInstance, setGoogleMapInstance] = useState(null);
+  const [leafletMapInstance, setLeafletMapInstance] = useState(null);
 
   // Active Map Layer
   const [activeLayer, setActiveLayer] = useState(MAP_LAYERS.LEAD);
@@ -69,6 +74,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
   // DOM refs
   const googleMapRef = useRef(null);
   const markersRef = useRef([]);
+  const boundaryLayersRef = useRef([]);
   const infoWindowRef = useRef(null);
   const tooltipRef = useRef(null);
 
@@ -81,6 +87,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
         if (active && key) {
           setApiKey(key);
           setApiKeyInput(key);
+          setUseLeafletFallback(false);
         }
       } finally {
         if (active) setIsResolvingApiKey(false);
@@ -105,6 +112,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
   useEffect(() => {
     return onGoogleMapsAuthFailure(() => {
       setAuthFailed(true);
+      setUseLeafletFallback(true);
     });
   }, []);
 
@@ -409,7 +417,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
   // GOOGLE MAPS PIN SYNCHRONIZATION (Hierarchical Zoom & Viewport Clamping)
   // --------------------------------------------------------------------
   useEffect(() => {
-    if (!apiKey || !googleMapRef.current) return;
+    if (!googleMapRef.current) return;
 
     let isMounted = true;
     let resizeTimer = null;
@@ -417,11 +425,57 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
     let idleListener = null;
     setMapLoadError(null);
 
-    loadGoogleMaps(apiKey)
+    const mapEngine = apiKey && !useLeafletFallback
+      ? loadGoogleMaps(apiKey).then(googleMaps => ({ engine: 'google', maps: googleMaps }))
+      : loadLeaflet().then(L => ({ engine: 'leaflet', maps: L }));
+
+    mapEngine
       .then((googleMaps) => {
         if (!isMounted || !googleMapRef.current) return;
 
-        const gMaps = googleMaps || window.google?.maps;
+        if (googleMaps.engine === 'leaflet') {
+          const L = googleMaps.maps;
+          let map = leafletMapInstance;
+          if (!map) {
+            map = L.map(googleMapRef.current, { zoomControl: true }).setView(
+              [googleFraming.center.lat, googleFraming.center.lng], googleFraming.zoom
+            );
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
+            }).addTo(map);
+            setLeafletMapInstance(map);
+          } else {
+            map.setView([googleFraming.center.lat, googleFraming.center.lng], googleFraming.zoom);
+          }
+          markersRef.current.forEach(m => m.remove?.());
+          boundaryLayersRef.current.forEach(layer => layer.remove?.());
+          markersRef.current = [];
+          const visibleHubs = (pollingCentreHubs.length ? pollingCentreHubs : constituencyHubs)
+            .filter(h => {
+              const lat = Number(h.latitude ?? h.lat);
+              const lng = Number(h.longitude ?? h.lng);
+              return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && lat !== 0 && lng !== 0;
+            })
+            .slice(0, 500);
+          visibleHubs.forEach(hub => {
+            const lat = Number(hub.latitude ?? hub.lat);
+            const lng = Number(hub.longitude ?? hub.lng);
+            const marker = createLeafletPin({
+              L, map, position: { lat, lng }, title: hub.name,
+              pinColor: hub.leadColor || FORMATION_COLORS.MUTED,
+              streamsCount: hub.streamsCount || 1,
+              popupHtml: `<strong>${String(hub.name || 'Polling Centre')}</strong><br>${Number(hub.registeredVoters || hub.totalRegisteredVoters || 0).toLocaleString()} registered voters`
+            });
+            if (marker) markersRef.current.push(marker);
+          });
+          const bounds = L.latLngBounds(visibleHubs.map(h => [Number(h.latitude ?? h.lat), Number(h.longitude ?? h.lng)]));
+          if (visibleHubs.length > 1 && bounds.isValid()) map.fitBounds(bounds.pad(0.08), { maxZoom: 12 });
+          boundaryLayersRef.current = renderLeafletJurisdictionBoundaries({ L, map, scopedStations });
+          setMapLoadError(null);
+          return;
+        }
+
+        const gMaps = googleMaps.maps || window.google?.maps;
         if (!gMaps || !gMaps.Map) {
           throw new Error('Google Maps JavaScript API could not be initialized.');
         }
@@ -609,7 +663,12 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
       })
       .catch((err) => {
         if (!isMounted) return;
-        setMapLoadError(err.message || 'Failed to load Google Maps SDK');
+        if (apiKey && !useLeafletFallback) {
+          setUseLeafletFallback(true);
+          setAuthFailed(true);
+          return;
+        }
+        setMapLoadError(`Map could not load: ${err.message || 'map service unavailable'}`);
       });
 
     return () => {
@@ -622,8 +681,10 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
         else if ('map' in m) m.map = null;
       });
       markersRef.current = [];
+      boundaryLayersRef.current.forEach(layer => layer.remove?.());
+      boundaryLayersRef.current = [];
     };
-  }, [mapMode, apiKey, activeLayer, pollingCentreHubs, constituencyHubs, selectedConstituency, googleFraming, agents]);
+  }, [mapMode, apiKey, useLeafletFallback, activeLayer, pollingCentreHubs, constituencyHubs, selectedConstituency, googleFraming, agents, leafletMapInstance, scopedStations]);
 
   // Handle saving API key in localStorage
   const handleSaveApiKey = () => {
@@ -852,33 +913,8 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
         {/* Authoritative Google Map Canvas */}
         <div ref={googleMapRef} className="google-map-canvas" />
 
-        {/* Prompt when API Key is missing */}
         {!apiKey && !isResolvingApiKey && (
-          <div className="google-maps-setup-card">
-            <div style={{ display: 'inline-flex', padding: '0.75rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '50%', marginBottom: '1rem' }}>
-              <Globe size={32} color="#10b981" />
-            </div>
-            <h3>Google Maps Integration</h3>
-            <p>
-              View Kenyan satellite imagery, streets, and GPS polling station hub pins. Paste your Google Maps API Key below to activate:
-            </p>
-            <input
-              type="password"
-              className="google-maps-key-input"
-              placeholder="Paste Google Maps API key"
-              autoComplete="off"
-              spellCheck="false"
-              value={apiKeyInput}
-              onChange={(e) => setApiKeyInput(e.target.value)}
-            />
-            <small className="google-maps-key-help">Use a key restricted to this site and the Maps JavaScript API.</small>
-            <div className="google-maps-actions">
-              <button type="button" className="btn btn-primary btn-sm" onClick={handleSaveApiKey} disabled={!apiKeyInput.trim()}>
-                <CheckCircle size={14} />
-                Save & Activate
-              </button>
-            </div>
-          </div>
+          <div className="map-provider-badge" role="status">OpenStreetMap · live station coordinates</div>
         )}
 
         {isResolvingApiKey && !apiKey && (
