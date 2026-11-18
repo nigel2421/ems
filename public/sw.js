@@ -1,5 +1,5 @@
 // KuraTech Offline Service Worker for Field Agent PWA (QA OFF-01..OFF-09)
-const CACHE_NAME = 'ems-pwa-v2';
+const CACHE_NAME = 'ems-pwa-v3';
 const ASSETS_TO_CACHE = [
   '/index.html',
   '/favicon.svg',
@@ -22,9 +22,15 @@ self.addEventListener('activate', (event) => {
           if (key !== CACHE_NAME) return caches.delete(key);
         })
       )
-    )
+    ).then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
+      .then((clients) => Promise.all(clients.map((client) => {
+        const clientUrl = new URL(client.url);
+        if (clientUrl.origin !== self.location.origin) return null;
+        if (clientUrl.pathname !== '/' && clientUrl.pathname !== '/admin.html') return null;
+        return client.navigate(client.url).catch(() => null);
+      })))
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
