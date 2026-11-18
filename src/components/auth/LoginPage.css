@@ -189,6 +189,13 @@
   color: #111;
 }
 
+.auth-wordmark img {
+  display: block;
+  width: 116px;
+  height: auto;
+  border-radius: 4px;
+}
+
 .auth-wordmark-dot {
   width: 18px;
   height: 18px;
@@ -570,6 +577,14 @@
   position: relative;
   z-index: 1;
   gap: 12px;
+}
+
+.auth-brand-logo {
+  display: block;
+  width: min(290px, 100%);
+  height: auto;
+  border-radius: 8px;
+  background: #fff;
 }
 
 .auth-brand-heading > div:last-child {

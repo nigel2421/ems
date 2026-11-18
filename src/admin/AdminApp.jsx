@@ -83,8 +83,8 @@ export const AdminApp = () => {
           {asideOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <ShieldCheck size={20} color="#0ea5e9" />
-          <strong style={{ fontSize: '0.95rem', fontWeight: 800 }}>Kuratech Ops Console</strong>
+          <img src="/kuratech-logo.png" alt="Kuratech" style={{ width: 118, height: 'auto', borderRadius: 4, background: '#fff' }} />
+          <strong style={{ fontSize: '0.72rem', fontWeight: 800 }}>OPS</strong>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
           <LanguageSwitcher compact={true} />
@@ -112,18 +112,10 @@ export const AdminApp = () => {
       {/* Left Menu Bar / Authoritative Admin Sidebar */}
       <aside className={`admin-aside ${asideOpen ? 'is-open' : ''}`}>
         <div className="admin-aside-brand">
-          <div
-            className="admin-aside-mark"
-            style={{
-              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-              boxShadow: '0 4px 12px rgba(2, 132, 199, 0.35)'
-            }}
-          >
-            <ShieldCheck size={20} color="#fff" />
-          </div>
+          <img src="/kuratech-logo.png" alt="Kuratech" style={{ display: 'block', width: 138, maxWidth: '42%', height: 'auto', borderRadius: 4, background: '#fff' }} />
           <div>
             <strong>
-              Kuratech <span className="admin-pro-badge" style={{ background: 'rgba(14,165,233,0.15)', color: '#0ea5e9', borderColor: 'rgba(14,165,233,0.3)' }}>OPS</span>
+              <span className="admin-pro-badge" style={{ background: 'rgba(14,165,233,0.15)', color: '#0ea5e9', borderColor: 'rgba(14,165,233,0.3)' }}>OPS</span>
             </strong>
             <span>ADMIN REALM · Isolated</span>
           </div>

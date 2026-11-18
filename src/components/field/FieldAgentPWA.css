@@ -30,6 +30,14 @@
   gap: 8px;
 }
 
+.field-brand img {
+  display: block;
+  width: 118px;
+  height: auto;
+  border-radius: 4px;
+  background: #fff;
+}
+
 .connectivity-badge {
   display: inline-flex;
   align-items: center;

@@ -109,8 +109,7 @@ export const LoginModal = ({ isAdminConsole = false }) => {
       <div className="auth-frame">
         <aside className="auth-brand">
           <div className="auth-brand-heading">
-            <div className="auth-brand-mark"><Map size={19} /></div>
-            <div><strong>KuraTech</strong><span>Election operations platform</span></div>
+            <img className="auth-brand-logo" src="/kuratech-logo.png" alt="Kuratech" />
           </div>
 
           <div className="auth-brand-copy">
@@ -147,8 +146,7 @@ export const LoginModal = ({ isAdminConsole = false }) => {
         <main className="auth-panel">
           <header className="auth-panel-top">
             <div className="auth-wordmark">
-              <span className="auth-wordmark-dot" />
-              EMS
+              <img src="/kuratech-logo.png" alt="Kuratech" />
             </div>
             <ThemeSwitcher compact={true} />
           </header>

@@ -176,6 +176,16 @@ html.dark .admin-role-btn.is-active,
   border-bottom: 1px solid var(--admin-line);
 }
 
+.admin-brand-image {
+  display: block;
+  width: 138px;
+  max-width: 42%;
+  height: auto;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  background: #fff;
+}
+
 .admin-aside-mark {
   width: 36px;
   height: 36px;
@@ -1396,6 +1406,13 @@ html.dark .admin-role-btn.is-active,
     width: 18px;
     height: 18px;
     color: var(--admin-green);
+  }
+
+  .admin-mobile-brand img {
+    width: 108px;
+    height: auto;
+    border-radius: 4px;
+    background: #fff;
   }
 
   .admin-mobile-brand strong {

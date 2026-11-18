@@ -218,6 +218,19 @@ body {
   letter-spacing: -0.02em;
 }
 
+.kuratech-brand-image {
+  display: block;
+  width: 138px;
+  height: auto;
+  border-radius: 4px;
+  background: #fff;
+  flex: 0 0 auto;
+}
+
+.kuratech-brand-image-small {
+  width: 108px;
+}
+
 html.dark .brand-logo,
 [data-theme="dark"] .brand-logo {
   color: #F4F1EA;

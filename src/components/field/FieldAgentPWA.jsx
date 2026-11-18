@@ -116,7 +116,8 @@ export const FieldAgentPWA = ({ user, onBackToDashboard }) => {
       {/* Header Bar */}
       <header className="field-header">
         <div className="field-brand">
-          <span>KuraTech FIELD</span>
+          <img src="/kuratech-logo.png" alt="Kuratech Field" />
+          <span>FIELD</span>
         </div>
         <div className={`connectivity-badge ${isOnline ? 'online' : 'offline'}`}>
           <span className="pulse-dot"></span>

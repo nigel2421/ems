@@ -7,7 +7,6 @@ import { ThemeSwitcher } from '../common/ThemeSwitcher';
 import { AddAgentModal } from '../modules/AddAgentModal';
 import { sanitizeMediaUrl } from '../../utils/urlSanitizer';
 import {
-  Shield,
   LayoutDashboard,
   Target,
   Building2,
@@ -209,9 +208,9 @@ export const AdminLayout = ({
           </span>
         </button>
         <button type="button" className="admin-mobile-brand" onClick={() => openModule('dashboard')}>
-          <Shield strokeWidth={2} />
+          <img src="/kuratech-logo.png" alt="Kuratech" />
           <strong>
-            KuraTech <span className="admin-pro-badge">PRO</span>
+            <span className="admin-pro-badge">PRO</span>
           </strong>
         </button>
       </header>
@@ -226,13 +225,9 @@ export const AdminLayout = ({
 
       <aside id="admin-aside-nav" className="admin-aside">
         <button type="button" className="admin-brand" onClick={() => openModule('dashboard')}>
-          <div className="admin-aside-mark">
-            <Shield strokeWidth={2} />
-          </div>
+          <img className="admin-brand-image" src="/kuratech-logo.png" alt="Kuratech" />
           <div>
-            <strong>
-              KuraTech <span className="admin-pro-badge">PRO</span>
-            </strong>
+            <strong><span className="admin-pro-badge">PRO</span></strong>
             <span>{t('app.subtitle', 'Election Management')}</span>
           </div>
         </button>

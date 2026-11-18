@@ -116,10 +116,7 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
           {/* Left: Brand Identity */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <div className="brand-logo" onClick={() => onOpenModule && onOpenModule('dashboard')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Shield style={{ width: '22px', height: '22px', color: 'var(--accent-primary)' }} />
-              <span style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-                KuraTech
-              </span>
+              <img src="/kuratech-logo.png" alt="Kuratech" className="kuratech-brand-image" />
               <span style={{ fontSize: '0.65rem', fontWeight: '800', padding: '0.15rem 0.4rem', background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent-primary)', border: '1px solid var(--border-glow)', borderRadius: '4px' }}>
                 PRO
               </span>
@@ -364,7 +361,7 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
             {/* Drawer Title Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Shield style={{ width: '20px', height: '20px', color: 'var(--accent-primary)' }} />
+                <img src="/kuratech-logo.png" alt="" className="kuratech-brand-image kuratech-brand-image-small" />
                 <span style={{ fontWeight: '800', fontSize: '1rem', color: 'var(--text-primary)' }}>KuraTech System Modules</span>
               </div>
               <button
