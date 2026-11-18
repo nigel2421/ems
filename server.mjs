@@ -413,9 +413,13 @@ const server = http.createServer((req, res) => {
     req.on('data', chunk => { body += chunk; });
     req.on('end', () => {
       try {
-        const { email, password, realm } = JSON.parse(body || '{}');
+        const { email, password } = JSON.parse(body || '{}');
         const cleanEmail = String(email || '').trim().toLowerCase();
-        const effectiveRealm = (realm === 'admin' || currentRealm === 'admin') ? 'admin' : currentRealm;
+        const requestHost = String(hostHeader || '').split(':')[0].toLowerCase();
+        const isLocalDevHost = requestHost === 'localhost' || requestHost === '127.0.0.1';
+        const effectiveRealm = hostRealm === 'admin' || (isLocalDevHost && currentRealm === 'admin')
+          ? 'admin'
+          : 'user';
 
         // Check server-side lockout
         const lock = getLockoutState(cleanEmail);
@@ -484,6 +488,24 @@ const server = http.createServer((req, res) => {
         // REALM & DOMAIN ENFORCEMENT
         // ================================================================
         const userIsAdmin = isAdminRole(user.role);
+
+        if (userIsAdmin && effectiveRealm !== 'admin') {
+          appendServerAuditLog({
+            userId: user.id,
+            userName: user.name,
+            role: user.role,
+            action: 'ADMIN_LOGIN_WRONG_DOMAIN',
+            details: `Admin account (${cleanEmail}) attempted login on the user domain (${hostHeader}). Entry denied.`,
+            ipAddress: clientIp
+          });
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: false,
+            code: 'ADMIN_LOGIN_WRONG_DOMAIN',
+            error: 'Administrator accounts can only sign in at ops-konsole.kuratech.site.'
+          }));
+          return;
+        }
 
         // Non-Admin user attempting login on admin console realm (ops-konsole.kuratech.site or admin.html) -> DENY
         if (!userIsAdmin && effectiveRealm === 'admin') {

@@ -756,6 +756,20 @@
   line-height: 1.55;
 }
 
+.auth-admin-hint {
+  margin: -16px 0 22px;
+  color: #69766f;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.auth-admin-hint a {
+  color: #08784c;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .auth-input {
   height: 50px;
   padding: 0 16px;
