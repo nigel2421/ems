@@ -58,6 +58,29 @@ jobs:
           target: "/var/www/kutatech-api"
           strip_components: 0
 
+      - name: Activate site and admin Nginx hosts
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          fingerprint: ${{ secrets.VPS_FINGERPRINT }}
+          script: |
+            set -eu
+            if [ "$(id -u)" -eq 0 ]; then
+              SUDO=""
+            else
+              sudo -n true
+              SUDO="sudo -n"
+            fi
+            $SUDO install -m 0644 /var/www/kutatech-api/deploy/nginx/kuratech.site.conf /etc/nginx/sites-available/kuratech.site.conf
+            $SUDO install -m 0644 /var/www/kutatech-api/deploy/nginx/ops-konsole.kuratech.site.conf /etc/nginx/sites-available/ops-konsole.kuratech.site.conf
+            $SUDO ln -sfn /etc/nginx/sites-available/kuratech.site.conf /etc/nginx/sites-enabled/kuratech.site.conf
+            $SUDO ln -sfn /etc/nginx/sites-available/ops-konsole.kuratech.site.conf /etc/nginx/sites-enabled/ops-konsole.kuratech.site.conf
+            $SUDO nginx -t
+            $SUDO systemctl reload nginx
+
       - name: Restart backend on VPS
         uses: appleboy/ssh-action@v1.0.3
         env:

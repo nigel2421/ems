@@ -131,6 +131,7 @@ export const onGoogleMapsAuthFailure = (callback) => {
 
 // Singleton loader tracking
 let optionsSet = false;
+let configuredLoaderKey = '';
 let googleMapsPromise = null;
 
 /**
@@ -146,19 +147,25 @@ export const loadGoogleMaps = async (customKey = '') => {
     return window.google.maps;
   }
 
+  if (optionsSet && configuredLoaderKey !== key.trim()) {
+    throw new Error('The Maps key changed after the API was initialized. Reload the page to use the new key.');
+  }
+
   if (!googleMapsPromise) {
+    if (!optionsSet) {
+      setOptions({ key: key.trim(), v: 'weekly' });
+      optionsSet = true;
+      configuredLoaderKey = key.trim();
+    }
+
     googleMapsPromise = (async () => {
-      if (!optionsSet) {
-        setOptions({
-          key: key.trim(),
-          v: 'weekly'
-        });
-        optionsSet = true;
-      }
       await importLibrary('maps');
       await importLibrary('marker');
       return window.google?.maps;
     })();
+    googleMapsPromise.catch(() => {
+      googleMapsPromise = null;
+    });
   }
 
   return googleMapsPromise;

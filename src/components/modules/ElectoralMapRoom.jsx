@@ -1,5 +1,5 @@
 // ====================================================================
-// KuraTech ELECTORAL MAP ROOM COMPONENT
+// CI-EMS ELECTORAL MAP ROOM COMPONENT
 // Authoritative Geospatial Command Interface:
 // - Google Maps Engine (Satellite / Hybrid / Roadmap)
 // - Polling Centre Stream Hubs (Super-imposed stream pins with count badges)
@@ -10,28 +10,17 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { useTheme } from '../../context/ThemeContext';
 import {
   resolveGoogleMapFraming,
   createMapPin,
-  createLeafletPin,
-  renderLeafletJurisdictionBoundaries,
   formatInfoWindowHtml,
   getGoogleMapsApiKey,
   setGoogleMapsApiKey,
-  fetchGoogleMapsApiKeyFromServer,
-  saveGoogleMapsApiKeyToServer,
   loadGoogleMaps,
-  loadLeaflet,
   onGoogleMapsAuthFailure
 } from '../../services/googleMapsService';
 import { FORMATION_COLORS, MAP_LAYERS, buildRegionMetricsIndex } from '../../utils/mapAnalytics';
 import { canAccessLocation, resolveCanonicalCounty, resolveCanonicalConstituency } from '../../utils/rbac';
-import {
-  resolveJurisdiction,
-  hasNationalGeographyAccess,
-  filterStationsByJurisdiction
-} from '../../utils/jurisdictionAnalytics';
 import {
   Map as MapIcon,
   ChevronRight,
@@ -54,26 +43,15 @@ import './ElectoralMapRoom.css';
 export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => {
   const { currentUser } = useAuth();
   const { geography, tallyResults = [], stationIntelligence = {}, agents = [] } = useData();
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
-
-  // Geographic RBAC resolution
-  const isNational = hasNationalGeographyAccess(currentUser);
-  const userJurisdiction = useMemo(
-    () => resolveJurisdiction(currentUser, geography),
-    [currentUser, geography]
-  );
 
   // Engine Mode: 'google_hybrid' (Satellite + Roads) | 'google_roadmap' (Clean Streets)
   const [mapMode, setMapMode] = useState('google_hybrid');
   const [apiKey, setApiKey] = useState(getGoogleMapsApiKey());
-  const [serverKeyChecked, setServerKeyChecked] = useState(() => Boolean(getGoogleMapsApiKey()));
-  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [apiKeyInput, setApiKeyInput] = useState(() => getGoogleMapsApiKey());
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [mapLoadError, setMapLoadError] = useState(null);
   const [authFailed, setAuthFailed] = useState(false);
   const [googleMapInstance, setGoogleMapInstance] = useState(null);
-  const [leafletMapInstance, setLeafletMapInstance] = useState(null);
 
   // Active Map Layer
   const [activeLayer, setActiveLayer] = useState(MAP_LAYERS.LEAD);
@@ -88,15 +66,9 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
 
   // DOM refs
   const googleMapRef = useRef(null);
-  const leafletMapRef = useRef(null);
-  const leafletLayersRef = useRef([]);
-  const leafletMarkersRef = useRef([]);
   const markersRef = useRef([]);
   const infoWindowRef = useRef(null);
   const tooltipRef = useRef(null);
-
-  // Determine whether to render the automatic OpenStreetMap / Esri Satellite fallback engine
-  const useFallbackMap = (serverKeyChecked && !apiKey) || authFailed || Boolean(mapLoadError);
 
   // High-performance single-pass pre-indexed metrics for all 47 counties & constituencies
   const regionMetricsIndex = useMemo(() => {
@@ -115,27 +87,6 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
       setAuthFailed(true);
     });
   }, []);
-
-  // Auto-resolve Google Maps API key from VPS backend config if not set locally
-  useEffect(() => {
-    if (!apiKey) {
-      let isMounted = true;
-      fetchGoogleMapsApiKeyFromServer()
-        .then((serverKey) => {
-          if (isMounted && serverKey) {
-            setApiKey(serverKey);
-          }
-        })
-        .finally(() => {
-          if (isMounted) {
-            setServerKeyChecked(true);
-          }
-        });
-      return () => { isMounted = false; };
-    } else {
-      setServerKeyChecked(true);
-    }
-  }, [apiKey]);
 
   // Handle explicit initial framing passed from Polling Station Intelligence or deep-links
   useEffect(() => {
@@ -167,19 +118,12 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
     if (!currentUser || !geography) return;
     if (initialCountyId || initialConstituencyId) return;
 
-    // For non-national users, lock initial administrative selection strictly to assigned scope
-    if (!isNational && userJurisdiction) {
-      if (userJurisdiction.county) setSelectedCounty(userJurisdiction.county);
-      if (userJurisdiction.constituency) setSelectedConstituency(userJurisdiction.constituency);
-      return;
-    }
-
     // 1. MP or Constituency-level role
     if (currentUser.constituency || (currentUser.role && currentUser.role.includes('MP'))) {
       const canonicalConst = resolveCanonicalConstituency(currentUser.constituency || currentUser.assignedEntity);
       const foundConst = (geography.constituencies || []).find(c => {
         return resolveCanonicalConstituency(c.id) === canonicalConst ||
-          resolveCanonicalConstituency(c.name) === canonicalConst;
+               resolveCanonicalConstituency(c.name) === canonicalConst;
       });
 
       if (foundConst) {
@@ -195,7 +139,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
       const canonicalCounty = resolveCanonicalCounty(currentUser.county || currentUser.assignedEntity);
       const foundCounty = (geography.counties || []).find(c => {
         return resolveCanonicalCounty(c.id) === canonicalCounty ||
-          resolveCanonicalCounty(c.name) === canonicalCounty;
+               resolveCanonicalCounty(c.name) === canonicalCounty;
       });
 
       if (foundCounty) {
@@ -203,7 +147,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
         setSelectedConstituency(null);
       }
     }
-  }, [currentUser, geography, isNational, userJurisdiction, initialCountyId, initialConstituencyId]);
+  }, [currentUser, geography]);
 
   // Google Maps Framing (center & zoom)
   const googleFraming = useMemo(
@@ -217,14 +161,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
       googleMapInstance.panTo(googleFraming.center);
       googleMapInstance.setZoom(googleFraming.zoom);
     }
-    if (leafletMapInstance && googleFraming?.center) {
-      leafletMapInstance.setView(
-        [googleFraming.center.lat, googleFraming.center.lng],
-        googleFraming.zoom || 12,
-        { animate: true }
-      );
-    }
-  }, [googleMapInstance, leafletMapInstance, googleFraming]);
+  }, [googleMapInstance, googleFraming]);
 
   // --------------------------------------------------------------------
   // SCOPED POLLING STATIONS (Role-Gated & Filter-Aware)
@@ -232,12 +169,6 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
   const scopedStations = useMemo(() => {
     const stations = geography?.pollingStations || [];
     if (!stations.length) return [];
-
-    // Strictly enforce geographic RBAC for scoped (non-national) accounts
-    // (e.g. MCA gets ONLY stations in their specific ward, MP in constituency)
-    if (!isNational) {
-      return filterStationsByJurisdiction(stations, userJurisdiction);
-    }
 
     // 1. If a constituency is selected, filter stations to that constituency
     if (selectedConstituency) {
@@ -261,7 +192,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
       );
     }
 
-    // 3. Fallback check for any other role scope
+    // 3. If authenticated user has restricted role scope, filter strictly
     if (currentUser && currentUser.role !== 'Super Admin' && currentUser.role !== 'Admin' && currentUser.assignedEntity !== 'GLOBAL') {
       return stations.filter(ps => canAccessLocation(currentUser, {
         county: ps.countyName || ps.county,
@@ -274,7 +205,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
 
     // 4. Default National View
     return stations;
-  }, [geography, currentUser, isNational, userJurisdiction, selectedCounty, selectedConstituency]);
+  }, [geography, currentUser, selectedCounty, selectedConstituency]);
 
   // --------------------------------------------------------------------
   // POLLING CENTRE HUBS (Super-Imposed Stream Aggregation)
@@ -483,7 +414,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
             center: googleFraming.center,
             zoom: googleFraming.zoom,
             mapTypeId,
-            mapId: 'CI_EMS_MAP_ID',
+            mapId: import.meta.env?.VITE_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID',
             disableDefaultUI: false,
             zoomControl: true,
             mapTypeControl: false,
@@ -674,267 +605,22 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
     };
   }, [mapMode, apiKey, activeLayer, pollingCentreHubs, constituencyHubs, selectedConstituency, googleFraming, agents]);
 
-  // --------------------------------------------------------------------
-  // AUTOMATIC HYBRID FALLBACK ENGINE (Leaflet: Esri Satellite + OSM Roadmap)
-  // Activates seamlessly when Google Maps API Key is unconfigured or restricted
-  // --------------------------------------------------------------------
-  useEffect(() => {
-    if (!useFallbackMap || !leafletMapRef.current) return;
-
-    let isMounted = true;
-    let moveEndHandler = null;
-    let activeMap = leafletMapInstance;
-
-    loadLeaflet()
-      .then((L) => {
-        if (!isMounted || !leafletMapRef.current) return;
-
-        if (!activeMap) {
-          activeMap = L.map(leafletMapRef.current, {
-            center: [googleFraming.center.lat, googleFraming.center.lng],
-            zoom: googleFraming.zoom || 12,
-            zoomControl: true,
-            attributionControl: true
-          });
-          setLeafletMapInstance(activeMap);
-        }
-
-        // Remove previous tile layers
-        leafletLayersRef.current.forEach((layer) => {
-          try { activeMap.removeLayer(layer); } catch { /* ignore */ }
-        });
-        leafletLayersRef.current = [];
-
-        if (mapMode === 'google_roadmap') {
-          const roadLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap contributors'
-          }).addTo(activeMap);
-          leafletLayersRef.current.push(roadLayer);
-        } else {
-          // Satellite + Hybrid Labels & Boundaries (Esri World Imagery + Esri Reference Overlays — 100% watermark-free)
-          const satLayer = L.tileLayer(
-            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            {
-              maxZoom: 19,
-              attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
-            }
-          ).addTo(activeMap);
-          const roadsOverlay = L.tileLayer(
-            'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
-            {
-              maxZoom: 19,
-              pane: 'overlayPane',
-              opacity: 0.85
-            }
-          ).addTo(activeMap);
-          const labelsLayer = L.tileLayer(
-            'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-            {
-              maxZoom: 19,
-              pane: 'overlayPane'
-            }
-          ).addTo(activeMap);
-          leafletLayersRef.current.push(satLayer, roadsOverlay, labelsLayer);
-        }
-
-        setTimeout(() => {
-          if (isMounted && activeMap) {
-            activeMap.invalidateSize();
-          }
-        }, 120);
-
-        const updateLeafletMarkers = () => {
-          if (!activeMap || !isMounted) return;
-          const currentZoom = activeMap.getZoom() || googleFraming.zoom || 8;
-          const bounds = activeMap.getBounds();
-
-          leafletMarkersRef.current.forEach((m) => {
-            try { activeMap.removeLayer(m); } catch { /* ignore */ }
-          });
-          leafletMarkersRef.current = [];
-
-          // Render County, Constituency, and Ward boundaries + bold name labels
-          const boundaryLayers = renderLeafletJurisdictionBoundaries({
-            L,
-            map: activeMap,
-            scopedStations,
-            currentZoom
-          });
-          if (Array.isArray(boundaryLayers) && boundaryLayers.length > 0) {
-            leafletMarkersRef.current.push(...boundaryLayers);
-          }
-
-          // 1. High-Level Overview (Zoom <= 10 and no specific constituency chosen)
-          if (currentZoom <= 10 && !selectedConstituency && constituencyHubs.length > 1) {
-            constituencyHubs.forEach((cHub) => {
-              let pinColor = FORMATION_COLORS.CAND_A;
-              if (activeLayer === MAP_LAYERS.REPORTING) {
-                pinColor = cHub.reportingPct === 100 ? '#10b981' : cHub.reportingPct > 0 ? '#0891b2' : '#d97706';
-              } else if (activeLayer === MAP_LAYERS.TURNOUT) {
-                pinColor = cHub.turnoutPct > 65 ? '#10b981' : cHub.turnoutPct > 40 ? '#0284c7' : '#475569';
-              } else {
-                pinColor = cHub.leadColor;
-              }
-
-              const marker = createLeafletPin({
-                L,
-                map: activeMap,
-                position: { lat: Number(cHub.latitude), lng: Number(cHub.longitude) },
-                title: `${cHub.name} (${cHub.streamsCount} stations)`,
-                labelText: cHub.name,
-                pinColor,
-                streamsCount: cHub.streamsCount,
-                onClick: () => {
-                  activeMap.setView([Number(cHub.latitude), Number(cHub.longitude)], 12, { animate: true });
-                  setSelectedConstituency(cHub.constituency);
-                }
-              });
-              if (marker) leafletMarkersRef.current.push(marker);
-            });
-            return;
-          }
-
-          // 2. Local Drill-Down: zoom >= 11 or selectedConstituency chosen
-          let candidates = pollingCentreHubs;
-          if (bounds) {
-            const inBounds = candidates.filter((hub) => {
-              if (hub.latitude == null || hub.longitude == null) return false;
-              return bounds.contains([Number(hub.latitude), Number(hub.longitude)]);
-            });
-            if (inBounds.length > 0) candidates = inBounds;
-          }
-
-          const clampedHubs = [...candidates]
-            .sort((a, b) => {
-              const riskScore = (r) => (r === 'Severe' ? 3 : r === 'High' ? 2 : r === 'Medium' ? 1 : 0);
-              const rDiff = riskScore(b.riskLevel) - riskScore(a.riskLevel);
-              if (rDiff !== 0) return rDiff;
-              return (b.registeredVoters || 0) - (a.registeredVoters || 0);
-            })
-            .slice(0, 35);
-
-          clampedHubs.forEach((hub) => {
-            const lat = hub.latitude != null ? hub.latitude : googleFraming.center.lat;
-            const lng = hub.longitude != null ? hub.longitude : googleFraming.center.lng;
-
-            let pinColor = FORMATION_COLORS.MUTED;
-            if (activeLayer === MAP_LAYERS.RISK) {
-              pinColor = hub.riskLevel === 'Severe' ? '#ef4444' : hub.riskLevel === 'High' ? '#f97316' : hub.riskLevel === 'Medium' ? '#eab308' : '#10b981';
-            } else if (activeLayer === MAP_LAYERS.REPORTING) {
-              pinColor = hub.reportingPct === 100 ? '#10b981' : hub.reportingPct > 0 ? '#0891b2' : '#d97706';
-            } else if (activeLayer === MAP_LAYERS.TURNOUT) {
-              pinColor = hub.turnoutPct > 65 ? '#10b981' : hub.turnoutPct > 40 ? '#0284c7' : '#475569';
-            } else {
-              pinColor = hub.leadColor;
-            }
-
-            const primaryAgent = (agents || []).find((a) =>
-              hub.streams.some((s) => s.id === a.assignedStationId)
-            );
-
-            const popupHtml = formatInfoWindowHtml(
-              hub,
-              { reportingPct: hub.reportingPct, streamsCount: hub.streamsCount, streams: hub.streams },
-              { riskLevel: hub.riskLevel },
-              primaryAgent
-            );
-
-            const marker = createLeafletPin({
-              L,
-              map: activeMap,
-              position: { lat: Number(lat), lng: Number(lng) },
-              title: `${hub.name} (${hub.streamsCount} streams)`,
-              labelText: currentZoom >= 12 ? hub.name : '',
-              pinColor,
-              streamsCount: hub.streamsCount,
-              popupHtml,
-              onClick: () => {
-                setDrawerData({
-                  region: hub,
-                  level: 'Polling Centre Hub',
-                  metrics: {
-                    registeredVoters: hub.totalRegisteredVoters,
-                    stationsCount: hub.streamsCount,
-                    talliesCount: hub.talliesCount,
-                    reportingPct: hub.reportingPct,
-                    turnoutPct: hub.turnoutPct,
-                    totalVotesCast: hub.totalVotesCast,
-                    candAVotes: hub.candAVotes,
-                    candBVotes: hub.candBVotes,
-                    candCVotes: hub.candCVotes,
-                    leader: hub.leader,
-                    leadColor: pinColor,
-                    margin: hub.margin
-                  },
-                  streams: hub.streams
-                });
-                setDrawerOpen(true);
-              }
-            });
-
-            if (marker) leafletMarkersRef.current.push(marker);
-          });
-        };
-
-        updateLeafletMarkers();
-        moveEndHandler = updateLeafletMarkers;
-        activeMap.on('moveend', moveEndHandler);
-      })
-      .catch((err) => {
-        console.warn('[ElectoralMapRoom] Fallback map failed to initialize:', err);
-      });
-
-    return () => {
-      isMounted = false;
-      if (activeMap && moveEndHandler) {
-        try { activeMap.off('moveend', moveEndHandler); } catch { /* ignore */ }
+  // Handle saving API key in localStorage
+  const handleSaveApiKey = () => {
+    const nextApiKey = apiKeyInput.trim();
+    if (nextApiKey) {
+      setGoogleMapsApiKey(nextApiKey);
+      if (apiKey && nextApiKey !== apiKey && typeof window !== 'undefined') {
+        window.location.reload();
+        return;
       }
-      leafletMarkersRef.current.forEach((m) => {
-        try { if (activeMap) activeMap.removeLayer(m); } catch { /* ignore */ }
-      });
-      leafletMarkersRef.current = [];
-    };
-  }, [useFallbackMap, leafletMapInstance, mapMode, isDark, activeLayer, pollingCentreHubs, constituencyHubs, selectedConstituency, googleFraming, agents]);
-
-  // Handle saving API key in localStorage and persisting globally on server for admins
-  const handleSaveApiKey = async () => {
-    const key = apiKeyInput.trim();
-    if (key) {
-      setGoogleMapsApiKey(key);
-      setApiKey(key);
-      setAuthFailed(false);
-      setMapLoadError(null);
+      setApiKey(nextApiKey);
       setShowKeyModal(false);
       setMapMode('google_hybrid');
-
-      if (currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') {
-        try {
-          await saveGoogleMapsApiKeyToServer(key);
-        } catch (err) {
-          console.warn('[ElectoralMapRoom] Failed to persist key to server:', err);
-        }
-      }
     }
   };
 
   const handleResetToNational = () => {
-    if (!isNational) {
-      // Re-frame strictly to user's assigned jurisdiction bounds
-      if (googleMapInstance && googleFraming?.center) {
-        googleMapInstance.panTo(googleFraming.center);
-        googleMapInstance.setZoom(googleFraming.zoom);
-      }
-      if (leafletMapInstance && googleFraming?.center) {
-        leafletMapInstance.setView(
-          [googleFraming.center.lat, googleFraming.center.lng],
-          googleFraming.zoom || 12,
-          { animate: true }
-        );
-      }
-      setDrawerOpen(false);
-      return;
-    }
     setSelectedCounty(null);
     setSelectedConstituency(null);
     setDrawerOpen(false);
@@ -942,43 +628,10 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
       googleMapInstance.setCenter({ lat: 0.0236, lng: 37.9062 });
       googleMapInstance.setZoom(6);
     }
-    if (leafletMapInstance) {
-      leafletMapInstance.setView([0.0236, 37.9062], 6, { animate: true });
-    }
   };
 
-  // Dynamically synchronize Google Maps roadmap styles with application theme
-  useEffect(() => {
-    if (!googleMapInstance) return;
-    if (mapMode === 'google_roadmap') {
-      const darkRoadmapStyles = [
-        { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
-        { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
-        { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
-        { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
-        { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
-        { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#263c3f' }] },
-        { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#6b9a76' }] },
-        { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#38414e' }] },
-        { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#212a37' }] },
-        { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9ca5b3' }] },
-        { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#746855' }] },
-        { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#1f2835' }] },
-        { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#f3d19c' }] },
-        { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2f3948' }] },
-        { featureType: 'transit.station', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
-        { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#17263c' }] },
-        { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#515c6d' }] },
-        { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{ color: '#17263c' }] }
-      ];
-      googleMapInstance.setOptions({ styles: isDark ? darkRoadmapStyles : [] });
-    } else {
-      googleMapInstance.setOptions({ styles: [] });
-    }
-  }, [googleMapInstance, mapMode, isDark]);
-
   return (
-    <div className={`map-room-container ${isDark ? 'dark' : 'light'}`}>
+    <div className="map-room-container">
       {/* Top Bar with Map Mode, Layer Selector & Breadcrumbs */}
       <header className="map-room-toolbar">
         <div className="map-room-title">
@@ -986,23 +639,16 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
           <div>
             <h2>Electoral Map Room</h2>
             <div className="map-room-breadcrumbs">
-              {isNational ? (
-                <button type="button" onClick={handleResetToNational}>
-                  Kenya National
-                </button>
-              ) : (
-                <span className="map-breadcrumb-locked" title="Strictly Gated Operational Scope">
-                  <Lock size={12} style={{ marginRight: 3, verticalAlign: 'middle' }} />
-                  {userJurisdiction?.title || 'Operational Scope'} (Strictly Gated)
-                </span>
-              )}
-              {selectedCounty && isNational && (
+              <button type="button" onClick={handleResetToNational}>
+                Kenya National
+              </button>
+              {selectedCounty && (
                 <>
                   <ChevronRight size={12} />
                   <span>{selectedCounty.name}</span>
                 </>
               )}
-              {selectedConstituency && isNational && (
+              {selectedConstituency && (
                 <>
                   <ChevronRight size={12} />
                   <span>{selectedConstituency.name}</span>
@@ -1013,107 +659,64 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
 
           {/* Quick County / Constituency Filter Dropdowns */}
           <div className="map-quick-filter">
-            {isNational ? (
-              <>
-                <select
-                  value={selectedCounty?.id || ''}
-                  onChange={(e) => {
-                    const cId = e.target.value;
-                    if (!cId) {
-                      handleResetToNational();
-                    } else {
-                      const found = (geography?.counties || []).find(c => c.id === cId);
-                      if (found) {
-                        setSelectedCounty(found);
-                        setSelectedConstituency(null);
-                      }
+            <select
+              value={selectedCounty?.id || ''}
+              onChange={(e) => {
+                const cId = e.target.value;
+                if (!cId) {
+                  handleResetToNational();
+                } else {
+                  const found = (geography?.counties || []).find(c => c.id === cId);
+                  if (found) {
+                    setSelectedCounty(found);
+                    setSelectedConstituency(null);
+                  }
+                }
+              }}
+              className="map-filter-select"
+              title="Filter by County"
+            >
+              <option value="">All 47 Counties</option>
+              {(geography?.counties || []).map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+
+            {selectedCounty && (
+              <select
+                value={selectedConstituency?.id || ''}
+                onChange={(e) => {
+                  const constId = e.target.value;
+                  if (!constId) {
+                    setSelectedConstituency(null);
+                  } else {
+                    const found = (geography?.constituencies || []).find(c => c.id === constId);
+                    if (found) {
+                      setSelectedConstituency(found);
                     }
-                  }}
-                  className="map-filter-select"
-                  title="Filter by County"
-                >
-                  <option value="">All 47 Counties</option>
-                  {(geography?.counties || []).map(c => (
+                  }
+                }}
+                className="map-filter-select"
+                title="Filter by Constituency"
+              >
+                <option value="">All Constituencies</option>
+                {(geography?.constituencies || [])
+                  .filter(c => c.countyId === selectedCounty.id)
+                  .map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
-                </select>
-
-                {selectedCounty && (
-                  <select
-                    value={selectedConstituency?.id || ''}
-                    onChange={(e) => {
-                      const constId = e.target.value;
-                      if (!constId) {
-                        setSelectedConstituency(null);
-                      } else {
-                        const found = (geography?.constituencies || []).find(c => c.id === constId);
-                        if (found) {
-                          setSelectedConstituency(found);
-                        }
-                      }
-                    }}
-                    className="map-filter-select"
-                    title="Filter by Constituency"
-                  >
-                    <option value="">All Constituencies</option>
-                    {(geography?.constituencies || [])
-                      .filter(c => c.countyId === selectedCounty.id)
-                      .map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                  </select>
-                )}
-              </>
-            ) : (
-              <>
-                <select
-                  disabled
-                  value={userJurisdiction?.county?.id || ''}
-                  className="map-filter-select is-locked"
-                  title="Assigned County (Locked)"
-                >
-                  <option value={userJurisdiction?.county?.id || ''}>
-                    {userJurisdiction?.county?.name || currentUser.county || 'Assigned County'} 🔒
-                  </option>
-                </select>
-
-                {userJurisdiction?.constituency && (
-                  <select
-                    disabled
-                    value={userJurisdiction?.constituency?.id || ''}
-                    className="map-filter-select is-locked"
-                    title="Assigned Constituency (Locked)"
-                  >
-                    <option value={userJurisdiction?.constituency?.id || ''}>
-                      {userJurisdiction?.constituency?.name || currentUser.constituency || 'Assigned Constituency'} 🔒
-                    </option>
-                  </select>
-                )}
-
-                {userJurisdiction?.ward && (
-                  <select
-                    disabled
-                    value={userJurisdiction?.ward?.id || ''}
-                    className="map-filter-select is-locked"
-                    title="Assigned Ward (Locked)"
-                  >
-                    <option value={userJurisdiction?.ward?.id || ''}>
-                      {userJurisdiction?.ward?.name || currentUser.ward || 'Assigned Ward'} 🔒
-                    </option>
-                  </select>
-                )}
-              </>
+              </select>
             )}
           </div>
         </div>
 
-        {/* Engine Switcher (Satellite vs Roadmap + Key Config) */}
+        {/* Engine Switcher (Google Satellite vs Roadmap) */}
         <div className="map-mode-selector">
           <button
             type="button"
             className={`map-mode-btn ${mapMode === 'google_hybrid' ? 'active' : ''}`}
             onClick={() => setMapMode('google_hybrid')}
-            title="Satellite & Roads"
+            title="Google Satellite & Roads"
           >
             <Satellite size={14} />
             <span>Satellite / Hybrid</span>
@@ -1122,22 +725,10 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
             type="button"
             className={`map-mode-btn ${mapMode === 'google_roadmap' ? 'active' : ''}`}
             onClick={() => setMapMode('google_roadmap')}
-            title="Street Roadmap"
+            title="Google Street Roadmap"
           >
             <Globe size={14} />
             <span>Roadmap</span>
-          </button>
-          <button
-            type="button"
-            className="map-mode-btn"
-            onClick={() => {
-              setApiKeyInput(apiKey || '');
-              setShowKeyModal(true);
-            }}
-            title="Configure Google Maps API Key"
-            aria-label="Configure Google Maps API Key"
-          >
-            <Key size={13} />
           </button>
         </div>
 
@@ -1174,6 +765,20 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
           >
             <AlertTriangle size={14} />
             <span>Risk Level</span>
+          </button>
+        </div>
+
+        {/* API Key Controls */}
+        <div className="map-zoom-controls">
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => setShowKeyModal(true)}
+            title="Google Maps API Key Configuration"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', padding: '0.35rem 0.65rem' }}
+          >
+            <Key size={13} color={apiKey ? '#10b981' : '#f59e0b'} />
+            <span>{apiKey ? 'API Key Active' : 'Set Maps Key'}</span>
           </button>
         </div>
       </header>
@@ -1225,18 +830,50 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
         )}
 
         {/* Authoritative Google Map Canvas */}
-        <div
-          ref={googleMapRef}
-          className="google-map-canvas"
-          style={{ display: useFallbackMap ? 'none' : 'block' }}
-        />
+        <div ref={googleMapRef} className="google-map-canvas" />
 
-        {/* Automatic Hybrid Satellite / OpenStreetMap Fallback Canvas */}
-        <div
-          ref={leafletMapRef}
-          className="leaflet-map-canvas"
-          style={{ display: useFallbackMap ? 'block' : 'none' }}
-        />
+        {/* Prompt when API Key is missing */}
+        {!apiKey && (
+          <div className="google-maps-setup-card">
+            <div style={{ display: 'inline-flex', padding: '0.75rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '50%', marginBottom: '1rem' }}>
+              <Globe size={32} color="#10b981" />
+            </div>
+            <h3>Google Maps Integration</h3>
+            <p>
+              View Kenyan satellite imagery, streets, and GPS polling station hub pins. Paste your Google Maps API Key below to activate:
+            </p>
+            <input
+              type="password"
+              className="google-maps-key-input"
+              placeholder="Paste Google Maps API key"
+              autoComplete="off"
+              spellCheck="false"
+              value={apiKeyInput}
+              onChange={(e) => setApiKeyInput(e.target.value)}
+            />
+            <small className="google-maps-key-help">Use a key restricted to this site and the Maps JavaScript API.</small>
+            <div className="google-maps-actions">
+              <button type="button" className="btn btn-primary btn-sm" onClick={handleSaveApiKey} disabled={!apiKeyInput.trim()}>
+                <CheckCircle size={14} />
+                Save & Activate
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Error display if Google Maps fails to load */}
+        {mapLoadError && (
+          <div className="google-maps-setup-card" style={{ borderColor: '#ef4444' }}>
+            <AlertTriangle size={32} color="#ef4444" style={{ marginBottom: '0.75rem' }} />
+            <h3>Google Maps Notice</h3>
+            <p style={{ color: '#f87171' }}>{mapLoadError}</p>
+            <div className="google-maps-actions">
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowKeyModal(true)}>
+                Update API Key
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Floating Legend */}
         <div className="map-legend">
@@ -1453,17 +1090,30 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
               Enter a valid Google Maps API Key with the <strong>Maps JavaScript API</strong> enabled to load live satellite imagery and GPS polling station pins:
             </p>
             <input
-              type="text"
+              type="password"
               className="google-maps-key-input"
               placeholder="Paste Google Maps API Key (AIzaSy...)"
-              defaultValue={apiKey}
+              autoComplete="off"
+              spellCheck="false"
+              value={apiKeyInput}
               onChange={(e) => setApiKeyInput(e.target.value)}
             />
             <div className="google-maps-actions">
               <button
                 type="button"
                 className="btn btn-primary btn-sm"
-                onClick={handleSaveApiKey}
+                onClick={() => {
+                  if (apiKeyInput.trim()) {
+                    setGoogleMapsApiKey(apiKeyInput.trim());
+                    if (apiKey && apiKeyInput.trim() !== apiKey && typeof window !== 'undefined') {
+                      window.location.reload();
+                      return;
+                    }
+                    setApiKey(apiKeyInput.trim());
+                    setShowKeyModal(false);
+                    setMapMode('google_hybrid');
+                  }
+                }}
               >
                 Save Key
               </button>
