@@ -172,13 +172,6 @@ export const LoginModal = ({ isAdminConsole = false }) => {
             <span className="auth-form-kicker">Secure workspace</span>
             <h2>Welcome back</h2>
             <p className="auth-form-intro">Sign in with your authorised officer account to continue.</p>
-            {!isAdminConsole && (
-              <p className="auth-admin-hint">
-                Administrators must sign in at{' '}
-                <a href="https://ops-konsole.kuratech.site/">ops-konsole.kuratech.site</a>.
-              </p>
-            )}
-
             {logoutReason === 'inactivity' && (
               <div className="auth-alert" role="status" style={{ background: 'rgba(230, 159, 0, 0.15)', borderColor: '#E69F00', color: '#E69F00' }}>
                 <AlertCircle strokeWidth={1.75} />
