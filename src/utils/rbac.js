@@ -448,6 +448,26 @@ export const canPerformAction = (user, action) => {
         ROLES.ASPIRANT
       ].includes(role);
 
+    case 'UPLOAD_VOTER_CONTACTS':
+      return [
+        ROLES.SUPER_ADMIN,
+        ROLES.ADMIN,
+        ROLES.CANDIDATE_ADMIN,
+        ROLES.STRATEGY_TEAM,
+        ROLES.COUNTY_COORDINATOR,
+        ROLES.GOVERNOR,
+        ROLES.SENATOR,
+        ROLES.WOMAN_REP,
+        ROLES.CONSTITUENCY_COORDINATOR,
+        ROLES.MP,
+        ROLES.WARD_COORDINATOR,
+        ROLES.MCA,
+        ROLES.POLLING_COORDINATOR,
+        ROLES.ASPIRANT,
+        ROLES.AGENT,
+        ROLES.FIELD_AGENT
+      ].includes(role);
+
     case 'CREATE_SURVEY':
     case 'MANAGE_AGENTS':
       return [

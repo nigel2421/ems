@@ -1194,10 +1194,108 @@ const server = http.createServer((req, res) => {
     }
   }
 
+  // Scoped voter contact lists are stored separately from the public generic DB API.
+  if (pathname === '/api/voter-contact-lists' || pathname === '/ems/api/voter-contact-lists') {
+    const token = extractTokenFromReq(req, currentRealm);
+    const session = token ? verifyToken(token) : null;
+    const actor = session ? (findUserById(session.uid) || findUserByEmail(session.email) || session) : null;
+    const uploadRoles = new Set([
+      'Super Admin', 'Admin', 'Candidate/Campaign Admin', 'Strategy Team',
+      'County Coordinator', 'Governor', 'Senator', 'Woman Rep',
+      'Constituency Coordinator', 'MP', 'Ward Coordinator', 'MCA',
+      'Polling Coordinator', 'Aspirant', 'Agent', 'Field Agent'
+    ]);
+    const sendRoles = new Set([
+      'Super Admin', 'Admin', 'Candidate/Campaign Admin', 'Strategy Team',
+      'County Coordinator', 'Governor', 'Senator', 'Woman Rep',
+      'Constituency Coordinator', 'MP', 'Ward Coordinator', 'MCA',
+      'Polling Coordinator', 'Aspirant'
+    ]);
+
+    if (!actor || (!isAdminRole(actor.role) && !uploadRoles.has(actor.role) && !sendRoles.has(actor.role))) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Sign in with an authorized account to access voter contact lists.' }));
+      return;
+    }
+
+    const isContactAdmin = isAdminRole(actor.role);
+    const ownerId = actor.supervisorId || actor.candidateId || actor.creatorId || actor.id || session.uid;
+    if (req.method === 'GET') {
+      const lists = Array.isArray(currentDb.voterContactLists) ? currentDb.voterContactLists : [];
+      const visible = isContactAdmin ? lists : lists.filter((list) => list.ownerId === ownerId || list.uploadedBy === actor.id || list.uploadedBy === session.uid);
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ lists: visible }));
+      return;
+    }
+
+    if (req.method === 'POST') {
+      if (!isContactAdmin && !uploadRoles.has(actor.role)) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'This account cannot upload voter contact lists.' }));
+        return;
+      }
+      let body = '';
+      let oversized = false;
+      req.on('data', (chunk) => {
+        if (oversized) return;
+        body += chunk;
+        if (body.length > 8 * 1024 * 1024) oversized = true;
+      });
+      req.on('end', () => {
+        if (oversized) {
+          res.writeHead(413, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Contact list is too large. Split it into smaller uploads.' }));
+          return;
+        }
+        try {
+          const payload = JSON.parse(body || '{}');
+          const contacts = Array.isArray(payload.contacts) ? payload.contacts : [];
+          if (!contacts.length || contacts.length > 50000) throw new Error('A contact list must contain between 1 and 50,000 rows.');
+          const normalized = contacts.map((contact) => {
+            let digits = String(contact.phone || '').replace(/\D/g, '');
+            if (digits.length === 9 && /^[17]/.test(digits)) digits = `254${digits}`;
+            else if (digits.length === 10 && digits.startsWith('0')) digits = `254${digits.slice(1)}`;
+            if (digits.length < 10 || digits.length > 15) return null;
+            return { id: String(contact.id || crypto.randomUUID()), phone: `+${digits}`, name: String(contact.name || '').slice(0, 120) };
+          }).filter(Boolean);
+          if (!normalized.length) throw new Error('No valid phone numbers were provided.');
+
+          const savedList = {
+            id: String(payload.id || `VCL-${crypto.randomUUID()}`),
+            name: String(payload.name || 'Voter contacts').slice(0, 150),
+            sourceFileName: String(payload.sourceFileName || '').slice(0, 180),
+            contacts: normalized,
+            ownerId: isContactAdmin ? (payload.ownerId || ownerId) : ownerId,
+            uploadedBy: actor.id || session.uid,
+            uploadedByName: String(actor.name || actor.fullName || actor.email || 'User').slice(0, 120),
+            uploadedByRole: actor.role,
+            createdAt: new Date().toISOString()
+          };
+          const lists = Array.isArray(currentDb.voterContactLists) ? currentDb.voterContactLists : [];
+          currentDb.voterContactLists = [savedList, ...lists.filter((list) => list.id !== savedList.id)];
+          currentDb.updatedAt = new Date().toISOString();
+          saveDb(currentDb);
+          res.writeHead(201, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+          res.end(JSON.stringify({ success: true, list: savedList }));
+        } catch (error) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: error.message }));
+        }
+      });
+      return;
+    }
+
+    res.writeHead(405, { 'Content-Type': 'application/json', 'Allow': 'GET, POST' });
+    res.end(JSON.stringify({ error: 'Method not allowed.' }));
+    return;
+  }
+
   // Common DB Full Sync endpoint
   if (req.method === 'GET' && (pathname === '/api/db' || pathname === '/ems/api/db')) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(currentDb));
+    const publicDb = { ...currentDb };
+    delete publicDb.voterContactLists;
+    res.end(JSON.stringify(publicDb));
     return;
   }
 
@@ -1207,6 +1305,7 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         const payload = JSON.parse(body || '{}');
+        delete payload.voterContactLists;
         currentDb = {
           ...currentDb,
           ...payload,
@@ -1215,7 +1314,9 @@ const server = http.createServer((req, res) => {
         saveDb(currentDb);
         broadcastEvent('db_update', payload);
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, db: currentDb }));
+        const publicDb = { ...currentDb };
+        delete publicDb.voterContactLists;
+        res.end(JSON.stringify({ success: true, db: publicDb }));
       } catch (err) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: err.message }));

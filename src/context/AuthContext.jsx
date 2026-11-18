@@ -638,7 +638,7 @@ export const AuthProvider = ({ children }) => {
         return checkCanPerformAction('MANAGE_USERS');
       case 'communications_cmd':
       case 'communication':
-        return checkCanPerformAction('SEND_BULK_SMS');
+        return checkCanPerformAction('SEND_BULK_SMS') || checkCanPerformAction('UPLOAD_VOTER_CONTACTS');
       default:
         return true;
     }

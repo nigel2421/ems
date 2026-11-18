@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 import { safeStorage } from '../utils/safeStorage';
 import { initialGeography, initialSubmissions, iebcOfficialBroadcasts, initialAuditLogs, initialUsers } from '../data/mockData';
 import {
@@ -51,6 +52,7 @@ const safeGetLocalStorage = (key, fallback) => {
 };
 
 export const DataProvider = ({ children }) => {
+  const { currentUser } = useAuth();
   // 1. Geography & Polling Stations: Uses bundled iebcGeographyData.json (46,051 stations)
   const [geography, setGeography] = useState(() => {
     // Purge legacy ems_geography from localStorage to prevent exceeding 5MB browser quota
@@ -70,6 +72,7 @@ export const DataProvider = ({ children }) => {
     const loaded = safeGetLocalStorage('ems_agent_directory', initialAgentDirectory);
     return (loaded || []).filter(a => !['Samuel Kiprop', 'Grace Muthoni', 'Kevin Omwamba', 'Ali Hassan Swaleh', 'Fatuma Bakari'].includes(a?.fullName || a?.name));
   });
+  const [voterContactLists, setVoterContactLists] = useState([]);
 
   // 4. Surveys
   const [surveys, setSurveys] = useState(() => {
@@ -254,6 +257,19 @@ export const DataProvider = ({ children }) => {
     fetchCentralDatabase();
   }, []);
 
+  useEffect(() => {
+    setVoterContactLists([]);
+    if (!currentUser?.id) return undefined;
+    let active = true;
+    fetch(`${window.location.origin}/api/voter-contact-lists`, { credentials: 'include', cache: 'no-store' })
+      .then(async (response) => {
+        const result = await response.json().catch(() => ({}));
+        if (active && response.ok && Array.isArray(result.lists)) setVoterContactLists(result.lists);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [currentUser?.id]);
+
   const syncStateToServer = async (payload) => {
     try {
       const apiUrl = `${window.location.origin}/ems/api/db`;
@@ -265,6 +281,20 @@ export const DataProvider = ({ children }) => {
     } catch (err) {
       // Ignore network errors in local dev
     }
+  };
+
+  const addVoterContactList = async (list, user) => {
+    const response = await fetch(`${window.location.origin}/api/voter-contact-lists`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(list)
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'The contact list could not be saved.');
+    setVoterContactLists((previous) => [result.list, ...previous.filter((item) => item.id !== result.list.id)]);
+    logAuditAction(user, 'VOTER_CONTACTS_IMPORTED', `Imported ${result.list.contacts?.length || 0} voter contacts from a spreadsheet`);
+    return result.list;
   };
 
 
@@ -796,6 +826,8 @@ export const DataProvider = ({ children }) => {
         bulkImportPollingStations,
         agents,
         setAgents,
+        voterContactLists,
+        addVoterContactList,
         createAgent,
         assignAgentToPollingStation,
         updateAgentStatus,

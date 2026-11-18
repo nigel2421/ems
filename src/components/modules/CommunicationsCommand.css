@@ -22,6 +22,14 @@
 .communications-card-head h2 { margin: 0; color: var(--comm-text); font-size: 1rem; font-weight: 750; }
 .communications-card-head p { margin: 0.25rem 0 0; color: var(--comm-muted); font-size: 0.78rem; }
 .communications-preview-tag { flex: none; padding: 0.32rem 0.5rem; border-radius: 99px; color: #8a5a00; background: #fff6dd; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.06em; }
+.communications-list-picker { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 0.55rem 0.8rem; }
+.communications-upload-button { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; padding: 0.6rem 0.8rem; border: 1px dashed #9bb9aa; border-radius: 9px; color: #176a4d; background: #f3faf6; font-size: 0.76rem; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.communications-upload-button:hover { border-color: var(--comm-green); background: #eaf6ef; }
+.communications-upload-button.is-loading { opacity: 0.65; cursor: progress; }
+.communications-upload-button input { display: none; }
+.communications-upload-help { grid-column: 1 / -1; margin: -0.25rem 0 0; color: #8492a0; font-size: 0.68rem; }
+.communications-upload-only { display: grid; justify-items: start; gap: 0.75rem; }
+.communications-upload-only .communications-provider-note { margin-bottom: 0.25rem; }
 .communications-form { display: grid; gap: 1rem; }
 .communications-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
 .communications-field { min-width: 0; display: flex; flex-direction: column; gap: 0.38rem; }
@@ -42,6 +50,7 @@
 .communications-audience-count svg { align-self: center; margin-right: 0.2rem; }
 .communications-audience-count strong { font-size: 1.7rem; line-height: 1; }
 .communications-audience-count span { color: #477260; font-size: 0.76rem; }
+.communications-list-meta { margin: 0.7rem 0 0; color: var(--comm-muted); font-size: 0.68rem; }
 .communications-audience-scope { display: grid; grid-template-columns: 1fr auto; gap: 0.55rem; padding: 0.95rem 0; border-bottom: 1px solid #eef2f5; }
 .communications-audience-scope span { color: var(--comm-muted); font-size: 0.76rem; }
 .communications-audience-scope strong { color: #334155; text-align: right; font-size: 0.76rem; font-weight: 650; }
@@ -64,4 +73,4 @@
 .communications-modal-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1.2rem; }
 
 @media (max-width: 820px) { .communications-layout { grid-template-columns: 1fr; } }
-@media (max-width: 560px) { .communications-fields { grid-template-columns: 1fr; } .communications-modal-actions { flex-direction: column-reverse; } .communications-modal-actions > button { width: 100%; } }
+@media (max-width: 560px) { .communications-fields, .communications-list-picker { grid-template-columns: 1fr; } .communications-upload-help { grid-column: auto; } .communications-modal-actions { flex-direction: column-reverse; } .communications-modal-actions > button { width: 100%; } }
