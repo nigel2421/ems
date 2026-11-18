@@ -28,6 +28,15 @@ const LOCKED_TEMP_MESSAGE = 'Too many failed sign-in attempts. Please wait befor
 const LOCKED_PERMANENT_MESSAGE =
   'This account has been locked after repeated failed sign-in attempts. Contact your system administrator to restore access.';
 
+const isAdminConsoleRealm = () => {
+  if (typeof window === 'undefined') return false;
+  const path = window.location.pathname || '';
+  const host = window.location.hostname || '';
+  return path.includes('/admin.html') || host.startsWith('ops-konsole.');
+};
+
+const isAdminAccount = (user) => user?.role === 'Super Admin' || user?.role === 'Admin';
+
 // Drop sessions that went idle past the limit (e.g. tab closed and reopened later)
 const sessionIsStale = () => {
   try {
@@ -110,8 +119,18 @@ export const AuthProvider = ({ children }) => {
 
   const [currentUser, setCurrentUser] = useState(() => {
     if (staleOnLoad) return null;
-    const savedUser = sessionStorage.getItem('ems_current_user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    try {
+      const savedUser = sessionStorage.getItem('ems_current_user');
+      const parsedUser = savedUser ? JSON.parse(savedUser) : null;
+      if (!isAdminConsoleRealm() && isAdminAccount(parsedUser)) {
+        sessionStorage.removeItem('ems_current_user');
+        sessionStorage.setItem('ems_is_authenticated', 'false');
+        return null;
+      }
+      return parsedUser;
+    } catch {
+      return null;
+    }
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -167,14 +186,7 @@ export const AuthProvider = ({ children }) => {
 
   // Helper to determine if current client is in the Admin Console realm
   const isInAdminRealm = () => {
-    try {
-      if (typeof window === 'undefined') return false;
-      const path = window.location.pathname || '';
-      const host = window.location.hostname || '';
-      return path.includes('admin.html') || host.startsWith('ops-konsole.');
-    } catch {
-      return false;
-    }
+    return isAdminConsoleRealm();
   };
 
   // Verify session on mount with server cookie
@@ -187,6 +199,13 @@ export const AuthProvider = ({ children }) => {
       .then(data => {
         if (!active) return;
         if (data && data.authenticated && data.user) {
+          if (!isAdm && isAdminAccount(data.user)) {
+            setCurrentUser(null);
+            setIsAuthenticated(false);
+            sessionStorage.removeItem('ems_current_user');
+            sessionStorage.setItem('ems_is_authenticated', 'false');
+            return;
+          }
           setCurrentUser(data.user);
           setIsAuthenticated(true);
           safeStorage.setItem('ems_current_user', data.user);
