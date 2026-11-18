@@ -10,7 +10,7 @@ This operational handbook outlines the exact steps for deploying and maintaining
 | :--- | :--- | :--- |
 | **FQDN** | `kuratech.site` | `ops-konsole.kuratech.site` |
 | **Target Audience** | Governors, Senators, MPs, MCAs, Agents, Observers | Super Admin, System Administrators |
-| **Static Entry Point** | `/var/www/ems/dist/index.html` | `/var/www/ems/dist/admin.html` |
+| **Static Entry Point** | `/var/www/kutatech/index.html` | `/var/www/kutatech/admin.html` |
 | **Search Indexing** | Allowed (`robots.txt`, dynamic sitemap) | Strict anti-indexing (`noindex, nofollow, noarchive`) |
 | **Backend API** | Reverse proxied to `127.0.0.1:5000/api/` | Reverse proxied to `127.0.0.1:5000/api/` |
 | **Auth Realm** | `user` | `admin` |
@@ -38,7 +38,7 @@ Run the following on the VPS as root or sudoer:
 
 ```bash
 # 1. Create directory structure
-sudo mkdir -p /var/www/ems/dist
+sudo mkdir -p /var/www/kutatech
 sudo mkdir -p /var/lib/ems
 sudo mkdir -p /var/log/ems
 sudo mkdir -p /var/www/certbot
@@ -144,11 +144,11 @@ Whenever you deploy new code:
 npm run build
 
 # 2. Sync distribution assets to Nginx webroot
-sudo rsync -av --delete dist/ /var/www/ems/dist/
+sudo rsync -av --delete dist/ /var/www/kutatech/
 
 # 3. Ensure permissions are valid
-sudo chown -R www-data:www-data /var/www/ems/dist
-sudo chmod -R 755 /var/www/ems/dist
+sudo chown -R www-data:www-data /var/www/kutatech
+sudo chmod -R 755 /var/www/kutatech
 ```
 
 ---

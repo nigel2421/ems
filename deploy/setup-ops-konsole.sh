@@ -2,7 +2,7 @@
 # ====================================================================
 # Kuratech EMS - Dedicated Operations Console Subdomain Setup
 # Subdomain: ops-konsole.kuratech.site
-# Target Root: /var/www/ems/dist (index admin.html)
+# Target Root: /var/www/kutatech (index admin.html)
 # ====================================================================
 
 set -e
@@ -19,7 +19,7 @@ if ! command -v certbot >/dev/null 2>&1; then
 fi
 
 mkdir -p /var/www/certbot
-mkdir -p /var/www/ems/dist
+mkdir -p /var/www/kutatech
 mkdir -p /etc/nginx/sites-available
 mkdir -p /etc/nginx/sites-enabled
 
@@ -47,7 +47,7 @@ server {
     }
 
     location / {
-        root /var/www/ems/dist;
+        root /var/www/kutatech;
         index admin.html;
         try_files $uri $uri/ /admin.html;
     }
@@ -117,7 +117,7 @@ server {
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
-    root /var/www/ems/dist;
+    root /var/www/kutatech;
     index admin.html;
 
     add_header X-Robots-Tag "noindex, nofollow, noarchive, nosnippet" always;
@@ -163,6 +163,6 @@ echo ""
 echo "===================================================================="
 echo " SUCCESS: ops-konsole.kuratech.site is LIVE with HTTPS!"
 echo " URL: https://ops-konsole.kuratech.site"
-echo " Entry Point: /var/www/ems/dist/admin.html"
+echo " Entry Point: /var/www/kutatech/admin.html"
 echo " Backend API: http://127.0.0.1:5000/api/"
 echo "===================================================================="
