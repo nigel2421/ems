@@ -1,37 +1,40 @@
-// ====================================================================
-// CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 2.3)
-// Communications Command & Emergency Broadcast Workspace Component
-// ====================================================================
+import React, { useMemo, useState } from 'react';
+import { AlertTriangle, CheckCircle2, Info, MessageSquareText, Send, Users, X } from 'lucide-react';
+import {
+  filterAudienceByScope,
+  createCommunicationDispatch,
+  approveEmergencyDispatch,
+  MESSAGE_CATEGORIES
+} from '../../utils/communicationsEngine.js';
+import './CommunicationsCommand.css';
 
-import React, { useState } from 'react';
-import { filterAudienceByScope, createCommunicationDispatch, approveEmergencyDispatch, MESSAGE_CATEGORIES } from '../../utils/communicationsEngine.js';
+const SAMPLE_RECIPIENTS = Array.from({ length: 17 }, (_, index) => ({
+  id: `USR-AGENT-${index + 1}`,
+  name: `Agent ${index + 1}`,
+  county: 'Nairobi',
+  constituency: 'Westlands',
+  ward: 'Parklands/Highridge',
+  role: 'Agent',
+  missionStatus: 'ASSIGNED'
+}));
 
 export const CommunicationsCommand = ({ user }) => {
   const [category, setCategory] = useState(MESSAGE_CATEGORIES.STANDARD_MESSAGE);
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const [targetCounty, setTargetCounty] = useState('Nairobi');
+  const [targetCounty, setTargetCounty] = useState(user?.county || 'Nairobi');
   const [targetRole, setTargetRole] = useState('Agent');
-  const [showMakerCheckerModal, setShowMakerCheckerModal] = useState(false);
+  const [showApproval, setShowApproval] = useState(false);
   const [pendingDispatch, setPendingDispatch] = useState(null);
-  const [notification, setNotification] = useState(null);
+  const [notice, setNotice] = useState(null);
 
-  const mockAgents = Array.from({ length: 17 }, (_, i) => ({
-    id: `USR-AGENT-${i + 1}`,
-    name: `Agent ${i + 1}`,
-    county: 'Nairobi',
-    constituency: 'Westlands',
-    ward: 'Parklands/Highridge',
-    role: 'Agent',
-    missionStatus: 'ASSIGNED'
-  }));
-
-  const audience = filterAudienceByScope(user || { role: 'Super Admin' }, mockAgents, {
+  const audience = useMemo(() => filterAudienceByScope(user || { role: 'Super Admin' }, SAMPLE_RECIPIENTS, {
     county: targetCounty,
     role: targetRole
-  });
+  }), [user, targetCounty, targetRole]);
 
-  const handleSendDispatch = () => {
+  const handleSendDispatch = (event) => {
+    event.preventDefault();
     if (!body.trim()) return;
 
     const dispatch = createCommunicationDispatch(user || { id: 'ADM-01', name: 'Campaign Ops Admin', role: 'Admin' }, {
@@ -44,161 +47,112 @@ export const CommunicationsCommand = ({ user }) => {
 
     if (dispatch.requiresMakerChecker) {
       setPendingDispatch(dispatch);
-      setShowMakerCheckerModal(true);
-    } else {
-      setNotification(`Dispatch sent to ${audience.length} recipients`);
-      setBody('');
+      setShowApproval(true);
+      return;
     }
+    setNotice('Preview dispatch recorded. No SMS provider is connected, so no messages were sent.');
+    setBody('');
   };
 
   const handleApproveEmergency = () => {
     try {
-      const approver = { id: 'SUP-99', name: 'Security Director', role: 'Super Admin' };
-      const approved = approveEmergencyDispatch(pendingDispatch, approver);
-      setShowMakerCheckerModal(false);
+      approveEmergencyDispatch(pendingDispatch, {
+        id: 'SUP-99',
+        name: 'Security Director',
+        role: 'Super Admin'
+      });
+      setShowApproval(false);
       setPendingDispatch(null);
-      setNotification(`EMERGENCY BROADCAST APPROVED by ${approver.name}. Sent to ${approved.recipientCount} agents.`);
+      setNotice('Approval flow completed in preview mode. No SMS provider is connected.');
       setBody('');
-    } catch (e) {
-      alert(e.message);
+    } catch (error) {
+      setNotice(error.message);
     }
   };
 
   return (
-    <div style={{ padding: '24px', background: '#0b0f19', color: '#f8fafc', minHeight: '100vh' }}>
-      <header style={{ borderBottom: '1px solid #1e293b', paddingBottom: '16px', marginBottom: '20px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem' }}>📡 COMMUNICATIONS COMMAND CENTRE</h2>
-        <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Scope-Targeted Dispatch & Emergency Operational Alerting</div>
+    <main className="communications-page">
+      <header className="communications-page-head">
+        <div className="communications-page-icon"><MessageSquareText size={20} /></div>
+        <div>
+          <p className="communications-eyebrow">FIELD OPERATIONS</p>
+          <h1>Bulk SMS</h1>
+          <p className="communications-page-subtitle">Compose and target operational messages by location and role.</p>
+        </div>
       </header>
 
-      {notification && (
-        <div style={{ background: '#10b981', color: '#fff', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontWeight: 700 }}>
-          ✓ {notification}
-        </div>
-      )}
+      {notice && <div className="communications-notice" role="status"><Info size={17} />{notice}<button type="button" onClick={() => setNotice(null)} aria-label="Dismiss message"><X size={16} /></button></div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-        {/* Dispatch Composer */}
-        <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '20px' }}>
-          <h3 style={{ marginTop: 0, color: '#38bdf8' }}>COMPOSE OPERATIONAL DISPATCH</h3>
-
-          <div style={{ marginBottom: '14px' }}>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>CATEGORY</label>
-            <select
-              value={category}
-              onChange={e => setCategory(e.target.value)}
-              style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '8px', color: '#fff' }}
-            >
-              <option value={MESSAGE_CATEGORIES.STANDARD_MESSAGE}>STANDARD MESSAGE</option>
-              <option value={MESSAGE_CATEGORIES.PRIORITY_ALERT}>PRIORITY ALERT</option>
-              <option value={MESSAGE_CATEGORIES.EMERGENCY_OPERATIONAL_ALERT}>EMERGENCY OPERATIONAL ALERT (Maker-Checker Required)</option>
-            </select>
+      <div className="communications-layout">
+        <section className="communications-card">
+          <div className="communications-card-head">
+            <div><h2>Compose message</h2><p>Choose a recipient group and write your message.</p></div>
+            <span className="communications-preview-tag">PREVIEW MODE</span>
           </div>
 
-          <div style={{ marginBottom: '14px' }}>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>TARGET COUNTY</label>
-            <select
-              value={targetCounty}
-              onChange={e => setTargetCounty(e.target.value)}
-              style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '8px', color: '#fff' }}
-            >
-              <option value="Nairobi">Nairobi County</option>
-              <option value="Mombasa">Mombasa County</option>
-              <option value="Kisumu">Kisumu County</option>
-            </select>
-          </div>
-
-          <div style={{ marginBottom: '14px' }}>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>SUBJECT / TITLE</label>
-            <input
-              type="text"
-              placeholder="Dispatch Subject..."
-              value={subject}
-              onChange={e => setSubject(e.target.value)}
-              style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '8px', color: '#fff' }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '14px' }}>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>MESSAGE CONTENT</label>
-            <textarea
-              rows="4"
-              placeholder="Enter dispatch text for targeted field personnel..."
-              value={body}
-              onChange={e => setBody(e.target.value)}
-              style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '8px', color: '#fff' }}
-            />
-          </div>
-
-          <button
-            onClick={handleSendDispatch}
-            style={{
-              width: '100%',
-              padding: '12px',
-              background: category === MESSAGE_CATEGORIES.EMERGENCY_OPERATIONAL_ALERT ? '#ef4444' : '#0284c7',
-              border: 'none',
-              borderRadius: '10px',
-              color: '#fff',
-              fontWeight: 800,
-              cursor: 'pointer'
-            }}
-          >
-            {category === MESSAGE_CATEGORIES.EMERGENCY_OPERATIONAL_ALERT ? 'REQUEST EMERGENCY BROADCAST APPROVAL' : 'DISPATCH MESSAGE'}
-          </button>
-        </div>
-
-        {/* Audience Preview & Delivery Stats */}
-        <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '20px' }}>
-          <h3 style={{ marginTop: 0, color: '#38bdf8' }}>TARGET AUDIENCE PREVIEW ({audience.length} RECIPIENTS)</h3>
-          <div style={{ background: '#0f172a', borderRadius: '10px', padding: '12px', maxHeight: '240px', overflowY: 'auto', marginBottom: '16px', fontSize: '0.8rem' }}>
-            {audience.map(agt => (
-              <div key={agt.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #1e293b' }}>
-                <span>{agt.name} ({agt.role})</span>
-                <span style={{ color: '#94a3b8' }}>{agt.ward}</span>
+          <form className="communications-form" onSubmit={handleSendDispatch}>
+            <div className="communications-fields">
+              <div className="communications-field">
+                <label htmlFor="sms-category">Message priority</label>
+                <select id="sms-category" value={category} onChange={(event) => setCategory(event.target.value)}>
+                  <option value={MESSAGE_CATEGORIES.STANDARD_MESSAGE}>Standard</option>
+                  <option value={MESSAGE_CATEGORIES.PRIORITY_ALERT}>Priority alert</option>
+                  <option value={MESSAGE_CATEGORIES.EMERGENCY_OPERATIONAL_ALERT}>Emergency alert · approval required</option>
+                </select>
               </div>
-            ))}
-          </div>
+              <div className="communications-field">
+                <label htmlFor="sms-county">County</label>
+                <select id="sms-county" value={targetCounty} onChange={(event) => setTargetCounty(event.target.value)}>
+                  <option value="Nairobi">Nairobi</option>
+                  <option value="Mombasa">Mombasa</option>
+                  <option value="Kisumu">Kisumu</option>
+                </select>
+              </div>
+              <div className="communications-field">
+                <label htmlFor="sms-role">Recipient role</label>
+                <select id="sms-role" value={targetRole} onChange={(event) => setTargetRole(event.target.value)}>
+                  <option value="Agent">Agents</option>
+                  <option value="All">All field staff</option>
+                </select>
+              </div>
+              <div className="communications-field">
+                <label htmlFor="sms-subject">Subject <span>Optional</span></label>
+                <input id="sms-subject" type="text" maxLength={100} value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="e.g. Polling station briefing" />
+              </div>
+            </div>
 
-          <h4 style={{ margin: '12px 0 6px 0', fontSize: '0.85rem', color: '#94a3b8' }}>DELIVERY TRACKING OVERVIEW</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', fontSize: '0.8rem', textAlign: 'center' }}>
-            <div style={{ background: '#0f172a', padding: '8px', borderRadius: '6px' }}>
-              <div style={{ fontWeight: 700, color: '#38bdf8' }}>1,402</div>
-              <div style={{ color: '#64748b' }}>SENT</div>
+            <div className="communications-field">
+              <label htmlFor="sms-body">Message</label>
+              <textarea id="sms-body" rows={6} maxLength={500} required value={body} onChange={(event) => setBody(event.target.value)} placeholder="Write a clear operational update for your selected recipients…" />
+              <div className="communications-character-count">{body.length}/500 characters</div>
             </div>
-            <div style={{ background: '#0f172a', padding: '8px', borderRadius: '6px' }}>
-              <div style={{ fontWeight: 700, color: '#10b981' }}>1,389</div>
-              <div style={{ color: '#64748b' }}>DELIVERED</div>
-            </div>
-            <div style={{ background: '#0f172a', padding: '8px', borderRadius: '6px' }}>
-              <div style={{ fontWeight: 700, color: '#eab308' }}>1,210</div>
-              <div style={{ color: '#64748b' }}>ACKNOWLEDGED</div>
-            </div>
+
+            <div className="communications-provider-note"><AlertTriangle size={17} /><span>Preview only. Connect an SMS provider to deliver messages to phones.</span></div>
+            <button className="communications-send-button" type="submit" disabled={!body.trim() || audience.length === 0}>
+              <Send size={16} />{category === MESSAGE_CATEGORIES.EMERGENCY_OPERATIONAL_ALERT ? 'Request approval' : 'Review message'}
+            </button>
+          </form>
+        </section>
+
+        <aside className="communications-card communications-audience-card">
+          <div className="communications-card-head"><div><h2>Audience</h2><p>Estimated recipients for this scope</p></div></div>
+          <div className="communications-audience-count"><Users size={19} /><strong>{audience.length}</strong><span>recipients</span></div>
+          <div className="communications-audience-scope"><span>County</span><strong>{targetCounty}</strong><span>Role</span><strong>{targetRole === 'All Field Operational Staff' ? 'All field staff' : `${targetRole}s`}</strong></div>
+          <div className="communications-audience-list">
+            {audience.slice(0, 5).map((recipient) => <div key={recipient.id}><span className="communications-avatar">{recipient.name.slice(-1)}</span><span><strong>{recipient.name}</strong><small>{recipient.ward}</small></span></div>)}
+            {audience.length > 5 && <p>and {audience.length - 5} more recipients</p>}
+            {audience.length === 0 && <p>No recipients match this scope.</p>}
           </div>
-        </div>
+        </aside>
       </div>
 
-      {/* Maker-Checker Approval Modal for Emergency Broadcast */}
-      {showMakerCheckerModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 1000 }}>
-          <div style={{ background: '#1e293b', border: '2px solid #ef4444', borderRadius: '16px', padding: '24px', maxWidth: '480px', width: '100%' }}>
-            <h3 style={{ margin: '0 0 12px 0', color: '#ef4444' }}>🚨 EMERGENCY BROADCAST MAKER-CHECKER APPROVAL</h3>
-            <p style={{ fontSize: '0.85rem', color: '#cbd5e1', lineHeight: 1.5 }}>
-              Requester <strong>{pendingDispatch?.senderName}</strong> has requested a high-priority Emergency Broadcast to <strong>{pendingDispatch?.recipientCount} recipients</strong>.
-              Under KuraTech 2.3 security policy, emergency broadcasts require independent Checker authorization.
-            </p>
-
-            <div style={{ background: '#0f172a', padding: '12px', borderRadius: '8px', fontSize: '0.8rem', margin: '14px 0', borderLeft: '4px solid #ef4444' }}>
-              <div><strong>Subject:</strong> {pendingDispatch?.subject || 'EMERGENCY BROADCAST'}</div>
-              <div><strong>Body:</strong> {pendingDispatch?.body}</div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-              <button onClick={() => setShowMakerCheckerModal(false)} style={{ flex: 1, padding: '10px', background: '#334155', border: 'none', color: '#fff', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>Reject Request</button>
-              <button onClick={handleApproveEmergency} style={{ flex: 1, padding: '10px', background: '#ef4444', border: 'none', color: '#fff', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}>APPROVE BROADCAST</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      {showApproval && <div className="communications-modal-backdrop" role="presentation"><section className="communications-approval-modal" role="dialog" aria-modal="true" aria-labelledby="communications-approval-title">
+        <div className="communications-modal-icon"><AlertTriangle size={21} /></div>
+        <h2 id="communications-approval-title">Emergency message approval</h2>
+        <p>This emergency broadcast requires a separate checker approval for {pendingDispatch?.recipientCount || 0} recipients.</p>
+        <div className="communications-message-preview"><strong>{pendingDispatch?.subject || 'Emergency alert'}</strong><span>{pendingDispatch?.body}</span></div>
+        <div className="communications-modal-actions"><button type="button" className="communications-secondary-button" onClick={() => setShowApproval(false)}>Cancel</button><button type="button" className="communications-send-button" onClick={handleApproveEmergency}><CheckCircle2 size={16} />Approve preview</button></div>
+      </section></div>}
+    </main>
   );
 };
