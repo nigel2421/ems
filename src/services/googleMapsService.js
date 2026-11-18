@@ -6,7 +6,6 @@
 // ====================================================================
 
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
-import { safeStorage } from '../utils/safeStorage.js';
 
 export const STORAGE_KEY_GOOGLE_MAPS_KEY = 'ems_google_maps_api_key';
 
@@ -77,10 +76,7 @@ export const fetchGoogleMapsApiKeyFromServer = async () => {
     const data = await res.json().catch(() => ({}));
     if (data && data.apiKey && data.apiKey.trim()) {
       const key = data.apiKey.trim();
-      inMemoryApiKey = key;
-      if (typeof window !== 'undefined') {
-        safeStorage.setItem(STORAGE_KEY_GOOGLE_MAPS_KEY, key);
-      }
+      setGoogleMapsApiKey(key);
       return key;
     }
   } catch (err) {

@@ -428,6 +428,22 @@
 }
 
 /* Setup & Key Configuration Card */
+.google-maps-loading-card {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  border-radius: 10px;
+  color: #334155;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
 .google-maps-setup-card {
   position: absolute;
   top: 50%;

@@ -15,6 +15,7 @@ import {
   createMapPin,
   formatInfoWindowHtml,
   getGoogleMapsApiKey,
+  fetchGoogleMapsApiKeyFromServer,
   setGoogleMapsApiKey,
   loadGoogleMaps,
   onGoogleMapsAuthFailure
@@ -50,6 +51,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
   const [apiKeyInput, setApiKeyInput] = useState(() => getGoogleMapsApiKey());
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [mapLoadError, setMapLoadError] = useState(null);
+  const [isResolvingApiKey, setIsResolvingApiKey] = useState(() => !getGoogleMapsApiKey());
   const [authFailed, setAuthFailed] = useState(false);
   const [googleMapInstance, setGoogleMapInstance] = useState(null);
 
@@ -69,6 +71,24 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
   const markersRef = useRef([]);
   const infoWindowRef = useRef(null);
   const tooltipRef = useRef(null);
+
+  // Resolve the deployment's server-configured Maps key when the build did not embed one.
+  useEffect(() => {
+    let active = true;
+    const loadConfiguredKey = async () => {
+      try {
+        const key = await fetchGoogleMapsApiKeyFromServer();
+        if (active && key) {
+          setApiKey(key);
+          setApiKeyInput(key);
+        }
+      } finally {
+        if (active) setIsResolvingApiKey(false);
+      }
+    };
+    loadConfiguredKey();
+    return () => { active = false; };
+  }, []);
 
   // High-performance single-pass pre-indexed metrics for all 47 counties & constituencies
   const regionMetricsIndex = useMemo(() => {
@@ -833,7 +853,7 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
         <div ref={googleMapRef} className="google-map-canvas" />
 
         {/* Prompt when API Key is missing */}
-        {!apiKey && (
+        {!apiKey && !isResolvingApiKey && (
           <div className="google-maps-setup-card">
             <div style={{ display: 'inline-flex', padding: '0.75rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '50%', marginBottom: '1rem' }}>
               <Globe size={32} color="#10b981" />
@@ -859,6 +879,10 @@ export const ElectoralMapRoom = ({ initialCountyId, initialConstituencyId }) => 
               </button>
             </div>
           </div>
+        )}
+
+        {isResolvingApiKey && !apiKey && (
+          <div className="google-maps-loading-card" role="status">Connecting to the configured map service…</div>
         )}
 
         {/* Error display if Google Maps fails to load */}
