@@ -27,7 +27,8 @@ import {
   Map,
   X,
   Mail,
-  IdCard
+  IdCard,
+  Settings
 } from 'lucide-react';
 import './AdminDashboard.css';
 import {
@@ -106,6 +107,7 @@ export const AdminLayout = ({
   const [showAgentMenu, setShowAgentMenu] = useState(false);
   const [showAddAgent, setShowAddAgent] = useState(false);
   const [asideOpen, setAsideOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const getModuleLabel = (item) => {
     switch (item.id) {
@@ -398,51 +400,33 @@ export const AdminLayout = ({
                 <span>Audit</span>
               </button>
             )}
-          <button type="button" className="admin-nav-btn" onClick={() => { onCloseProfilePanel?.(); closeAside(); onOpenNotifications?.(); }}>
-            <Bell strokeWidth={1.75} />
-            <span>{t('nav.alerts', 'Alerts')}</span>
-            {totalAlerts > 0 && <span className="admin-nav-badge">{totalAlerts}</span>}
-          </button>
-        </div>
-
-        <div style={{ padding: '0.65rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.45rem', borderTop: '1px solid var(--border-color, rgba(0, 0, 0, 0.08))', marginTop: 'auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>{t('common.language', 'Language')}</span>
-            <LanguageSwitcher compact={true} />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>{t('common.theme', 'Theme')}</span>
-            <ThemeSwitcher compact={true} />
-          </div>
-        </div>
-
-        <div className="admin-profile-block">
-          <button
-            type="button"
-            className={`admin-profile-btn${showProfilePanel ? ' is-active' : ''}`}
-            onClick={() => {
-              closeAside();
-              onToggleProfilePanel?.();
-            }}
-            aria-expanded={showProfilePanel}
-            aria-controls="admin-profile-panel"
-          >
-            <img src={sanitizeMediaUrl(currentUser?.avatar, DEFAULT_AVATAR)} alt="" />
-            <div>
-              <strong>{currentUser?.name}</strong>
-              <span className={`role-badge ${getRoleClass(currentUser?.role)}`}>
-                {currentUser?.role}
-              </span>
-            </div>
-            <ChevronDown
-              strokeWidth={1.75}
-              className={`admin-nav-chevron${showProfilePanel ? ' is-open' : ''}`}
-            />
-          </button>
         </div>
       </aside>
 
       <div className="admin-layout-main">
+        <div className="admin-user-toolbar">
+          <div className="admin-user-toolbar-actions">
+            <div className="admin-settings-wrap">
+              <button type="button" className="admin-toolbar-btn" aria-expanded={showSettings} onClick={() => setShowSettings((open) => !open)}>
+                <Settings size={17} /><span>Settings</span><ChevronDown size={14} />
+              </button>
+              {showSettings && <div className="admin-settings-menu">
+                <label>{t('common.language', 'Language')}</label>
+                <LanguageSwitcher compact />
+                <label>{t('common.theme', 'Theme')}</label>
+                <ThemeSwitcher compact />
+              </div>}
+            </div>
+            <button type="button" className="admin-toolbar-btn admin-alerts-btn" onClick={() => onOpenNotifications?.()} aria-label={`${t('nav.alerts', 'Alerts')}${totalAlerts ? `, ${totalAlerts} unread` : ''}`}>
+              <Bell size={18} /><span>{t('nav.alerts', 'Alerts')}</span>{totalAlerts > 0 && <b>{totalAlerts}</b>}
+            </button>
+            <button type="button" className={`admin-profile-btn admin-toolbar-profile${showProfilePanel ? ' is-active' : ''}`} onClick={() => onToggleProfilePanel?.()} aria-expanded={showProfilePanel} aria-controls="admin-profile-panel">
+              <img src={sanitizeMediaUrl(currentUser?.avatar, DEFAULT_AVATAR)} alt="" />
+              <div><strong>{currentUser?.name}</strong><span className={`role-badge ${getRoleClass(currentUser?.role)}`}>{currentUser?.role}</span></div>
+              <ChevronDown size={15} className={`admin-nav-chevron${showProfilePanel ? ' is-open' : ''}`} />
+            </button>
+          </div>
+        </div>
         {showProfilePanel && (
           <div
             id="admin-profile-panel"
