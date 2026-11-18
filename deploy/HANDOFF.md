@@ -84,6 +84,19 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
+### Allow GitHub Actions to activate Nginx
+
+The deployment SSH account does not have passwordless sudo by default. To allow the workflow to update only these two site configs, run the following once on the VPS as root (replace `VPS_DEPLOY_USER` with the value of the `VPS_USERNAME` GitHub Actions secret):
+
+```bash
+install -o root -g root -m 0755 /var/www/kutatech-api/deploy/activate-nginx-hosts.sh /usr/local/sbin/ems-activate-nginx-hosts
+printf '%s ALL=(root) NOPASSWD: /usr/local/sbin/ems-activate-nginx-hosts\n' 'VPS_DEPLOY_USER' > /etc/sudoers.d/ems-nginx-deploy
+chmod 0440 /etc/sudoers.d/ems-nginx-deploy
+visudo -cf /etc/sudoers.d/ems-nginx-deploy
+```
+
+This grants the deployment account passwordless sudo for the root-owned helper only. The helper reads the two checked-in domain configs, enables them, validates Nginx, and reloads it. The GitHub Actions deployment step calls this helper after uploading the backend files.
+
 ---
 
 ## 6. Backend Deployment via PM2

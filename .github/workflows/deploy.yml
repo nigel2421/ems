@@ -69,17 +69,10 @@ jobs:
           script: |
             set -eu
             if [ "$(id -u)" -eq 0 ]; then
-              SUDO=""
+              /usr/local/sbin/ems-activate-nginx-hosts
             else
-              sudo -n true
-              SUDO="sudo -n"
+              sudo -n /usr/local/sbin/ems-activate-nginx-hosts
             fi
-            $SUDO install -m 0644 /var/www/kutatech-api/deploy/nginx/kuratech.site.conf /etc/nginx/sites-available/kuratech.site.conf
-            $SUDO install -m 0644 /var/www/kutatech-api/deploy/nginx/ops-konsole.kuratech.site.conf /etc/nginx/sites-available/ops-konsole.kuratech.site.conf
-            $SUDO ln -sfn /etc/nginx/sites-available/kuratech.site.conf /etc/nginx/sites-enabled/kuratech.site.conf
-            $SUDO ln -sfn /etc/nginx/sites-available/ops-konsole.kuratech.site.conf /etc/nginx/sites-enabled/ops-konsole.kuratech.site.conf
-            $SUDO nginx -t
-            $SUDO systemctl reload nginx
 
       - name: Restart backend on VPS
         uses: appleboy/ssh-action@v1.0.3
