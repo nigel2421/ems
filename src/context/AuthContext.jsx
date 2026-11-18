@@ -636,6 +636,9 @@ export const AuthProvider = ({ children }) => {
       case 'system_settings':
       case 'user_management':
         return checkCanPerformAction('MANAGE_USERS');
+      case 'communications_cmd':
+      case 'communication':
+        return checkCanPerformAction('SEND_BULK_SMS');
       default:
         return true;
     }

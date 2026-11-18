@@ -28,7 +28,8 @@ import {
   X,
   Mail,
   IdCard,
-  Settings
+  Settings,
+  MessageSquareText
 } from 'lucide-react';
 import './AdminDashboard.css';
 import {
@@ -363,6 +364,19 @@ export const AdminLayout = ({
             </>
           )}
         </div>
+
+        {canAccessModule?.('communications_cmd') && (
+          <div className="admin-nav-group">
+            <button
+              type="button"
+              className={`admin-nav-btn${['communications_cmd', 'communication'].includes(currentModule) ? ' is-active' : ''}`}
+              onClick={() => openModule('communications_cmd')}
+            >
+              <MessageSquareText strokeWidth={1.75} />
+              <span>Bulk SMS</span>
+            </button>
+          </div>
+        )}
 
         <div className="admin-nav-group">
           <div className="admin-nav-label">{toolsLabel}</div>

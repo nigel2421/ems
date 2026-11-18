@@ -430,6 +430,24 @@ export const canPerformAction = (user, action) => {
     case 'SUBMIT_SURVEY_RESPONSE':
       return true; // All authenticated roles can submit field entries for their scope
 
+    case 'SEND_BULK_SMS':
+      return [
+        ROLES.SUPER_ADMIN,
+        ROLES.ADMIN,
+        ROLES.CANDIDATE_ADMIN,
+        ROLES.STRATEGY_TEAM,
+        ROLES.COUNTY_COORDINATOR,
+        ROLES.GOVERNOR,
+        ROLES.SENATOR,
+        ROLES.WOMAN_REP,
+        ROLES.CONSTITUENCY_COORDINATOR,
+        ROLES.MP,
+        ROLES.WARD_COORDINATOR,
+        ROLES.MCA,
+        ROLES.POLLING_COORDINATOR,
+        ROLES.ASPIRANT
+      ].includes(role);
+
     case 'CREATE_SURVEY':
     case 'MANAGE_AGENTS':
       return [
