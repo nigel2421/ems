@@ -1,9 +1,10 @@
 // KuraTech Offline Service Worker for Field Agent PWA (QA OFF-01..OFF-09)
-const CACHE_NAME = 'ems-pwa-v3';
+const CACHE_NAME = 'ems-pwa-v4';
 const ASSETS_TO_CACHE = [
   '/index.html',
   '/favicon.svg',
   '/favicon.ico',
+  '/kuratech-logo.png',
   '/manifest.json'
 ];
 
