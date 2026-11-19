@@ -80,12 +80,21 @@ const MainAppContent = () => {
   });
 
   const [mapFilters, setMapFilters] = useState(null);
+  const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Super Admin';
+
+  React.useEffect(() => {
+    if (!isAdmin && currentModule === 'polling_stations') {
+      setCurrentModule('dashboard');
+      navigateToModule('dashboard');
+    }
+  }, [isAdmin, currentModule, navigateToModule]);
 
   if (!isAuthenticated || !currentUser) {
     return <LoginModal />;
   }
 
   const openModule = (mod, state) => {
+    if (mod === 'polling_stations' && !isAdmin) return;
     if (mod === 'ai_assistant') {
       setShowAIAssistant(true);
       return;
@@ -221,6 +230,7 @@ const MainAppContent = () => {
       case 'health':
         return <SystemHealthPanel />;
       case 'polling_stations':
+        if (!isAdmin) return renderDashboardByRole();
         return <PollingStationIntelligence onOpenModule={openModule} onClose={() => setCurrentModule('dashboard')} />;
       case 'interactive_map':
         return <ElectoralMapRoom initialCountyId={mapFilters?.countyId} initialConstituencyId={mapFilters?.constituencyId} />;

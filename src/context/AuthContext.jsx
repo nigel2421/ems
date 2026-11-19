@@ -625,6 +625,7 @@ export const AuthProvider = ({ children }) => {
         return false;
       }
       case 'polling_stations':
+        return false;
       case 'agents':
       case 'surveys':
       case 'field_reports':

@@ -100,7 +100,10 @@ export const Navbar = ({ onOpenNotifications, onOpenAuditLogs, onOpenModule, cur
     }
   ];
 
-  const allNavModules = navCategories.flatMap(c => c.modules);
+  const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Super Admin';
+  const allNavModules = navCategories.flatMap(c => c.modules).filter(
+    module => module.id !== 'polling_stations' || isAdmin
+  );
   const primaryNavModules = allNavModules.filter(m => primaryNavIds.includes(m.id));
   const overflowNavModules = allNavModules.filter(m => !primaryNavIds.includes(m.id));
 
