@@ -23,7 +23,6 @@ export const ASPIRANT_ROLES = new Set([
   'Aspirant',
   'Candidate/Campaign Admin',
   'Candidate Admin',
-  'National Coordinator',
   'County Coordinator',
   'Constituency Coordinator',
   'Ward Coordinator',

@@ -1,5 +1,3 @@
-import { CampaignWorkspace } from './components/dashboards/CampaignWorkspace';
-import { isCampaignWorkspaceUser } from './utils/teamHierarchy';
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider, useData } from './context/DataContext';
@@ -261,8 +259,6 @@ const MainAppContent = () => {
         return renderDashboardByRole();
     }
   };
-
-  if (isCampaignWorkspaceUser(currentUser)) return <CampaignWorkspace />;
 
   const content = renderActiveModuleContent();
 

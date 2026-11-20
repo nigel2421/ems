@@ -26,9 +26,9 @@ test('security rejects empty, weak, and mismatched passwords', () => {
   assert.equal(validateCoordinatorStep(2, { password: 'Secure!234', passwordConfirm: 'Secure!234' }), '');
 });
 
-test('legacy station roles display as agents without changing other roles', () => {
-  assert.equal(getRoleDisplayName('Agent'), 'Polling Station Agent');
-  assert.equal(getRoleDisplayName('Field Agent'), 'Polling Station Agent');
+test('legacy station roles display as coordinators without changing other roles', () => {
+  assert.equal(getRoleDisplayName('Agent'), 'Polling Station Coordinator');
+  assert.equal(getRoleDisplayName('Field Agent'), 'Polling Station Coordinator');
   assert.equal(getRoleDisplayName('County Coordinator'), 'County Coordinator');
   assert.equal(getRoleDisplayName('Admin'), 'Admin');
 });

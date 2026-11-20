@@ -198,13 +198,13 @@ export const LoginModal = ({ isAdminConsole = false }) => {
               </div>
             )}
 
-            <label className="auth-sr-only" htmlFor="auth-email">Email or phone</label>
+            <label className="auth-sr-only" htmlFor="auth-email">Official email</label>
             <input
               id="auth-email"
               className="auth-input"
-              type="text"
+              type="email"
               autoComplete="username"
-              placeholder="Email or phone"
+              placeholder="Official email"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
