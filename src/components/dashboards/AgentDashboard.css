@@ -1,0 +1,226 @@
+.agent-overview {
+  width: 100%;
+  min-width: 0;
+}
+.ao-connection {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #278568;
+  background: #2785680d;
+  border: 1px solid #27856822;
+  border-radius: 7px;
+  padding: 8px 10px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.ao-connection.is-offline {
+  color: #a17a46;
+  background: #bd934a0d;
+  border-color: #bd934a30;
+}
+.ao-work-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 20px;
+}
+.ao-station-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  background: var(--co-soft);
+  border: 1px solid var(--co-line);
+  border-radius: 12px;
+  color: #498e72;
+  flex-shrink: 0;
+}
+.ao-assignment > h3 {
+  font-size: 23px;
+  letter-spacing: -0.6px;
+  font-weight: 650;
+  line-height: 1.4;
+  margin: 10px 0;
+}
+.ao-station-code {
+  font-size: 11px;
+  color: #428c6d;
+}
+.ao-location-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  background: var(--co-soft);
+  border-radius: 12px;
+  padding: 18px;
+  margin: 23px 0;
+}
+.ao-location-grid > div {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.ao-location-grid span {
+  font-size: 9px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--co-muted);
+}
+.ao-location-grid strong {
+  font-size: 12px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.ao-assignment-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.ao-assignment-actions > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #278568;
+  font-size: 11px;
+  text-decoration: none;
+}
+.ao-actions {
+  display: grid;
+  gap: 12px;
+}
+.agent-overview .ao-actions > button {
+  display: flex;
+  gap: 13px;
+  justify-content: start;
+  width: 100%;
+  padding: 15px 16px;
+  text-align: left;
+  border-radius: 11px;
+  background: none;
+}
+.ao-action-icon {
+  display: grid;
+  place-items: center;
+  width: 37px;
+  height: 37px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--co-soft);
+  color: #3a8c6d;
+}
+.ao-actions button > div,
+.ao-report-list button > div,
+.ao-study-list button > div {
+  flex: 1;
+  min-width: 0;
+}
+.ao-actions strong,
+.ao-report-list strong,
+.ao-study-list strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.ao-actions button div > span,
+.ao-report-list button div > span,
+.ao-study-list button div > span {
+  display: block;
+  font-size: 10px;
+  color: var(--co-muted);
+  font-weight: 400;
+  line-height: 1.6;
+  margin-top: 4px;
+}
+.ao-actions button > svg {
+  color: var(--co-muted);
+  flex-shrink: 0;
+}
+.ao-report-list,
+.ao-study-list {
+  display: grid;
+  gap: 0;
+}
+.agent-overview :is(.ao-report-list, .ao-study-list) > button {
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  gap: 12px;
+  width: 100%;
+  padding: 15px 0;
+  border: 0;
+  border-bottom: 1px solid var(--co-line);
+  border-radius: 0;
+  text-align: left;
+  background: none;
+}
+.agent-overview :is(.ao-report-list, .ao-study-list) > button:last-child {
+  border-bottom: 0;
+}
+.ao-empty {
+  text-align: center;
+  padding: 28px 12px;
+  color: var(--co-muted);
+}
+.ao-empty > svg {
+  color: #77a58e;
+}
+.ao-empty h3 {
+  font-size: 15px;
+  color: var(--co-ink);
+  font-weight: 600;
+  margin: 14px 0 9px;
+}
+.ao-empty p {
+  font-size: 12px;
+  max-width: 300px;
+  margin: 0 auto 18px;
+}
+.agent-overview .coord-scope strong {
+  overflow-wrap: anywhere;
+}
+.agent-overview .coord-scope > span {
+  flex-wrap: wrap;
+}
+.agent-overview .coord-head h1 {
+  font-size: clamp(25px, 2.6vw, 35px);
+}
+@media (max-width: 1000px) {
+  .ao-work-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .ao-assignment > h3 {
+    font-size: 21px;
+  }
+  .ao-location-grid {
+    gap: 16px;
+    padding: 16px;
+  }
+  .agent-overview .coord-actions {
+    width: 100%;
+  }
+  .agent-overview .ao-actions > button {
+    padding: 13px 11px;
+    gap: 10px;
+  }
+  .ao-actions strong {
+    font-size: 11px;
+  }
+  .ao-actions button div > span {
+    font-size: 10px;
+  }
+  .agent-overview .coord-card-head {
+    flex-wrap: wrap;
+  }
+  .ao-report-list .coord-badge {
+    font-size: 8px;
+  }
+  .agent-overview .coord-head h1 {
+    font-size: 28px;
+  }
+  .ao-connection {
+    font-size: 9px;
+  }
+}

@@ -19,7 +19,7 @@ import { AIAssistantModal } from './components/modules/AIAssistantModal';
 import { AuditLogViewer } from './components/modules/AuditLogViewer';
 import { ElectionCountdown } from './components/modules/ElectionCountdown';
 import { KenyaPoliticalNewsFab } from './components/modules/KenyaPoliticalNewsPanel';
-import { FieldAgentPWA } from './components/field/FieldAgentPWA';
+import { AgentDashboard } from './components/dashboards/AgentDashboard';
 import { ExceptionCommandCenter } from './components/dashboards/ExceptionCommandCenter';
 import { ElectionWarRoom } from './components/dashboards/ElectionWarRoom';
 import { HierarchicalWarRoom } from './components/dashboards/HierarchicalWarRoom';
@@ -182,7 +182,7 @@ const MainAppContent = () => {
         return <RegionalDashboard onOpenModule={openModule} />;
       case 'Field Agent':
       case 'Agent':
-        return <FieldAgentPWA user={currentUser} onBackToDashboard={() => openModule('dashboard')} />;
+        return <AgentDashboard onOpenModule={openModule} />;
       case 'Observer':
         return <ObserverDashboard />;
       default:
@@ -219,7 +219,7 @@ const MainAppContent = () => {
       case 'war_room':
         return <ElectionWarRoom user={currentUser} onSelectModule={(mod) => setCurrentModule(mod)} />;
       case 'field_pwa':
-        return <FieldAgentPWA user={currentUser} onBackToDashboard={() => setCurrentModule('dashboard')} />;
+        return <AgentDashboard onOpenModule={openModule} />;
       case 'exception_cmd':
         return <ExceptionCommandCenter user={currentUser} onSelectModule={(mod) => setCurrentModule(mod)} />;
       case 'evidence_review':
