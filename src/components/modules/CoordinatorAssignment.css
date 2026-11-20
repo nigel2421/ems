@@ -1,0 +1,28 @@
+.coordinator-assignment { display: grid; gap: 1.4rem; }
+.assignment-profile { padding: 1.2rem; border: 1px solid var(--border-subtle); border-radius: 14px; background: var(--bg-surface-elevated); }
+.assignment-profile-heading { display: flex; align-items: center; gap: .8rem; }
+.assignment-profile-icon { display: grid; place-items: center; width: 42px; height: 42px; background: var(--bg-surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; color: var(--accent-primary); flex-shrink: 0; }
+.assignment-overline { font-size: .75rem; font-weight: 700; letter-spacing: .07em; color: var(--text-muted); margin: 0 0 .2rem; }
+.assignment-profile-heading h4 { font-size: 1rem; margin: 0 0 .15rem; }
+.assignment-profile-heading span:not(.assignment-profile-icon) { color: var(--text-secondary); font-size: .875rem; }
+.assignment-locked { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1rem 0 0; }
+.assignment-locked > div { flex: 1 1 125px; padding: .8rem; background: var(--bg-surface-card); border: 1px solid var(--border-subtle); border-radius: 10px; }
+.assignment-locked dt { display: flex; align-items: center; justify-content: space-between; gap: .5rem; color: var(--text-muted); font-size: .8rem; margin: 0 0 .35rem; }
+.assignment-locked dd { margin: 0; font-size: .95rem; font-weight: 650; color: var(--text-primary); overflow-wrap: anywhere; }
+.assignment-profile-note { margin: .85rem 0 0; font-size: .875rem; line-height: 1.5; color: var(--text-muted); }
+.assignment-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem 1rem; }
+.assignment-field { min-width: 0; }
+.assignment-field-wide { grid-column: 1 / -1; }
+.assignment-field label { display: block; margin-bottom: .5rem; font-size: .875rem; font-weight: 650; }
+.coordinator-body .assignment-field .form-select { width: 100%; border: 1px solid var(--border-contrast); border-radius: 10px; background-color: var(--bg-surface-card); color: var(--text-primary); text-overflow: ellipsis; }
+.assignment-field .form-select:disabled { cursor: not-allowed; background-color: var(--bg-surface-elevated); color: var(--text-muted); opacity: .75; }
+.assignment-field p { margin: .45rem 0 0; font-size: .8rem; line-height: 1.45; color: var(--text-muted); }
+.assignment-summary, .assignment-error { display: flex; gap: .75rem; padding: 1rem; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--bg-surface-elevated); }
+.assignment-summary > svg, .assignment-error > svg { flex-shrink: 0; color: var(--text-muted); }
+.assignment-summary strong, .assignment-error strong { font-size: .9rem; }
+.assignment-summary p, .assignment-error p { margin: .35rem 0 0; font-size: .875rem; color: var(--text-secondary); line-height: 1.5; overflow-wrap: anywhere; }
+.assignment-summary.is-ready { border-color: var(--accent-success); background: color-mix(in srgb, var(--accent-success) 7%, var(--bg-surface-card)); }
+.assignment-summary.is-ready > svg { color: var(--accent-success); }
+.assignment-error { border-color: var(--accent-danger); }
+.assignment-error > svg { color: var(--accent-danger); }
+@media (max-width: 540px) { .assignment-fields { grid-template-columns: minmax(0, 1fr); } }

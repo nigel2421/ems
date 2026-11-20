@@ -2,10 +2,11 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { UserPlus, X, Camera, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { ScopedLocationSieve } from './ScopedLocationSieve';
+import { CoordinatorAssignment } from './CoordinatorAssignment';
 import { checkPasswordComplexity, passwordsMatch } from '../../utils/passwordPolicy';
 import { sanitizeMediaUrl } from '../../utils/urlSanitizer';
 import { validateCoordinatorStep } from '../../utils/coordinatorOnboarding';
+import { resolveCoordinatorStationAssignment } from '../../utils/coordinatorAssignment';
 import './AddCoordinatorModal.css';
 
 export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
@@ -123,9 +124,15 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
     const finalStationId = locationMeta.pollingStationId;
     const resolvedPs = geography.pollingStations.find(ps => ps.id === finalStationId);
     if (!resolvedPs) { setStep(1); setSubmitError('Select an available polling station.'); return; }
-    const finalCounty = locationMeta.countyName || resolvedPs?.countyName || currentUser?.county || null;
-    const finalConst = locationMeta.constituencyName || resolvedPs?.constituencyName || currentUser?.constituency || null;
-    const finalWard = locationMeta.wardName || resolvedPs?.wardName || currentUser?.ward || null;
+    const verifiedLocation = resolveCoordinatorStationAssignment(currentUser, geography, finalStationId);
+    if (!verifiedLocation.complete) {
+      setStep(1);
+      setSubmitError('This station is outside the aspirant’s current profile assignment. Select a permitted location.');
+      return;
+    }
+    const finalCounty = verifiedLocation.countyName;
+    const finalConst = verifiedLocation.constituencyName;
+    const finalWard = verifiedLocation.wardName;
     const finalEntityName = resolvedPs
       ? `${resolvedPs.code || resolvedPs.id} - ${resolvedPs.name}`
       : (locationMeta.pollingStationName || locationMeta.pollingCentreName || finalWard || 'Assigned Polling Station');
@@ -220,8 +227,7 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
               </fieldset>
             </section>
             <section hidden={step !== 1} aria-label="Electoral assignment">
-              <ScopedLocationSieve user={currentUser} geography={geography} purpose="Coordinator Registration" onSelectionChange={sel => setLocationMeta(sel)} />
-              <p className="coordinator-hint">Choose a polling stream to complete this step. Your account’s geographic restrictions apply.</p>
+              <CoordinatorAssignment user={currentUser} geography={geography} onSelectionChange={sel => setLocationMeta(sel)} />
             </section>
             <section hidden={step !== 2} aria-label="Account security"><fieldset disabled={step !== 2}>
               <div className="form-group"><label className="form-label" htmlFor="coordinator-password">Account password</label><input id="coordinator-password" type="password" autoComplete="new-password" className="form-input" value={password} onChange={e => setPassword(e.target.value)} required /><small>At least 8 characters, with uppercase, lowercase, a number, and a special character.</small></div>

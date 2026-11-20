@@ -1,3 +1,4 @@
+import { resolveCoordinatorStationAssignment } from './src/utils/coordinatorAssignment.js';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -24,6 +25,13 @@ import { READINESS_WORKSTREAMS, STAKEHOLDER_ROLES, evaluateProductionReadiness, 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+let assignmentGeography = { counties: [], constituencies: [], wards: [], pollingStations: [] };
+try {
+  assignmentGeography = JSON.parse(fs.readFileSync(path.join(__dirname, 'src/data/iebcGeographyData.json'), 'utf8'));
+} catch (error) {
+  console.error('[Server] Coordinator assignments unavailable: electoral geography could not be loaded.', error.message);
+}
+
 
 // Ensure baseline accounts are safely merged on startup (preserving any existing VPS accounts)
 try {
@@ -771,12 +779,22 @@ const server = http.createServer((req, res) => {
             const cleanEmail = String(email || '').trim().toLowerCase();
             const cleanPhone = String(phone || '').replace(/\s+/g, '').toLowerCase();
 
+            let verifiedCoordinatorLocation = null;
             // When an Aspirant or Coordinator is creating an agent:
             if (isAsp && !isAdm) {
               const targetRole = String(role || 'Agent').trim();
               if (targetRole !== 'Agent' && targetRole !== 'Field Agent') {
                 res.writeHead(403, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: false, error: 'Aspirants and Coordinators are only authorized to provision Agent accounts.' }));
+                return;
+              }
+
+              verifiedCoordinatorLocation = resolveCoordinatorStationAssignment(
+                creatorUser, assignmentGeography, pollingStationId || assignedEntity
+              );
+              if (!verifiedCoordinatorLocation.complete) {
+                res.writeHead(403, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: 'Select a polling station within the aspirant profile assignment. Contact an administrator if your profile is incomplete.' }));
                 return;
               }
 
@@ -844,23 +862,22 @@ const server = http.createServer((req, res) => {
             }
 
             // Geographic scoping: merge specific selected sub-jurisdiction with creator's locked jurisdiction
-            const effectiveCounty = (isAsp && !isAdm && creatorCounty)
+            const effectiveCounty = verifiedCoordinatorLocation?.countyName || ((isAsp && !isAdm && creatorCounty)
               ? creatorCounty
-              : (cleanJurisdictionField(county) || creatorCounty || null);
-            const effectiveConst = (isAsp && !isAdm && creatorConst)
+              : (cleanJurisdictionField(county) || creatorCounty || null));
+            const effectiveConst = verifiedCoordinatorLocation?.constituencyName || ((isAsp && !isAdm && creatorConst)
               ? creatorConst
-              : (cleanJurisdictionField(constituency) || creatorConst || null);
-            const effectiveWard = (isAsp && !isAdm && creatorWard)
+              : (cleanJurisdictionField(constituency) || creatorConst || null));
+            const effectiveWard = verifiedCoordinatorLocation?.wardName || ((isAsp && !isAdm && creatorWard)
               ? creatorWard
-              : (cleanJurisdictionField(ward) || creatorWard || null);
+              : (cleanJurisdictionField(ward) || creatorWard || null));
             const effectiveParty = (isAsp && !isAdm && (creatorUser.party || decoded.party))
               ? (creatorUser.party || decoded.party)
               : (party || 'Independent');
 
             const resolvedStationId = pollingStationId || assignedEntity || null;
-            const resolvedStations = Array.isArray(assignedStations) && assignedStations.length > 0
-              ? assignedStations
-              : (resolvedStationId ? [resolvedStationId] : []);
+            const resolvedStations = verifiedCoordinatorLocation ? [verifiedCoordinatorLocation.pollingStationId]
+              : (Array.isArray(assignedStations) && assignedStations.length > 0 ? assignedStations : (resolvedStationId ? [resolvedStationId] : []));
 
             const existingAgentRecord = isAgentTarget
               ? ((existingByPhone && (existingByPhone.role === 'Agent' || existingByPhone.role === 'Field Agent'))
@@ -881,11 +898,11 @@ const server = http.createServer((req, res) => {
               constituency: effectiveConst,
               ward: effectiveWard,
               party: effectiveParty,
-              assignedEntity: assignedEntity || pollingStationId || effectiveWard || 'PS-1',
-              entityName: entityName || pollingStationName || 'Assigned Polling Station',
+              assignedEntity: verifiedCoordinatorLocation?.pollingStationId || assignedEntity || pollingStationId || effectiveWard || 'PS-1',
+              entityName: verifiedCoordinatorLocation?.pollingStationName || entityName || pollingStationName || 'Assigned Polling Station',
               pollingStationId: resolvedStationId,
-              pollingStationCode: pollingStationCode || resolvedStationId,
-              pollingStationName: pollingStationName || entityName || 'Assigned Polling Station',
+              pollingStationCode: verifiedCoordinatorLocation?.pollingStationCode || pollingStationCode || resolvedStationId,
+              pollingStationName: verifiedCoordinatorLocation?.pollingStationName || pollingStationName || entityName || 'Assigned Polling Station',
               assignedStations: resolvedStations,
               supervisorId: supervisorId || (isAsp ? decoded.uid : null),
               supervisor: supervisor || (isAsp ? decoded.name : null),
