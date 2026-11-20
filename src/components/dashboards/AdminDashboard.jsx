@@ -1,3 +1,5 @@
+import { CoordinatorAssignment } from '../modules/CoordinatorAssignment';
+import { resolveCoordinatorStationAssignment } from '../../utils/coordinatorAssignment';
 import { getRoleDisplayName } from '../../utils/roleDisplay';
 import React, { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -326,7 +328,7 @@ export const AdminDashboard = ({
 
   const handleAssignAgent = (e) => {
     e.preventDefault();
-    if (!selectedAgent) return;
+    if (!selectedAgent || !resolveCoordinatorStationAssignment(currentUser, geography, selectedPs).complete) return;
     assignAgentToPollingStation(
       selectedAgent,
       selectedPs,
@@ -746,7 +748,7 @@ export const AdminDashboard = ({
       {activeTab === 'assign_agent' && (
         <div className="admin-panel">
           <h2>Coordinator boundary binding</h2>
-          <p>Filter County → Constituency → Ward, then bind a coordinator to a station stream.</p>
+          <p>Choose a location within the campaign area, then confirm the coordinator’s assignment.</p>
 
           {agents.length === 0 ? (
             <div className="admin-empty">
@@ -764,66 +766,7 @@ export const AdminDashboard = ({
                 </select>
               </div>
 
-              <div className="admin-geo-box">
-                <div>Location sieve</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">County</label>
-                    <select className="form-select" value={countyId} onChange={(e) => { setCountyId(e.target.value); setConstituencyId(''); setWardId(''); setSelectedPs(''); }}>
-                      <option value="">-- Select County --</option>
-                      {geography.counties.map((c) => (
-                        <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">Constituency</label>
-                    <select className="form-select" value={constituencyId} onChange={(e) => { setConstituencyId(e.target.value); setWardId(''); setSelectedPs(''); }}>
-                      <option value="">-- Select Constituency --</option>
-                      {availableConstituencies.map((cs) => (
-                        <option key={cs.id} value={cs.id}>{cs.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">Ward</label>
-                    <select
-                      className="form-select"
-                      value={wardId}
-                      onChange={(e) => {
-                        setWardId(e.target.value);
-                        const firstPs = geography.pollingStations.find((ps) => ps.wardId === e.target.value)?.id || '';
-                        setSelectedPs(firstPs);
-                      }}
-                    >
-                      <option value="">-- Select Ward --</option>
-                      {availableWards.map((w) => (
-                        <option key={w.id} value={w.id}>{w.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="form-group" style={{ marginBottom: 0, marginTop: '1rem' }}>
-                  <label className="form-label">
-                    Polling station stream
-                    <span style={{ marginLeft: '0.5rem', color: '#0E7A45' }}>
-                      {wardId ? geography.pollingStations.filter((ps) => ps.wardId === wardId).length : 0} in ward
-                    </span>
-                  </label>
-                  <select className="form-select" value={selectedPs} onChange={(e) => setSelectedPs(e.target.value)} required>
-                    {wardId ? (
-                      geography.pollingStations.filter((ps) => ps.wardId === wardId).map((ps) => (
-                        <option key={ps.id} value={ps.id}>
-                          {ps.code} - {ps.name} ({ps.registeredVoters} voters)
-                        </option>
-                      ))
-                    ) : (
-                      <option value="">Select county, constituency, and ward first</option>
-                    )}
-                  </select>
-                </div>
-              </div>
+              <CoordinatorAssignment user={currentUser} geography={geography} onSelectionChange={sel => setSelectedPs(sel.complete ? sel.pollingStationId : '')} />
 
               <button type="submit" className="admin-btn admin-btn-primary" style={{ height: 48, width: '100%' }}>
                 <MapPin strokeWidth={1.75} />

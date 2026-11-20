@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { AddAgentModal } from './AddAgentModal';
-import { ScopedLocationSieve } from './ScopedLocationSieve';
+import { CoordinatorAssignment } from './CoordinatorAssignment';
+import { resolveCoordinatorStationAssignment } from '../../utils/coordinatorAssignment';
 
 import {
   Users,
@@ -40,53 +41,13 @@ export const AgentManagement = ({ onClose }) => {
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [selectedAgentForAssign, setSelectedAgentForAssign] = useState(null);
-  const [bindCountyId, setBindCountyId] = useState(geography.counties[0]?.id || '');
-  const [bindConstituencyId, setBindConstituencyId] = useState('');
-  const [bindWardId, setBindWardId] = useState('');
   const [targetPsId, setTargetPsId] = useState('');
   const [assignSuccess, setAssignSuccess] = useState('');
   const [viewingActivityAgent, setViewingActivityAgent] = useState(null);
-
-  const availableBindConstituencies = geography.constituencies.filter((c) => c.countyId === bindCountyId);
-  const availableBindWards = geography.wards.filter((w) => w.constituencyId === bindConstituencyId);
-  const availableBindPollingStations = bindWardId
-    ? geography.pollingStations.filter((ps) => ps.wardId === bindWardId)
-    : [];
-
-  const handleBindCountyChange = (cId) => {
-    setBindCountyId(cId);
-    const firstConst = geography.constituencies.find((c) => c.countyId === cId)?.id || '';
-    setBindConstituencyId(firstConst);
-    const firstWard = geography.wards.find((w) => w.constituencyId === firstConst)?.id || '';
-    setBindWardId(firstWard);
-    const firstPs = geography.pollingStations.find((ps) => ps.wardId === firstWard)?.id || '';
-    setTargetPsId(firstPs);
-  };
-
-  const handleBindConstituencyChange = (csId) => {
-    setBindConstituencyId(csId);
-    const firstWard = geography.wards.find((w) => w.constituencyId === csId)?.id || '';
-    setBindWardId(firstWard);
-    const firstPs = geography.pollingStations.find((ps) => ps.wardId === firstWard)?.id || '';
-    setTargetPsId(firstPs);
-  };
-
-  const handleBindWardChange = (wId) => {
-    setBindWardId(wId);
-    const firstPs = geography.pollingStations.find((ps) => ps.wardId === wId)?.id || '';
-    setTargetPsId(firstPs);
-  };
-
   const handleOpenAssignModal = (agent) => {
     setSelectedAgentForAssign(agent);
-    const firstCounty = geography.counties[0]?.id || '';
-    setBindCountyId(firstCounty);
-    const firstConst = geography.constituencies.find((c) => c.countyId === firstCounty)?.id || '';
-    setBindConstituencyId(firstConst);
-    const firstWard = geography.wards.find((w) => w.constituencyId === firstConst)?.id || '';
-    setBindWardId(firstWard);
-    const firstPs = geography.pollingStations.find((ps) => ps.wardId === firstWard)?.id || '';
-    setTargetPsId(firstPs);
+    setTargetPsId('');
+    setAssignSuccess('');
   };
 
   const scopedAgents = getScopedAgents ? getScopedAgents(currentUser, agents) : agents;
@@ -134,6 +95,7 @@ export const AgentManagement = ({ onClose }) => {
   const handleAssignSubmit = (e) => {
     e.preventDefault();
     if (!selectedAgentForAssign || !targetPsId) return;
+    if (!resolveCoordinatorStationAssignment(currentUser, geography, targetPsId).complete) return;
     assignAgentToPollingStation(selectedAgentForAssign.id, targetPsId, currentUser);
     setAssignSuccess(`Bound station to ${selectedAgentForAssign.fullName || selectedAgentForAssign.name}.`);
     setTimeout(() => {
@@ -353,7 +315,7 @@ export const AgentManagement = ({ onClose }) => {
 
       {selectedAgentForAssign && (
         <div className="agm-modal-overlay" onClick={() => setSelectedAgentForAssign(null)}>
-          <div className="agm-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="agm-modal coordinator-bind-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="agm-modal-head">
               <div>
                 <h3>Assign polling station</h3>
@@ -367,18 +329,9 @@ export const AgentManagement = ({ onClose }) => {
             {assignSuccess && <div className="agm-notice">{assignSuccess}</div>}
 
             <form onSubmit={handleAssignSubmit} className="agm-form">
-              <ScopedLocationSieve
-                user={currentUser}
-                geography={geography}
-                purpose="Coordinator Polling Station Assignment"
-                onSelectionChange={(sel) => {
-                  if (sel.pollingStationId) {
-                    setTargetPsId(sel.pollingStationId);
-                  }
-                }}
-              />
+              <CoordinatorAssignment user={currentUser} geography={geography} onSelectionChange={sel => setTargetPsId(sel.complete ? sel.pollingStationId : '')} />
 
-              <button type="submit" className="admin-btn admin-btn-primary" style={{ width: '100%', height: 46 }}>
+              <button type="submit" disabled={!targetPsId} className="admin-btn admin-btn-primary" style={{ width: '100%', height: 46 }}>
                 <UserCheck strokeWidth={1.75} />
                 Confirm assignment
               </button>

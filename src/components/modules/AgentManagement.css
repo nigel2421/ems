@@ -285,3 +285,5 @@
     grid-template-columns: 1fr;
   }
 }
+
+.coordinator-bind-dialog { width: min(760px, 96vw); max-width:760px; }

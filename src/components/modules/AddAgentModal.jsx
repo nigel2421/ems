@@ -207,13 +207,16 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
   return (
     <div className="modal-overlay coordinator-overlay" style={{ zIndex: 10000 }} onClick={() => !isSubmitting && onClose()}>
       <div ref={dialogRef} className="coordinator-dialog" role="dialog" aria-modal="true" aria-labelledby="coordinator-title" onClick={e => e.stopPropagation()} onKeyDown={handleDialogKeyDown}>
-        <header className="coordinator-header">
-          <div className="coordinator-heading"><span className="coordinator-icon"><UserPlus size={22} /></span><div><p className="coordinator-eyebrow">YOUR FIELD TEAM</p><h2 id="coordinator-title">Add coordinator</h2></div></div>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={onClose} disabled={isSubmitting} aria-label="Close registration"><X size={18} /></button>
-        </header>
-        <ol className="coordinator-steps" aria-label="Registration progress">
-          {steps.map((label, index) => <li key={label} className={index === step ? 'is-current' : index < step ? 'is-complete' : ''} aria-current={index === step ? 'step' : undefined}><span>{index < step ? <CheckCircle2 size={18} /> : index + 1}</span><strong>{label}</strong></li>)}
-        </ol>
+        <aside className="coordinator-rail">
+          <span className="coordinator-rail-brand"><UserPlus size={24} /> KURATECH / TEAM</span>
+          <div className="coordinator-rail-intro"><p>FIELD OPERATIONS</p><h2>Build your<br />field team.</h2><span>One coordinator. One clear assignment.</span></div>
+          <ol className="coordinator-steps" aria-label="Registration progress">
+            {steps.map((label, index) => <li key={label} className={index === step ? 'is-current' : index < step ? 'is-complete' : ''} aria-current={index === step ? 'step' : undefined}><span>{index < step ? <CheckCircle2 size={18} /> : index + 1}</span><div><strong>{label}</strong><small>{['Contact and identity', 'Campaign and location', 'Sign-in credentials', 'Confirm and create'][index]}</small></div></li>)}
+          </ol>
+          <div className="coordinator-rail-owner"><span>YOUR CAMPAIGN</span><strong>{currentUser?.name}</strong><small>{currentUser?.constituency || currentUser?.county || currentUser?.entityName}</small></div>
+        </aside>
+        <div className="coordinator-main">
+        <header className="coordinator-header"><div><p className="coordinator-eyebrow">TEAM REGISTRATION</p><h2 id="coordinator-title">New coordinator</h2></div><button type="button" className="btn btn-secondary btn-sm" onClick={onClose} disabled={isSubmitting} aria-label="Close registration"><X size={18} /></button></header>
         <form ref={formRef} onSubmit={handleSubmit} autoComplete="off">
           <div className="coordinator-body">
             <div className="coordinator-step-heading"><p className="coordinator-eyebrow">STEP {step + 1} OF 4</p><h3 ref={headingRef} tabIndex={-1}>{['Who are you adding?', 'Choose their assignment', 'Secure their account', 'Review coordinator details'][step]}</h3><p>{['Start with their name and contact details.', 'Select a polling station within your electoral jurisdiction.', 'Create a password for this coordinator to sign in.', 'Check the details before creating the account.'][step]}</p></div>
@@ -227,7 +230,7 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
               </fieldset>
             </section>
             <section hidden={step !== 1} aria-label="Electoral assignment">
-              <CoordinatorAssignment user={currentUser} geography={geography} onSelectionChange={sel => setLocationMeta(sel)} />
+              <CoordinatorAssignment user={currentUser} geography={geography} onSelectionChange={sel => { setLocationMeta(sel); if (step === 1) setSubmitError(''); }} />
             </section>
             <section hidden={step !== 2} aria-label="Account security"><fieldset disabled={step !== 2}>
               <div className="form-group"><label className="form-label" htmlFor="coordinator-password">Account password</label><input id="coordinator-password" type="password" autoComplete="new-password" className="form-input" value={password} onChange={e => setPassword(e.target.value)} required /><small>At least 8 characters, with uppercase, lowercase, a number, and a special character.</small></div>
@@ -239,6 +242,7 @@ export const AddAgentModal = ({ onClose, defaultAspirantId = null }) => {
           </div>
           <footer className="coordinator-footer"><button type="button" className="btn btn-secondary" onClick={step === 0 ? onClose : handleBack} disabled={isSubmitting}>{step === 0 ? 'Cancel' : 'Back'}</button><span>{step + 1} / 4</span>{step < 3 ? <button key="continue" type="submit" className="btn btn-primary">Continue</button> : <button key="register" type="submit" className="btn btn-primary" disabled={isSubmitting}>{isSubmitting ? 'Registering coordinator…' : 'Register coordinator'}</button>}</footer>
         </form>
+        </div>
       </div>
     </div>
   );
