@@ -54,7 +54,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
           fingerprint: ${{ secrets.VPS_FINGERPRINT }}
-          source: "server.mjs,server/**,scripts/**,src/utils/productionReadinessGate.js,src/utils/coordinatorAssignment.js,src/utils/teamHierarchy.js,src/utils/passwordPolicy.js,src/utils/scopeResolver.js,src/data/iebcGeographyData.json,package.json,deploy/**"
+          source: "server.mjs,server/**,scripts/**,src/utils/productionReadinessGate.js,src/utils/coordinatorAssignment.js,src/utils/teamHierarchy.js,src/utils/passwordPolicy.js,src/utils/surveyScience.js,src/utils/scopeResolver.js,src/data/iebcGeographyData.json,package.json,deploy/**"
           target: "/var/www/kutatech-api"
           strip_components: 0
 

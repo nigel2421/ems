@@ -1,0 +1,1 @@
+export const surveyRequest=async(path='',method='GET',body)=>{const r=await fetch('/api/surveys'+path,{method,credentials:'include',headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});const d=await r.json();if(!r.ok)throw new Error(d.error);return d;};
