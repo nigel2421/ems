@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "test": "node --test src/__tests__/ci-ems.test.js src/__tests__/survey-science.test.js",
+    "test": "node --test src/__tests__/ci-ems.test.js src/__tests__/survey-science.test.js src/__tests__/result-submission.test.js",
     "test:e2e": "python -m pytest tests/e2e_selenium",
     "test:e2e:headed": "python -m pytest tests/e2e_selenium --headed",
     "test:e2e:live": "python -m pytest tests/e2e_selenium --env=live",
@@ -23,9 +23,11 @@
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.38.0",
+    "pdfjs-dist": "^4.10.38",
     "react": "^19.2.8",
     "react-chartjs-2": "^5.3.1",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",

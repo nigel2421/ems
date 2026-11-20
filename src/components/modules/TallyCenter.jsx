@@ -1,875 +1,585 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { useData } from '../../context/DataContext';
-import { processOCRForm34A } from '../../services/api';
+import React, { useEffect, useState } from "react";
 import {
-  Vote,
+  UploadCloud,
+  FileCheck2,
+  ArrowRight,
   Plus,
-  Scan,
-  ShieldCheck,
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  FileImage,
-  X,
-  Clock3,
-  Scale,
-  BarChart3,
-  Lock
-} from 'lucide-react';
+  Download,
+} from "lucide-react";
+import { readForm } from "../../services/readForm";
 import {
-  Chart as ChartJS,
-  ArcElement,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Tooltip,
-  Legend
-} from 'chart.js';
-import { Pie, Bar } from 'react-chartjs-2';
-import {
-  resolveJurisdiction,
-  hasNationalGeographyAccess,
-  filterStationsByJurisdiction,
-  filterTalliesByJurisdiction
-} from '../../utils/jurisdictionAnalytics';
-import '../dashboards/DashboardShared.css';
-import './TallyCenter.css';
-
-ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Tooltip, Legend);
-
-const formatCount = (value) => Number(value || 0).toLocaleString('en-KE');
-
-const CANDIDATE_COLORS = {
-  A: '#006B3F',
-  B: '#C9A227',
-  C: '#0E7A45',
-  Rejected: '#BB0A21'
+  parseResultText,
+  normalizeName,
+  validateResult,
+  summarizeResults,
+} from "../../utils/resultMath";
+import "./ResultSubmission.css";
+const request = async (method = "GET", body, suffix = "") => {
+  const r = await fetch("/api/results" + suffix, {
+    method,
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "Request failed.");
+  return d;
 };
-
-const statusClass = (status) => {
-  switch (status) {
-    case 'Approved':
-      return 'tc-status tc-status-approved';
-    case 'Mismatch':
-      return 'tc-status tc-status-mismatch';
-    default:
-      return 'tc-status tc-status-submitted';
-  }
-};
-
+const blank = (name) => ({
+  stationId: "",
+  candidates: [
+    { name, votes: "" },
+    { name: "", votes: "" },
+  ],
+  registered: "",
+  rejected: "",
+  total: "",
+  confirmed: false,
+});
 export const TallyCenter = () => {
-  const { currentUser, canPerformAction } = useAuth();
-  const { tallyResults, geography, submitTallyCenterForm, verifyTallyResult } = useData();
-
-
-  const counties = geography?.counties || [];
-  const isNational = hasNationalGeographyAccess(currentUser);
-  const assignment = useMemo(
-    () => resolveJurisdiction(currentUser, geography),
-    [currentUser, geography]
-  );
-  const defaultCountyId = isNational
-    ? counties[0]?.id || ''
-    : assignment.county?.id || counties[0]?.id || '';
-
-  const [activeTab, setActiveTab] = useState('summary');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const [selectedCountyId, setSelectedCountyId] = useState(defaultCountyId);
-  const [selectedStationId, setSelectedStationId] = useState('');
-
-  const [candAVotes, setCandAVotes] = useState(412);
-  const [candBVotes, setCandBVotes] = useState(198);
-  const [candCVotes, setCandCVotes] = useState(45);
-  const [rejectedVotes, setRejectedVotes] = useState(12);
-  const [evidenceImage, setEvidenceImage] = useState(null);
-  const [isScanningOCR, setIsScanningOCR] = useState(false);
-  const [ocrData, setOcrData] = useState(null);
-
-  const [verifyingTally, setVerifyingTally] = useState(null);
-  const [verifyComment, setVerifyComment] = useState('');
-  const [entryError, setEntryError] = useState('');
-  const [historyModalTally, setHistoryModalTally] = useState(null);
-
+  const [data, setData] = useState(null),
+    [error, setError] = useState(""),
+    [step, setStep] = useState(1),
+    [form, setForm] = useState(blank("")),
+    [file, setFile] = useState(null),
+    [preview, setPreview] = useState(""),
+    [busy, setBusy] = useState(""),
+    [raw, setRaw] = useState(""),
+    [notice, setNotice] = useState(""),
+    [search, setSearch] = useState("");
+  const refresh = async () => {
+    try {
+      const d = await request();
+      setData(d);
+      setForm((f) => ({
+        ...f,
+        candidates: f.candidates.map((c, i) =>
+          i ? c : { ...c, name: d.aspirant.name },
+        ),
+      }));
+    } catch (e) {
+      setError(e.message);
+    }
+  };
   useEffect(() => {
-    if (!isNational && assignment.county?.id) {
-      setSelectedCountyId(assignment.county.id);
+    refresh();
+  }, []);
+  useEffect(() => {
+    if (!file) {
+      setPreview("");
       return;
     }
-    if (isNational && !selectedCountyId && defaultCountyId) {
-      setSelectedCountyId(defaultCountyId);
-    }
-  }, [isNational, assignment.county?.id, defaultCountyId, selectedCountyId]);
-
-  const scopedStations = useMemo(() => {
-    const list = geography?.pollingStations || [];
-    if (!isNational) {
-      return filterStationsByJurisdiction(list, assignment);
-    }
-    if (!selectedCountyId) return [];
-    return list.filter((ps) => ps && ps.countyId === selectedCountyId);
-  }, [geography?.pollingStations, isNational, assignment, selectedCountyId]);
-
-  const entryStations = useMemo(() => scopedStations.slice(0, 200), [scopedStations]);
-
-  useEffect(() => {
-    if (!entryStations.length) {
-      setSelectedStationId('');
-      return;
-    }
-    if (!entryStations.some((ps) => ps.id === selectedStationId)) {
-      setSelectedStationId(entryStations[0].id);
-    }
-  }, [entryStations, selectedStationId]);
-
-  const selectedPs = entryStations.find((ps) => ps.id === selectedStationId) || entryStations[0];
-  const registeredVoters = selectedPs?.registeredVoters || 750;
-
-  const calculatedTotal =
-    Number(candAVotes || 0) + Number(candBVotes || 0) + Number(candCVotes || 0) + Number(rejectedVotes || 0);
-  const isExceedingReg = calculatedTotal > registeredVoters;
-
-  const scopedTallies = useMemo(
-    () =>
-      filterTalliesByJurisdiction(tallyResults, geography?.pollingStations || [], assignment, {
-        national: isNational
-      }),
-    [tallyResults, geography?.pollingStations, assignment, isNational]
-  );
-
-  const metrics = useMemo(() => {
-    const list = scopedTallies;
-    return {
-      total: list.length,
-      submitted: list.filter((t) => t.status === 'Submitted').length,
-      approved: list.filter((t) => t.status === 'Approved').length,
-      mismatch: list.filter((t) => t.status === 'Mismatch').length
-    };
-  }, [scopedTallies]);
-
-  const voteAnalytics = useMemo(() => {
-    const list = scopedTallies;
-    const totals = list.reduce(
-      (acc, tally) => {
-        acc.candA += Number(tally.candAVotes || 0);
-        acc.candB += Number(tally.candBVotes || 0);
-        acc.candC += Number(tally.candCVotes || 0);
-        acc.rejected += Number(tally.rejectedVotes || 0);
-        return acc;
-      },
-      { candA: 0, candB: 0, candC: 0, rejected: 0 }
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+  const change = (key, value) =>
+    setForm((f) => ({ ...f, [key]: value, confirmed: false }));
+  const candidate = (i, key, value) =>
+    change(
+      "candidates",
+      form.candidates.map((c, j) => (j === i ? { ...c, [key]: value } : c)),
     );
-
-    const candidateTotal = totals.candA + totals.candB + totals.candC;
-    const allBallots = candidateTotal + totals.rejected;
-    const share = (value) => (candidateTotal > 0 ? Math.round((value / candidateTotal) * 1000) / 10 : 0);
-
-    return {
-      ...totals,
-      candidateTotal,
-      allBallots,
-      shares: {
-        candA: share(totals.candA),
-        candB: share(totals.candB),
-        candC: share(totals.candC)
-      },
-      leader:
-        totals.candA >= totals.candB && totals.candA >= totals.candC
-          ? 'Candidate A'
-          : totals.candB >= totals.candC
-            ? 'Candidate B'
-            : 'Candidate C',
-      margin: Math.abs(totals.candA - totals.candB)
-    };
-  }, [scopedTallies]);
-
-  const scopeLabel = isNational
-    ? 'National tally desk'
-    : assignment.title || 'Assigned jurisdiction';
-  const scopeSubtitle = isNational
-    ? 'Form 34A capture, OCR assist, and supervisor verification'
-    : `Form 34A for your ${String(assignment.label || 'area').toLowerCase()} only · ${assignment.county?.name || ''}${
-        assignment.constituency ? ` · ${assignment.constituency.name}` : ''
-      }${assignment.ward ? ` · ${assignment.ward.name}` : ''}`;
-  const countyOptions = isNational
-    ? counties
-    : counties.filter((c) => c.id === assignment.county?.id);
-
-  const candidatePieData = useMemo(
-    () => ({
-      labels: ['Candidate A', 'Candidate B', 'Candidate C'],
-      datasets: [
-        {
-          label: 'Total votes',
-          data: [voteAnalytics.candA, voteAnalytics.candB, voteAnalytics.candC],
-          backgroundColor: [CANDIDATE_COLORS.A, CANDIDATE_COLORS.B, CANDIDATE_COLORS.C],
-          borderColor: '#FFFFFF',
-          borderWidth: 2,
-          hoverOffset: 6
-        }
-      ]
-    }),
-    [voteAnalytics]
-  );
-
-  const ballotPieData = useMemo(
-    () => ({
-      labels: ['Candidate A', 'Candidate B', 'Candidate C', 'Rejected'],
-      datasets: [
-        {
-          label: 'Ballots',
-          data: [voteAnalytics.candA, voteAnalytics.candB, voteAnalytics.candC, voteAnalytics.rejected],
-          backgroundColor: [
-            CANDIDATE_COLORS.A,
-            CANDIDATE_COLORS.B,
-            CANDIDATE_COLORS.C,
-            CANDIDATE_COLORS.Rejected
-          ],
-          borderColor: '#FFFFFF',
-          borderWidth: 2,
-          hoverOffset: 6
-        }
-      ]
-    }),
-    [voteAnalytics]
-  );
-
-  const comparisonBarData = useMemo(
-    () => ({
-      labels: ['Candidate A', 'Candidate B', 'Candidate C'],
-      datasets: [
-        {
-          label: 'Total votes',
-          data: [voteAnalytics.candA, voteAnalytics.candB, voteAnalytics.candC],
-          backgroundColor: [CANDIDATE_COLORS.A, CANDIDATE_COLORS.B, CANDIDATE_COLORS.C],
-          borderRadius: 10,
-          maxBarThickness: 48
-        }
-      ]
-    }),
-    [voteAnalytics]
-  );
-
-  const pieOptions = useMemo(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            boxWidth: 10,
-            boxHeight: 10,
-            usePointStyle: true,
-            pointStyle: 'circle',
-            color: '#6B756F',
-            font: { size: 11, family: 'Inter, Segoe UI, sans-serif' },
-            padding: 12
-          }
-        },
-        tooltip: {
-          backgroundColor: '#073322',
-          titleColor: '#fff',
-          bodyColor: '#fff',
-          callbacks: {
-            label: (ctx) => `${ctx.label}: ${formatCount(ctx.raw || 0)} votes`
-          }
-        }
-      }
-    }),
-    []
-  );
-
-  const barOptions = useMemo(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#073322',
-          titleColor: '#fff',
-          bodyColor: '#fff',
-          callbacks: {
-            label: (ctx) => `${formatCount(ctx.raw || 0)} votes`
-          }
-        }
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: { color: '#6B756F', font: { size: 11 } }
-        },
-        y: {
-          beginAtZero: true,
-          grid: { color: '#E6EBE8' },
-          ticks: {
-            color: '#6B756F',
-            font: { size: 11 },
-            callback: (value) => formatCount(value)
-          }
-        }
-      }
-    }),
-    []
-  );
-
-  const filteredTallies = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    return scopedTallies.filter((tally) => {
-      if (statusFilter && tally.status !== statusFilter) return false;
-      if (!term) return true;
-      return (
-        tally.pollingStationName?.toLowerCase().includes(term) ||
-        tally.pollingStationCode?.toLowerCase().includes(term)
+  const upload = async (f) => {
+    setError("");
+    setNotice("");
+    if (!f) return;
+    if (
+      !["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(
+        f.type,
+      ) ||
+      f.size > 5 * 1024 * 1024
+    ) {
+      setError("Choose a JPG, PNG, WebP or PDF up to 5 MB.");
+      return;
+    }
+    setFile(f);
+    setRaw("");
+    setForm(blank(data.aspirant.name));
+    setBusy("Reading document…");
+    try {
+      const result = await readForm(f, setBusy);
+      setRaw(result.text);
+      const parsed = parseResultText(result.text, data.aspirant.name);
+      const own = parsed.candidates.find(
+        (c) => normalizeName(c.name) === normalizeName(data.aspirant.name),
       );
-    });
-  }, [scopedTallies, statusFilter, searchTerm]);
-
-  const handleSimulateOCR = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setEvidenceImage(URL.createObjectURL(file));
-    setIsScanningOCR(true);
-
-    const ocrRes = await processOCRForm34A(file);
-    setIsScanningOCR(false);
-    if (ocrRes.success) {
-      setOcrData(ocrRes);
-      setCandAVotes(ocrRes.extractedVotes.candA);
-      setCandBVotes(ocrRes.extractedVotes.candB);
-      setCandCVotes(ocrRes.extractedVotes.candC);
-      setRejectedVotes(ocrRes.extractedVotes.rejected);
+      setForm((f) => ({
+        ...f,
+        registered: parsed.registered,
+        rejected: parsed.rejected,
+        total: parsed.total,
+        candidates: [
+          { name: data.aspirant.name, votes: own?.votes || "" },
+          ...parsed.candidates.filter((c) => c !== own),
+          ...(parsed.candidates.filter((c) => c !== own).length
+            ? []
+            : [{ name: "", votes: "" }]),
+        ],
+      }));
+      setNotice(
+        (result.confidence == null
+          ? "PDF text extracted."
+          : `Text recognition confidence: ${Math.round(result.confidence)}%.`) +
+          (own
+            ? " Verify every name and figure."
+            : " Aspirant name was not matched. Enter their votes from the document."),
+      );
+      setStep(2);
+    } catch (e) {
+      setError(
+        "Document reading failed. You can enter the figures manually and review the attachment.",
+      );
+      setStep(2);
+    } finally {
+      setBusy("");
     }
   };
-
-  const handleSubmitTally = (e) => {
-    e.preventDefault();
-    setEntryError('');
-    if (!selectedPs) return;
-
-    if (!evidenceImage) {
-      setEntryError('Form 34A photograph or scanned document is mandatory for result transmission. Please upload or scan Form 34A.');
+  const submit = async () => {
+    setError("");
+    const problem = validateResult(form);
+    if (problem) {
+      setError(problem);
       return;
     }
-
-    const res = submitTallyCenterForm(
-      {
-        pollingStationId: selectedPs.id,
-        pollingStationCode: selectedPs.code,
-        pollingStationName: selectedPs.name,
-        registeredVoters,
-        candAVotes,
-        candBVotes,
-        candCVotes,
-        rejectedVotes,
-        agentId: currentUser?.id || 'AGT-001',
-        evidence: {
-          formType: 'Form 34A',
-          imageUrl: evidenceImage,
-          ocrExtracted: ocrData?.extractedVotes
-        }
-      },
-      currentUser,
-      { allowOverwrite: false }
-    );
-
-    if (res && !res.success) {
-      setEntryError(res.errors?.join('; ') || 'Validation failed');
-      return;
+    setBusy("Submitting…");
+    try {
+      const evidence = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      await request("POST", { ...form, evidence, filename: file.name });
+      setNotice("Submitted for independent review.");
+      setFile(null);
+      setForm(blank(data.aspirant.name));
+      setRaw("");
+      setStep(1);
+      await refresh();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy("");
     }
-
-    setActiveTab('summary');
   };
-
-  const handleVerifySubmit = (status) => {
-    if (!verifyingTally) return;
-    verifyTallyResult(verifyingTally.id, status, verifyComment, currentUser);
-    setVerifyingTally(null);
-    setVerifyComment('');
+  const review = async (r, status) => {
+    const comment = window.prompt("Review comment (required)");
+    if (!comment) return;
+    try {
+      await request("PATCH", { id: r.id, status, comment });
+      await refresh();
+    } catch (e) {
+      setError(e.message);
+    }
   };
-
+  const view = async (r) => {
+    try {
+      const d = await request("GET", null, "?evidence=" + r.id);
+      const blob = await (await fetch(d.evidence)).blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = r.filename;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+  const report = () => {
+    const rows = [
+      [
+        "Station",
+        "Status",
+        "Candidate",
+        "Votes",
+        "Registered",
+        "Rejected",
+        "Total",
+      ],
+      ...data.results.flatMap((r) =>
+        r.candidates.map((c) => [
+          r.stationName,
+          r.status,
+          c.name,
+          c.votes,
+          r.registered,
+          r.rejected,
+          r.total,
+        ]),
+      ),
+    ];
+    const csv = rows
+      .map((row) =>
+        row
+          .map(
+            (v) =>
+              '"' +
+              String(v)
+                .replace(/"/g, '""')
+                .replace(/^[=+@-]/, "'$&") +
+              '"',
+          )
+          .join(","),
+      )
+      .join("\r\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "campaign-results.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  const summary = summarizeResults(data?.results || []),
+    valid = Object.values(summary.totals).reduce((a, b) => a + b, 0),
+    rank = Object.entries(summary.totals).sort((a, b) => b[1] - a[1]);
   return (
-    <div className="role-dash tc-shell">
-      <header className="tc-top">
+    <section className="rs">
+      <header className="rs-heading">
         <div>
-          <h1>Tally center</h1>
+          <span className="rs-eyebrow">ELECTION RESULTS / DOCUMENT INTAKE</span>
+          <h1>Result submission</h1>
           <p>
-            {scopeLabel}: {scopeSubtitle}
+            Upload the signed station return, check the figures, then send for
+            review.
           </p>
         </div>
-
-        <div className="tc-tabs" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'summary'}
-            className={activeTab === 'summary' ? 'is-active' : ''}
-            onClick={() => setActiveTab('summary')}
-          >
-            <Vote strokeWidth={1.75} />
-            Live stream
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'entry'}
-            className={activeTab === 'entry' ? 'is-active' : ''}
-            onClick={() => setActiveTab('entry')}
-          >
-            <Plus strokeWidth={1.75} />
-            Submit Form 34A
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'analytics'}
-            className={activeTab === 'analytics' ? 'is-active' : ''}
-            onClick={() => setActiveTab('analytics')}
-          >
-            <BarChart3 strokeWidth={1.75} />
-            Analytics
-          </button>
-        </div>
+        <FileCheck2 size={36} />
       </header>
-
-      <section className="admin-metric-grid tc-metrics">
-        <article className="admin-metric is-featured">
-          <div className="admin-metric-top">
-            <span>Forms received</span>
-            <div className="admin-metric-icon">
-              <Vote strokeWidth={1.75} />
-            </div>
-          </div>
-          <strong>{formatCount(metrics.total)}</strong>
-          <small>Station tallies in queue</small>
-        </article>
-        <article className="admin-metric">
-          <div className="admin-metric-top">
-            <span>Awaiting review</span>
-            <div className="admin-metric-icon">
-              <Clock3 strokeWidth={1.75} />
-            </div>
-          </div>
-          <strong>{formatCount(metrics.submitted)}</strong>
-          <small>Submitted status</small>
-        </article>
-        <article className="admin-metric">
-          <div className="admin-metric-top">
-            <span>Approved</span>
-            <div className="admin-metric-icon">
-              <CheckCircle2 strokeWidth={1.75} />
-            </div>
-          </div>
-          <strong>{formatCount(metrics.approved)}</strong>
-          <small>Supervisor signed off</small>
-        </article>
-        <article className="admin-metric">
-          <div className="admin-metric-top">
-            <span>Mismatches</span>
-            <div className="admin-metric-icon">
-              <AlertTriangle strokeWidth={1.75} />
-            </div>
-          </div>
-          <strong>{formatCount(metrics.mismatch)}</strong>
-          <small>Math or evidence flags</small>
-        </article>
-      </section>
-
-      {activeTab === 'summary' && (
-        <article className="tc-panel">
-          <div className="tc-toolbar">
-            <input
-              type="search"
-              className="form-input tc-search"
-              placeholder="Search station name or code"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <select className="form-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="">All statuses</option>
-              <option value="Submitted">Submitted</option>
-              <option value="Approved">Approved</option>
-              <option value="Mismatch">Mismatch</option>
-            </select>
-          </div>
-
-          <div className="custom-table-container tc-table-wrap">
-            <table className="custom-table tc-table">
-              <thead>
-                <tr>
-                  <th>Station</th>
-                  <th>A</th>
-                  <th>B</th>
-                  <th>C</th>
-                  <th>Rejected</th>
-                  <th>Cast / Reg</th>
-                  <th>Evidence</th>
-                  <th>Status</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTallies.length === 0 ? (
-                  <tr>
-                    <td colSpan="9">
-                      <div className="admin-empty">No tallies match the current filters.</div>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredTallies.map((tally) => (
-                    <tr key={tally.id}>
-                      <td>
-                        <strong className="tc-station-name">{tally.pollingStationName}</strong>
-                        <span className="tc-meta">{tally.pollingStationCode}</span>
-                      </td>
-                      <td className="tc-vote tc-vote-a">{formatCount(tally.candAVotes)}</td>
-                      <td className="tc-vote">{formatCount(tally.candBVotes)}</td>
-                      <td className="tc-vote">{formatCount(tally.candCVotes)}</td>
-                      <td className="tc-meta-cell">{formatCount(tally.rejectedVotes)}</td>
-                      <td>
-                        <strong className={tally.status === 'Mismatch' ? 'tc-cast-bad' : 'tc-cast-ok'}>
-                          {formatCount(tally.totalVotesCast)}
-                        </strong>
-                        <span className="tc-meta"> / {formatCount(tally.registeredVoters)}</span>
-                      </td>
-                      <td>
-                        {tally.evidence?.imageUrl ? (
-                          <a
-                            href={tally.evidence.imageUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="tc-evidence"
-                          >
-                            <FileImage strokeWidth={1.75} />
-                            Form 34A
-                          </a>
-                        ) : (
-                          <span className="tc-meta">—</span>
-                        )}
-                      </td>
-                      <td>
-                        <span className={statusClass(tally.status)}>{tally.status}</span>
-                      </td>
-                      <td>
-                        {canPerformAction?.('VERIFY_TALLY') ? (
-                          <button
-                            type="button"
-                            className="admin-btn admin-btn-ghost tc-verify-btn"
-                            onClick={() => setVerifyingTally(tally)}
-                          >
-                            <ShieldCheck strokeWidth={1.75} />
-                            Verify
-                          </button>
-                        ) : (
-                          <span className="tc-meta" title="Verification restricted to Coordinators and Admins">Read-only</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </article>
+      {error && (
+        <div role="alert" className="rs-alert">
+          {error}
+        </div>
       )}
-
-      {activeTab === 'analytics' && (
-        <section className="tc-analytics">
-          <div className="tc-analytics-summary">
-            <article className="tc-share-card">
-              <span>Candidate A</span>
-              <strong>{formatCount(voteAnalytics.candA)}</strong>
-              <small>{voteAnalytics.shares.candA}% share</small>
-            </article>
-            <article className="tc-share-card">
-              <span>Candidate B</span>
-              <strong>{formatCount(voteAnalytics.candB)}</strong>
-              <small>{voteAnalytics.shares.candB}% share</small>
-            </article>
-            <article className="tc-share-card">
-              <span>Candidate C</span>
-              <strong>{formatCount(voteAnalytics.candC)}</strong>
-              <small>{voteAnalytics.shares.candC}% share</small>
-            </article>
-            <article className="tc-share-card tc-share-lead">
-              <span>Current lead</span>
-              <strong>{voteAnalytics.leader}</strong>
-              <small>Margin {formatCount(voteAnalytics.margin)} votes</small>
-            </article>
-          </div>
-
-          <div className="tc-chart-grid">
-            <article className="tc-panel tc-chart-card">
-              <div className="tc-chart-head">
-                <h2>Candidate vote share</h2>
-                <p>Total votes across Form 34A tallies in {scopeLabel}</p>
-              </div>
-              <div className="tc-chart-canvas">
-                <Pie data={candidatePieData} options={pieOptions} />
-              </div>
-            </article>
-
-            <article className="tc-panel tc-chart-card">
-              <div className="tc-chart-head">
-                <h2>Ballot composition</h2>
-                <p>Valid candidate votes versus rejected ballots</p>
-              </div>
-              <div className="tc-chart-canvas">
-                <Pie data={ballotPieData} options={pieOptions} />
-              </div>
-            </article>
-
-            <article className="tc-panel tc-chart-card tc-chart-wide">
-              <div className="tc-chart-head">
-                <h2>Candidate comparison</h2>
-                <p>
-                  Aggregate totals · {formatCount(voteAnalytics.candidateTotal)} valid votes ·{' '}
-                  {formatCount(voteAnalytics.rejected)} rejected
-                </p>
-              </div>
-              <div className="tc-chart-canvas tc-chart-bar">
-                <Bar data={comparisonBarData} options={barOptions} />
-              </div>
-            </article>
-          </div>
-        </section>
+      {notice && (
+        <div role="status" className="rs-notice">
+          {notice}
+        </div>
       )}
-
-      {activeTab === 'entry' && (
-        <article className="tc-panel tc-entry-panel">
-          <div className="tc-entry-head">
-            <div>
-              <h2>Submit Form 34A</h2>
-              <p>Select a station, upload evidence, and confirm ballot figures before transmission.</p>
-            </div>
+      {!data ? (
+        <p>Loading campaign profile…</p>
+      ) : (
+        <>
+          <div className="rs-profile">
+            <strong>{data.aspirant.name}</strong>
+            <span>
+              {data.aspirant.role} · Affiliated aspirant · Candidate A locked
+            </span>
           </div>
-
-          <form onSubmit={handleSubmitTally} className="tc-entry-form">
-            {entryError && (
-              <div
-                role="alert"
-                style={{
-                  padding: '0.85rem 1rem',
-                  borderRadius: '10px',
-                  background: 'rgba(187, 10, 33, 0.12)',
-                  border: '1px solid #BB0A21',
-                  color: '#ff6b6b',
-                  fontSize: '0.85rem',
-                  marginBottom: '1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}
-              >
-                <AlertTriangle size={18} strokeWidth={2} />
-                <span>{entryError}</span>
-              </div>
-            )}
-            <div className="tc-form-grid">
-              <div className="form-group">
-                <label className="form-label">County</label>
-                {!isNational ? (
-                  <div
-                    className="locked-jurisdiction-badge"
-                    title={`Locked to your ${String(assignment.label || 'assignment').toLowerCase()}`}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.45rem',
-                      padding: '0.6rem 0.85rem',
-                      borderRadius: '8px',
-                      background: 'rgba(6, 182, 212, 0.1)',
-                      border: '1px solid rgba(6, 182, 212, 0.3)',
-                      color: '#06b6d4',
-                      fontWeight: '600',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    <Lock size={14} />
-                    <span>{scopeLabel} 🔒 [Locked]</span>
-                  </div>
-                ) : (
-                  <select
-                    className="form-select"
-                    value={selectedCountyId}
-                    onChange={(e) => setSelectedCountyId(e.target.value)}
-                    title="Select county"
-                  >
-                    {countyOptions.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-              <div className="form-group">
-                <label className="form-label">Polling station</label>
-                <select
-                  className="form-select"
-                  value={selectedStationId}
-                  onChange={(e) => setSelectedStationId(e.target.value)}
-                  required
-                >
-                  {entryStations.map((ps) => (
-                    <option key={ps.id} value={ps.id}>
-                      {ps.code} — {ps.name}
-                    </option>
+          <div className="rs-layout">
+            <article className="rs-card">
+              <nav className="rs-steps" aria-label="Submission steps">
+                {["Upload", "Review figures", "Confirm"].map((label, i) => (
+                  <span key={label} className={step === i + 1 ? "active" : ""}>
+                    {i + 1}. {label}
+                  </span>
+                ))}
+              </nav>
+              {step === 1 ? (
+                <>
+                  <h2>Attach station return</h2>
+                  <p>
+                    Form 34A is the presidential return. For other offices,
+                    attach the corresponding official station return for this
+                    aspirant’s contest.
+                  </p>
+                  <label className="rs-drop">
+                    <UploadCloud size={36} />
+                    <strong>Choose a photo or PDF</strong>
+                    <span>
+                      JPG, PNG, WebP or PDF · up to 5 MB · one station per
+                      submission
+                    </span>
+                    <input
+                      aria-label="Upload station return"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      disabled={!!busy}
+                      onChange={(e) => upload(e.target.files[0])}
+                    />
+                  </label>
+                  {busy && <p role="status">{busy}</p>}
+                </>
+              ) : (
+                <>
+                  <h2>
+                    {step === 2
+                      ? "Review extracted figures"
+                      : "Confirm submission"}
+                  </h2>
+                  <label>
+                    Polling station
+                    <input
+                      placeholder="Search assigned stations"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                    />
+                    <select
+                      disabled={step === 3}
+                      value={form.stationId}
+                      onChange={(e) => change("stationId", e.target.value)}
+                    >
+                      <option value="">Select assigned station</option>
+                      {data.stations
+                        .filter(
+                          (s) =>
+                            !search ||
+                            `${s.name} ${s.code}`
+                              .toLowerCase()
+                              .includes(search.toLowerCase()) ||
+                            s.id === form.stationId,
+                        )
+                        .slice(0, 500)
+                        .map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name} · {s.code || s.id}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  <p className="rs-muted">
+                    Candidate A is taken from your campaign profile. Confirm OCR
+                    against the source, including candidates that were missed.
+                  </p>
+                  {form.candidates.map((c, i) => (
+                    <div className="rs-candidate" key={i}>
+                      <label>
+                        {i === 0
+                          ? "A · Affiliated aspirant"
+                          : `Candidate ${i + 1}`}
+                        <input
+                          aria-label={`Candidate ${i + 1} name`}
+                          value={c.name}
+                          readOnly={i === 0 || step === 3}
+                          onChange={(e) => candidate(i, "name", e.target.value)}
+                        />
+                      </label>
+                      <label>
+                        Votes
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={c.votes}
+                          readOnly={step === 3}
+                          onChange={(e) =>
+                            candidate(i, "votes", e.target.value)
+                          }
+                        />
+                      </label>
+                      {i > 0 && step === 2 && (
+                        <button
+                          aria-label="Remove candidate"
+                          onClick={() =>
+                            change(
+                              "candidates",
+                              form.candidates.filter((_, j) => j !== i),
+                            )
+                          }
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
                   ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="tc-ocr-box">
-              <div className="tc-ocr-title">
-                <Scan strokeWidth={1.75} />
-                Form 34A evidence & OCR assist
-              </div>
-              <input type="file" accept="image/*" onChange={handleSimulateOCR} className="form-input" />
-              {isScanningOCR && <p className="tc-ocr-scanning">Extracting figures from Form 34A…</p>}
-              {ocrData && (
-                <p className="tc-ocr-ok">
-                  Extraction complete · confidence {Math.round((ocrData.confidence || 0) * 100)}%
-                </p>
+                  {step === 2 && (
+                    <button
+                      className="rs-secondary"
+                      onClick={() =>
+                        change("candidates", [
+                          ...form.candidates,
+                          { name: "", votes: "" },
+                        ])
+                      }
+                    >
+                      <Plus size={16} /> Add candidate
+                    </button>
+                  )}
+                  <div className="rs-totals">
+                    {[
+                      ["registered", "Registered voters"],
+                      ["rejected", "Rejected ballots"],
+                      ["total", "Total ballots cast"],
+                    ].map(([key, label]) => (
+                      <label key={key}>
+                        {label}
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          readOnly={step === 3}
+                          value={form[key]}
+                          onChange={(e) => change(key, e.target.value)}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  {step === 3 && (
+                    <label className="rs-check">
+                      <input
+                        type="checkbox"
+                        checked={form.confirmed}
+                        onChange={(e) =>
+                          setForm({ ...form, confirmed: e.target.checked })
+                        }
+                      />{" "}
+                      I checked every candidate, figure, and station against the
+                      uploaded return. This is submitted data, pending review.
+                    </label>
+                  )}
+                  <div className="rs-actions">
+                    <button
+                      className="rs-secondary"
+                      disabled={!!busy}
+                      onClick={() => setStep(step - 1)}
+                    >
+                      Back
+                    </button>
+                    {step === 2 ? (
+                      <button
+                        onClick={() => {
+                          const problem = validateResult(form);
+                          if (problem || !form.stationId) {
+                            setError(problem || "Select a station.");
+                            return;
+                          }
+                          setError("");
+                          setStep(3);
+                        }}
+                      >
+                        Continue <ArrowRight size={16} />
+                      </button>
+                    ) : (
+                      <button
+                        disabled={!!busy || !form.confirmed}
+                        onClick={submit}
+                      >
+                        {busy || "Submit for review"}
+                      </button>
+                    )}
+                  </div>
+                </>
               )}
-            </div>
-
-            <div className="tc-vote-grid">
-              <div className="form-group">
-                <label className="form-label">Candidate A</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  min="0"
-                  value={candAVotes}
-                  onChange={(e) => setCandAVotes(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Candidate B</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  min="0"
-                  value={candBVotes}
-                  onChange={(e) => setCandBVotes(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Candidate C</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  min="0"
-                  value={candCVotes}
-                  onChange={(e) => setCandCVotes(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Rejected ballots</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  min="0"
-                  value={rejectedVotes}
-                  onChange={(e) => setRejectedVotes(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className={`tc-math ${isExceedingReg ? 'is-bad' : 'is-ok'}`}>
-              <div>
-                <Scale strokeWidth={1.75} />
-                <span>
-                  Total cast <strong>{formatCount(calculatedTotal)}</strong> / registered{' '}
-                  <strong>{formatCount(registeredVoters)}</strong>
-                </span>
-              </div>
-              {isExceedingReg && (
-                <span className="tc-math-flag">
-                  <AlertTriangle strokeWidth={1.75} />
-                  Cast exceeds registered voters
-                </span>
+            </article>
+            <aside className="rs-card">
+              <h2>Source document</h2>
+              {preview ? (
+                <>
+                  {file.type === "application/pdf" ? (
+                    <iframe title="Uploaded result document" src={preview} />
+                  ) : (
+                    <img alt="Uploaded station return" src={preview} />
+                  )}
+                  <p>{file.name}</p>
+                </>
+              ) : (
+                <p className="rs-muted">Your document will appear here.</p>
               )}
-            </div>
-
-            <button type="submit" className="admin-btn admin-btn-primary tc-submit" disabled={!selectedPs}>
-              <Vote strokeWidth={1.75} />
-              Transmit to verification queue
-            </button>
-          </form>
-        </article>
-      )}
-
-      {verifyingTally && (
-        <div className="tc-modal-overlay" onClick={() => setVerifyingTally(null)}>
-          <div className="tc-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-            <div className="tc-modal-head">
-              <div>
-                <h3>Verify tally</h3>
-                <p>{verifyingTally.pollingStationName}</p>
-              </div>
-              <button type="button" className="tc-icon-btn" onClick={() => setVerifyingTally(null)} aria-label="Close">
-                <X strokeWidth={1.75} />
+              {raw && (
+                <details>
+                  <summary>Recognized text</summary>
+                  <pre>{raw}</pre>
+                </details>
+              )}
+            </aside>
+          </div>
+          <article className="rs-card rs-analysis">
+            <div className="rs-heading">
+              <h2>Results & analysis</h2>
+              <button className="rs-secondary" onClick={report}>
+                <Download size={16} /> Export CSV
               </button>
             </div>
-
-            <div className="tc-verify-grid">
+            <div className="rs-metrics">
               <div>
-                <span>Candidate A</span>
-                <strong>{formatCount(verifyingTally.candAVotes)}</strong>
-              </div>
-              <div>
-                <span>Candidate B</span>
-                <strong>{formatCount(verifyingTally.candBVotes)}</strong>
-              </div>
-              <div>
-                <span>Candidate C</span>
-                <strong>{formatCount(verifyingTally.candCVotes)}</strong>
-              </div>
-              <div>
-                <span>Rejected</span>
-                <strong>{formatCount(verifyingTally.rejectedVotes)}</strong>
-              </div>
-              <div className="tc-verify-total">
-                <span>Total cast</span>
                 <strong>
-                  {formatCount(verifyingTally.totalVotesCast)} / {formatCount(verifyingTally.registeredVoters)}
+                  {summary.approved} / {data.stations.length}
+                </strong>
+                <span>stations approved in your area</span>
+              </div>
+              <div>
+                <strong>{summary.ballots.toLocaleString()}</strong>
+                <span>reported ballots · approved only</span>
+              </div>
+              <div>
+                <strong>
+                  {data.results.filter((r) => r.status === "Submitted").length}
+                </strong>
+                <span>awaiting independent review</span>
+              </div>
+            </div>
+            {rank.map(([name, votes]) => (
+              <div className="rs-bar" key={name}>
+                <span>{name}</span>
+                <progress max={valid || 1} value={votes} />
+                <strong>
+                  {votes.toLocaleString()} ·{" "}
+                  {valid ? ((votes / valid) * 100).toFixed(1) : 0}%
+                  <small>
+                    Scenario total:{" "}
+                    {Math.round(
+                      (votes / summary.approved) * data.stations.length,
+                    ).toLocaleString()}
+                  </small>
                 </strong>
               </div>
+            ))}
+            <p className="rs-muted">
+              Scenario projection: if remaining stations have the same candidate
+              shares as approved stations, projected shares equal those above.
+              Scenario totals also assume the same average ballots per station.
+              Reporting stations are not a random sample; this is not a win
+              probability or an official prediction. No projection is available
+              until results are approved.
+            </p>
+            <div className="rs-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Station</th>
+                    <th>Status</th>
+                    <th>Ballots</th>
+                    <th>Document & review</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.results.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.stationName}</td>
+                      <td>{r.status}</td>
+                      <td>{r.total}</td>
+                      <td>
+                        <button
+                          className="rs-secondary"
+                          onClick={() => view(r)}
+                        >
+                          Download source
+                        </button>
+                        {r.canReview && r.status === "Submitted" && (
+                          <>
+                            <button onClick={() => review(r, "Approved")}>
+                              Approve
+                            </button>
+                            <button
+                              className="rs-secondary"
+                              onClick={() => review(r, "Rejected")}
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        {r.review && <small>{r.review.comment}</small>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!data.results.length && <p>No station returns submitted yet.</p>}
             </div>
-
-            <div className="form-group">
-              <label className="form-label">Supervisor comment</label>
-              <textarea
-                rows={3}
-                className="form-input"
-                placeholder="Confirm Form 34A evidence and ballot reconciliation notes"
-                value={verifyComment}
-                onChange={(e) => setVerifyComment(e.target.value)}
-              />
-            </div>
-
-            <div className="tc-modal-actions">
-              <button type="button" className="admin-btn admin-btn-primary" onClick={() => handleVerifySubmit('Approved')}>
-                <CheckCircle2 strokeWidth={1.75} />
-                Approve
-              </button>
-              <button type="button" className="admin-btn tc-btn-danger" onClick={() => handleVerifySubmit('Mismatch')}>
-                <XCircle strokeWidth={1.75} />
-                Flag mismatch
-              </button>
-            </div>
-          </div>
-        </div>
+          </article>
+        </>
       )}
-    </div>
+    </section>
   );
 };

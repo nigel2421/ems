@@ -1,3 +1,4 @@
+import { TallyCenter } from '../modules/TallyCenter';
 // ====================================================================
 // CAMPAIGN INTELLIGENCE & ELECTION MANAGEMENT SYSTEM (KuraTech 2.3)
 // Mobile-First Field Agent PWA Application Component
@@ -6,7 +7,6 @@
 import React, { useState, useEffect } from 'react';
 import './FieldAgentPWA.css';
 import { createAgentMission, updateMissionStatus, MISSION_STATES } from '../../utils/agentMissions.js';
-import { calculateEvidenceQualityScore } from '../../utils/evidenceVault.js';
 import { enqueueOfflineItem, getOfflineQueue } from '../../utils/offlineSync.js';
 
 export const FieldAgentPWA = ({ user, onBackToDashboard }) => {
@@ -26,9 +26,6 @@ export const FieldAgentPWA = ({ user, onBackToDashboard }) => {
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
   const [incidentText, setIncidentText] = useState('');
-  const [candAVotes, setCandAVotes] = useState('421');
-  const [candBVotes, setCandBVotes] = useState('318');
-  const [rejectedVotes, setRejectedVotes] = useState('7');
   const [statusNotification, setStatusNotification] = useState(null);
 
   useEffect(() => {
@@ -77,36 +74,6 @@ export const FieldAgentPWA = ({ user, onBackToDashboard }) => {
     setIncidentText('');
     setShowIncidentModal(false);
     showTempNotification('Incident report queued & secured locally');
-  };
-
-  const handleCaptureEvidence = async () => {
-    const qualityEval = calculateEvidenceQualityScore({
-      imageReadable: true,
-      stationId: mission.pollingUnitId,
-      formType: 'Form 34A',
-      fieldsDetected: true,
-      mathValid: true,
-      signaturesDetected: true,
-      stampDetected: true,
-      isDuplicate: false
-    });
-
-    const payload = {
-      type: 'RESULT_EVIDENCE_SUBMISSION',
-      formType: 'Form 34A',
-      stationId: mission.pollingUnitId,
-      candAVotes: Number(candAVotes),
-      candBVotes: Number(candBVotes),
-      rejectedVotes: Number(rejectedVotes),
-      totalVotesCast: Number(candAVotes) + Number(candBVotes) + Number(rejectedVotes),
-      qualityEval,
-      capturedAt: new Date().toISOString()
-    };
-
-    await enqueueOfflineItem(payload);
-    setOfflineQueue(getOfflineQueue());
-    setShowEvidenceModal(false);
-    showTempNotification('Result evidence captured & SHA-256 verified');
   };
 
   const isCheckedIn = mission.status === MISSION_STATES.CHECKED_IN || mission.status === MISSION_STATES.ON_DUTY;
@@ -288,32 +255,7 @@ export const FieldAgentPWA = ({ user, onBackToDashboard }) => {
         </div>
       )}
 
-      {/* Modal: Capture Form 34A Evidence */}
-      {showEvidenceModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 1000 }}>
-          <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '20px', width: '100%', maxWidth: '400px' }}>
-            <h3 style={{ margin: '0 0 12px 0', color: '#38bdf8' }}>📷 Capture Result Evidence (Form 34A)</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem' }}>
-              <div>
-                <label style={{ color: '#94a3b8' }}>Candidate A Votes:</label>
-                <input type="number" value={candAVotes} onChange={e => setCandAVotes(e.target.value)} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '8px', color: '#fff' }} />
-              </div>
-              <div>
-                <label style={{ color: '#94a3b8' }}>Candidate B Votes:</label>
-                <input type="number" value={candBVotes} onChange={e => setCandBVotes(e.target.value)} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '8px', color: '#fff' }} />
-              </div>
-              <div>
-                <label style={{ color: '#94a3b8' }}>Rejected Votes:</label>
-                <input type="number" value={rejectedVotes} onChange={e => setRejectedVotes(e.target.value)} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '8px', color: '#fff' }} />
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
-              <button onClick={() => setShowEvidenceModal(false)} style={{ flex: 1, padding: '10px', background: '#334155', border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
-              <button onClick={handleCaptureEvidence} style={{ flex: 1, padding: '10px', background: '#0284c7', border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Save Evidence</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {showEvidenceModal && <div style={{position:'fixed',inset:0,overflow:'auto',background:'#f3f6f5',zIndex:1000}}><button onClick={()=>setShowEvidenceModal(false)} style={{margin:16,padding:12}}>Close result submission</button><TallyCenter/></div>}
     </div>
   );
 };
