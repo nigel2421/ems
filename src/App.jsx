@@ -5,7 +5,6 @@ import { AdminLayout } from './components/dashboards/AdminLayout';
 import { AdminDashboard } from './components/dashboards/AdminDashboard';
 import { StrategyDashboard } from './components/dashboards/StrategyDashboard';
 import { RegionalDashboard } from './components/dashboards/RegionalDashboard';
-import { AgentDashboard } from './components/dashboards/AgentDashboard';
 import { ObserverDashboard } from './components/dashboards/ObserverDashboard';
 import { PollingStationIntelligence } from './components/modules/PollingStationIntelligence';
 import { AgentManagement } from './components/modules/AgentManagement';
