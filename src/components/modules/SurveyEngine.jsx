@@ -1,3 +1,4 @@
+import { SurveyShareLink } from "./SurveyShareLink";
 import {
   InsightRing,
   ResponseTrend,
@@ -176,7 +177,7 @@ export const SurveyEngine = () => {
     const a = analysis;
     download(
       "research-report.html",
-      `<!doctype html><meta charset="utf-8"><title>${esc(selected.title)}</title><style>body{font:16px system-ui;max-width:850px;margin:40px auto;padding:20px;color:#17352b}h1{font-size:34px}table{border-collapse:collapse;width:100%}td,th{padding:10px;border-bottom:1px solid #ddd;text-align:left}small{color:#667}</style><h1>${esc(selected.title)}</h1><p>Generated ${new Date().toLocaleString()}</p><p>Analysis group: ${esc(filter||'All respondents')}</p><h2>Method</h2><p>${esc(selected.population)} · ${esc(selected.method)}</p><p>${esc(selected.frameDescription)}</p><p>${a.questions.length} questions · ${a.valid} included · ${a.excluded} excluded</p><p>${esc(a.limitations)}</p>${a.questions.map((q) => `<h2>${esc(q.text)}</h2><p>Base ${q.n}; missing ${q.missing}</p>${q.options ? `<table><tr><th>Answer</th><th>Count</th><th>%</th><th>95% interval</th></tr>${q.options.map((o) => `<tr><td>${esc(o.label)}</td><td>${o.count}</td><td>${o.percent.toFixed(1)}</td><td>${o.interval ? o.interval.map((v) => (v * 100).toFixed(1)).join(" – ") : "Not applicable"}</td></tr>`).join("")}</table>` : q.mean !== undefined ? `<p>Mean ${q.mean ?? "—"}</p>` : `<p>Open responses are reported verbatim.</p>`}`).join("")}<h2>Limitations</h2><p>${esc(a.limitations)}</p>`,
+      `<!doctype html><meta charset="utf-8"><title>${esc(selected.title)}</title><style>body{font:16px system-ui;max-width:850px;margin:40px auto;padding:20px;color:#17352b}h1{font-size:34px}table{border-collapse:collapse;width:100%}td,th{padding:10px;border-bottom:1px solid #ddd;text-align:left}small{color:#667}</style><h1>${esc(selected.title)}</h1><p>Generated ${new Date().toLocaleString()}</p><p>Analysis group: ${esc(filter || "All respondents")}</p><h2>Method</h2><p>${esc(selected.population)} · ${esc(selected.method)}</p><p>${esc(selected.frameDescription)}</p><p>${a.questions.length} questions · ${a.valid} included · ${a.excluded} excluded</p><p>${esc(a.limitations)}</p>${a.questions.map((q) => `<h2>${esc(q.text)}</h2><p>Base ${q.n}; missing ${q.missing}</p>${q.options ? `<table><tr><th>Answer</th><th>Count</th><th>%</th><th>95% interval</th></tr>${q.options.map((o) => `<tr><td>${esc(o.label)}</td><td>${o.count}</td><td>${o.percent.toFixed(1)}</td><td>${o.interval ? o.interval.map((v) => (v * 100).toFixed(1)).join(" – ") : "Not applicable"}</td></tr>`).join("")}</table>` : q.mean !== undefined ? `<p>Mean ${q.mean ?? "—"}</p>` : `<p>Open responses are reported verbatim.</p>`}`).join("")}<h2>Limitations</h2><p>${esc(a.limitations)}</p>`,
       "text/html",
     );
   };
@@ -400,6 +401,7 @@ export const SurveyEngine = () => {
                         findings
                       </div>
                     )}
+                    <SurveyShareLink survey={s} compact />
                     <div className="se-study-footer">
                       <button
                         className="se-text-button"
@@ -460,8 +462,13 @@ export const SurveyEngine = () => {
               return;
             }
             act(async () => {
-              await surveyRequest("", "POST", { ...draft, questions });
-              setView("list");
+              const data = await surveyRequest("", "POST", {
+                ...draft,
+                questions,
+              });
+              setSelected(data.survey);
+              setFilter("");
+              setView("analysis");
             });
           }}
         >
@@ -705,25 +712,90 @@ export const SurveyEngine = () => {
                       ))}
                     </select>
                     {["single", "multi"].includes(q.type) && (
-                      <label>
-                        Choices (one per line)
-                        <textarea
-                          required
-                          value={q.options.join("\n")}
-                          onChange={(e) =>
+                      <div className="se-choice-editor">
+                        <span className="se-choice-title">Answer choices</span>
+                        <p>
+                          {q.type === "multi"
+                            ? "Participants can select more than one choice."
+                            : "Participants select one choice."}
+                        </p>
+                        {q.options.map((option, choiceIndex) => (
+                          <div className="se-choice-row" key={choiceIndex}>
+                            <span
+                              className={
+                                "se-choice-marker " +
+                                (q.type === "multi" ? "is-multi" : "")
+                              }
+                              aria-hidden="true"
+                            />
+                            <label>
+                              Choice {choiceIndex + 1}
+                              <input
+                                required
+                                maxLength={120}
+                                placeholder={`Enter choice ${choiceIndex + 1}`}
+                                value={option}
+                                onChange={(e) =>
+                                  setQuestions(
+                                    questions.map((x) =>
+                                      x.id === q.id
+                                        ? {
+                                            ...x,
+                                            options: x.options.map((v, j) =>
+                                              j === choiceIndex
+                                                ? e.target.value
+                                                : v,
+                                            ),
+                                          }
+                                        : x,
+                                    ),
+                                  )
+                                }
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              aria-label={`Remove choice ${choiceIndex + 1} from question ${i + 1}`}
+                              disabled={q.options.length <= 2}
+                              onClick={() =>
+                                setQuestions(
+                                  questions.map((x) =>
+                                    x.id === q.id
+                                      ? {
+                                          ...x,
+                                          options: x.options.filter(
+                                            (_, j) => j !== choiceIndex,
+                                          ),
+                                        }
+                                      : x,
+                                  ),
+                                )
+                              }
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          disabled={q.options.length >= 12}
+                          onClick={() =>
                             setQuestions(
                               questions.map((x) =>
                                 x.id === q.id
-                                  ? {
-                                      ...x,
-                                      options: e.target.value.split("\n"),
-                                    }
+                                  ? { ...x, options: [...x.options, ""] }
                                   : x,
                               ),
                             )
                           }
-                        />
-                      </label>
+                        >
+                          <Plus size={14} />
+                          Add choice
+                        </button>
+                        <small>
+                          {q.options.length} of 12 choices · at least 2 required
+                        </small>
+                      </div>
                     )}
                     <label className="se-check">
                       <input
@@ -830,6 +902,7 @@ export const SurveyEngine = () => {
               )}
             </div>
           </div>
+          <SurveyShareLink key={selected.id} survey={selected} />
           <div className="se-stats">
             <article>
               <strong>{analysis.valid}</strong>
