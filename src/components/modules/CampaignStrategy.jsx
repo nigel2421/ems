@@ -456,7 +456,7 @@ export const CampaignStrategy = ({ onClose }) => {
           </div>
           <h1>Strategy phase roadmap</h1>
           <p>
-            Autonomous background agents ingest live Kenyan political news to drive strategic recommendations, phase objectives, and tactical priorities.
+            Autonomous background coordinators ingest live Kenyan political news to drive strategic recommendations, phase objectives, and tactical priorities.
           </p>
         </div>
         <div className="strategy-hero-actions">
@@ -701,7 +701,7 @@ export const CampaignStrategy = ({ onClose }) => {
                   {currentFactor.label}
                 </span>
                 {currentFactor.agentCanInput && (
-                  <em className="strategy-intel-agent-tag">Agent input</em>
+                  <em className="strategy-intel-agent-tag">Coordinator input</em>
                 )}
               </div>
               <p>{currentFactor.help}</p>

@@ -25,7 +25,7 @@ export const LogisticsReadinessPanel = () => {
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e293b', paddingBottom: '16px', marginBottom: '20px' }}>
         <div>
           <h2 style={{ margin: 0, fontSize: '1.4rem' }}>📦 LOGISTICS & READINESS COMMAND</h2>
-          <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Election Equipment, Agent Kits & D-Day Deadline Operations</div>
+          <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Election Equipment, Coordinator Kits & D-Day Deadline Operations</div>
         </div>
         <div style={{ background: deadlineEval.isTargetMet ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)', border: `1px solid ${deadlineEval.isTargetMet ? '#10b981' : '#f59e0b'}`, color: deadlineEval.isTargetMet ? '#10b981' : '#f59e0b', padding: '6px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 700 }}>
           {deadlineEval.phase}: {deadlineEval.actualPct}% READINESS (TARGET: {deadlineEval.targetPct}%)

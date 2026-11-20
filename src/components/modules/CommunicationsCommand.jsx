@@ -117,7 +117,7 @@ export const CommunicationsCommand = ({ user }) => {
             <div className="communications-field">
               <label htmlFor="sms-recipient-source">Send to</label>
               <select id="sms-recipient-source" value={recipientSource} onChange={(event) => setRecipientSource(event.target.value)}>
-                <option value="agents">Uploaded agents</option>
+                <option value="agents">Uploaded coordinators</option>
                 <option value="voters">Uploaded voter numbers</option>
               </select>
             </div>
@@ -148,7 +148,7 @@ export const CommunicationsCommand = ({ user }) => {
             <button className="communications-send-button" type="submit" disabled={!body.trim() || recipients.length === 0}><Send size={16} />Review SMS for {recipients.length.toLocaleString()} recipients</button>
           </form>}
 
-          {!canSend && canUpload && <div className="communications-upload-only"><div className="communications-provider-note"><Info size={17} /><span>Field agent access lets you upload a contact list for your campaign account. Sending is managed by an authorized campaign user.</span></div><label className={`communications-upload-button${isImporting ? ' is-loading' : ''}`}><input type="file" accept=".xlsx,.csv" onChange={handleImport} disabled={isImporting} />{isImporting ? <FileSpreadsheet size={16} /> : <Upload size={16} />}{isImporting ? 'Reading file…' : 'Upload Excel / CSV'}</label><p className="communications-upload-help">Use a Phone or Mobile column, or place numbers in column A. Excel .xlsx and CSV files are supported.</p></div>}
+          {!canSend && canUpload && <div className="communications-upload-only"><div className="communications-provider-note"><Info size={17} /><span>Field coordinator access lets you upload a contact list for your campaign account. Sending is managed by an authorized campaign user.</span></div><label className={`communications-upload-button${isImporting ? ' is-loading' : ''}`}><input type="file" accept=".xlsx,.csv" onChange={handleImport} disabled={isImporting} />{isImporting ? <FileSpreadsheet size={16} /> : <Upload size={16} />}{isImporting ? 'Reading file…' : 'Upload Excel / CSV'}</label><p className="communications-upload-help">Use a Phone or Mobile column, or place numbers in column A. Excel .xlsx and CSV files are supported.</p></div>}
         </section>
 
         <aside className="communications-card communications-audience-card">

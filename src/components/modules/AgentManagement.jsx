@@ -153,13 +153,13 @@ export const AgentManagement = ({ onClose }) => {
     <div className="role-dash agm-shell">
       <header className="admin-page-head">
         <div>
-          <h1>Agent management</h1>
-          <p>Deploy field agents, assign polling stations, and monitor duty status and performance.</p>
+          <h1>Coordinator management</h1>
+          <p>Manage field coordinators, assign polling stations, and monitor duty status and performance.</p>
         </div>
         <div className="admin-head-actions">
           <button type="button" className="admin-btn admin-btn-primary" onClick={() => setShowAddModal(true)}>
             <UserPlus strokeWidth={1.75} />
-            Register agent
+            Add coordinator
           </button>
         </div>
       </header>
@@ -167,7 +167,7 @@ export const AgentManagement = ({ onClose }) => {
       <section className="admin-metric-grid">
         <article className="admin-metric is-featured">
           <div className="admin-metric-top">
-            <span>Registered agents</span>
+            <span>Registered coordinators</span>
             <div className="admin-metric-icon"><Users strokeWidth={1.75} /></div>
           </div>
           <strong>{formatCount(filteredAgents.length)}</strong>
@@ -187,7 +187,7 @@ export const AgentManagement = ({ onClose }) => {
             <div className="admin-metric-icon"><MapPin strokeWidth={1.75} /></div>
           </div>
           <strong>{formatCount(boundCount)}</strong>
-          <small>Agents with assigned streams</small>
+          <small>Coordinators with assigned streams</small>
         </article>
         <article className="admin-metric">
           <div className="admin-metric-top">
@@ -222,7 +222,7 @@ export const AgentManagement = ({ onClose }) => {
       <article className="admin-card">
         <div className="admin-card-head">
           <div>
-            <h2>Field agent roster</h2>
+            <h2>Coordinator roster</h2>
             <p>
               Showing {formatCount(rangeStart)}–{formatCount(rangeEnd)} of {formatCount(filteredAgents.length)}
             </p>
@@ -233,7 +233,7 @@ export const AgentManagement = ({ onClose }) => {
           <table className="custom-table">
             <thead>
               <tr>
-                <th>Agent</th>
+                <th>Coordinator</th>
                 <th>Region</th>
                 <th>Stations</th>
                 <th>Supervisor</th>
@@ -302,7 +302,7 @@ export const AgentManagement = ({ onClose }) => {
                             className="admin-btn admin-btn-sm"
                             style={{ background: '#eab308', color: '#000', fontWeight: 700, padding: '0.2rem 0.55rem', border: 'none' }}
                             onClick={() => unlockAccount(ag.email)}
-                            title="Unlock agent sign-in lockout"
+                            title="Unlock coordinator sign-in lockout"
                           >
                             <Key size={12} style={{ marginRight: 3 }} /> Unlock
                           </button>
@@ -322,7 +322,7 @@ export const AgentManagement = ({ onClose }) => {
               ) : (
                 <tr>
                   <td colSpan="8">
-                    <div className="admin-empty">No field agents match these filters. Register a new agent to get started.</div>
+                    <div className="admin-empty">No coordinators match these filters. Add a coordinator to get started.</div>
                   </td>
                 </tr>
               )}
@@ -370,7 +370,7 @@ export const AgentManagement = ({ onClose }) => {
               <ScopedLocationSieve
                 user={currentUser}
                 geography={geography}
-                purpose="Agent Polling Station Assignment"
+                purpose="Coordinator Polling Station Assignment"
                 onSelectionChange={(sel) => {
                   if (sel.pollingStationId) {
                     setTargetPsId(sel.pollingStationId);

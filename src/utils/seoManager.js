@@ -25,7 +25,7 @@ export const PAGE_SEO_REGISTRY = {
   },
   polling_stations: {
     title: 'Polling Station Intelligence & GPS Directory | KuraTech',
-    description: 'Directory and security risk assessment for 46,051 Kenyan polling stations across 290 constituencies with live voter capacity and agent assignments.',
+    description: 'Directory and security risk assessment for 46,051 Kenyan polling stations across 290 constituencies with live voter capacity and coordinator assignments.',
     canonicalRoute: '#/polling-stations',
     robots: 'index, follow',
     ogType: 'website',
@@ -60,8 +60,8 @@ export const PAGE_SEO_REGISTRY = {
     changefreq: 'weekly'
   },
   agents: {
-    title: 'Accredited Agent Management & Station Deployment | KuraTech',
-    description: 'Official roster of certified polling station agents, deployment tracking, digital check-ins, and direct communications network.',
+    title: 'Accredited Coordinator Management & Station Deployment | KuraTech',
+    description: 'Official roster of certified polling station coordinators, deployment tracking, digital check-ins, and direct communications network.',
     canonicalRoute: '#/agents',
     robots: 'index, follow',
     ogType: 'website',
@@ -69,7 +69,7 @@ export const PAGE_SEO_REGISTRY = {
     changefreq: 'daily'
   },
   field_reports: {
-    title: 'Field Agent Incident & Polling Stream Reports | KuraTech',
+    title: 'Coordinator Incident & Polling Stream Reports | KuraTech',
     description: 'Real-time field observer observations, station opening times, queue length telemetry, and security incident logs across Kenya.',
     canonicalRoute: '#/field-reports',
     robots: 'index, follow',

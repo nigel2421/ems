@@ -15,8 +15,8 @@ export const DICTIONARY = {
     'nav.verification': 'Document Verification',
     'nav.map_room': 'Electoral Map Room',
     'nav.polling_intel': 'Polling Intel',
-    'nav.agent_management': 'Agent Management',
-    'nav.agents': 'Agent Management',
+    'nav.agent_management': 'Coordinator Management',
+    'nav.agents': 'Coordinator Management',
     'nav.tally_center': 'Tally Center',
     'nav.logistics': 'Logistics & Supply',
     'nav.security': 'Security Command',
@@ -43,7 +43,7 @@ export const DICTIONARY = {
     'metrics.polling_stations': 'Polling Stations',
     'metrics.polling_stations_desc': 'Operational stream hubs with GPS coordinates',
     'metrics.active_accounts': 'Active Personnel Accounts',
-    'metrics.active_accounts_desc': 'Authorized Returning Officers, Agents & Analysts',
+    'metrics.active_accounts_desc': 'Authorized Returning Officers, Coordinators & Analysts',
     'metrics.pending_tallies': 'Pending Tallies',
     'metrics.pending_tallies_desc': 'Awaiting cryptographic signature & Form 34A verification',
 
@@ -90,7 +90,7 @@ export const DICTIONARY = {
     'role.woman_rep': 'Woman Representative',
     'role.mp': 'Member of Parliament',
     'role.mca': 'Member of County Assembly',
-    'role.agent': 'Polling Station Agent',
+    'role.agent': 'Polling Station Coordinator',
     'role.observer': 'Accredited Observer'
   },
   sw: {
@@ -102,8 +102,8 @@ export const DICTIONARY = {
     'nav.verification': 'Uthibitishaji wa Fomu',
     'nav.map_room': 'Chumba cha Ramani ya Uchaguzi',
     'nav.polling_intel': 'Uchambuzi wa Vituo vya Kura',
-    'nav.agent_management': 'Usimamizi wa Maafisa',
-    'nav.agents': 'Usimamizi wa Mawakala',
+    'nav.agent_management': 'Usimamizi wa Waratibu',
+    'nav.agents': 'Usimamizi wa Waratibu',
     'nav.tally_center': 'Kituo cha Ujumlishaji Kura',
     'nav.logistics': 'Usafirishaji na Vifaa',
     'nav.security': 'Usalama wa Mfumo',
@@ -177,7 +177,7 @@ export const DICTIONARY = {
     'role.woman_rep': 'Mwakilishi wa Wanawake',
     'role.mp': 'Mbunge',
     'role.mca': 'Mwakilishi wa Wodi',
-    'role.agent': 'Wakala wa Kituo',
+    'role.agent': 'Mratibu wa Kituo',
     'role.observer': 'Mwangalizi Aliyeidhinishwa'
   }
 };

@@ -70,7 +70,7 @@ export const RegionalDashboard = ({ onOpenModule }) => {
         <div className="admin-head-actions">
           <button type="button" className="admin-btn admin-btn-ghost" onClick={() => onOpenModule('agents')}>
             <UserCheck strokeWidth={1.75} />
-            Assign agents
+            Assign coordinators
           </button>
           <button type="button" className="admin-btn admin-btn-ghost" onClick={() => onOpenModule('tally_center')}>
             <ShieldCheck strokeWidth={1.75} />
@@ -84,7 +84,7 @@ export const RegionalDashboard = ({ onOpenModule }) => {
       <section className="admin-metric-grid">
         <article className="admin-metric is-featured">
           <div className="admin-metric-top">
-            <span>Field agents</span>
+            <span>Field coordinators</span>
             <div className="admin-metric-icon"><Users strokeWidth={1.75} /></div>
           </div>
           <strong>{formatCount(scopedAgents.length)}</strong>
@@ -120,7 +120,7 @@ export const RegionalDashboard = ({ onOpenModule }) => {
         <article className="admin-card">
           <div className="admin-card-head">
             <div>
-              <h2>Field agents roster</h2>
+              <h2>Field coordinators roster</h2>
               <p>Assigned stations, status, and performance</p>
             </div>
             <button type="button" className="admin-btn admin-btn-ghost" onClick={() => onOpenModule('agents')}>
@@ -132,7 +132,7 @@ export const RegionalDashboard = ({ onOpenModule }) => {
             <table className="custom-table">
               <thead>
                 <tr>
-                  <th>Agent</th>
+                  <th>Coordinator</th>
                   <th>Region / ward</th>
                   <th>Status</th>
                   <th>Activity</th>
@@ -155,7 +155,7 @@ export const RegionalDashboard = ({ onOpenModule }) => {
                 ) : (
                   <tr>
                     <td colSpan="5">
-                      <div className="admin-empty">No field agents assigned to {regionName} yet.</div>
+                      <div className="admin-empty">No field coordinators assigned to {regionName} yet.</div>
                     </td>
                   </tr>
                 )}

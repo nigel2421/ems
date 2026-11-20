@@ -103,7 +103,7 @@ export const ElectionWarRoom = ({ user, onSelectModule }) => {
         <div className="warroom-metric-card" onClick={() => onSelectModule && onSelectModule('exception_cmd')}>
           <div className="metric-value" style={{ color: '#ef4444' }}>49</div>
           <div className="metric-label">AGENTS MISSING CHECK-IN</div>
-          <div className="metric-hint">Open Missing Agent Queue →</div>
+          <div className="metric-hint">Open Missing Coordinator Queue →</div>
         </div>
 
         <div className="warroom-metric-card" onClick={() => onSelectModule && onSelectModule('logistics_panel')}>
@@ -151,7 +151,7 @@ export const ElectionWarRoom = ({ user, onSelectModule }) => {
 
         <div className="command-actions-grid">
           <button className="cmd-btn" onClick={() => onSelectModule && onSelectModule('communications_cmd')}>
-            📞 Contact Agent
+            📞 Contact Coordinator
           </button>
           <button className="cmd-btn" onClick={() => onSelectModule && onSelectModule('communications_cmd')}>
             📞 Contact Supervisor

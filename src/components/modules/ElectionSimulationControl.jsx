@@ -96,7 +96,7 @@ export default function ElectionSimulationControl({ userRole = 'SUPER_ADMIN' }) 
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
             <div style={{ backgroundColor: '#0f172a', padding: '14px', borderRadius: '6px' }}>
-              <div style={{ fontSize: '11px', color: '#94a3b8' }}>Agent SLA Performance</div>
+              <div style={{ fontSize: '11px', color: '#94a3b8' }}>Coordinator SLA Performance</div>
               <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#10b981', marginTop: '4px' }}>{simulationReport.performanceMetrics.agentSlaPerformance}</div>
             </div>
             <div style={{ backgroundColor: '#0f172a', padding: '14px', borderRadius: '6px' }}>

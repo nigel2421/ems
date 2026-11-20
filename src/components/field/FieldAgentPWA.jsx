@@ -228,12 +228,12 @@ export const FieldAgentPWA = ({ user, onBackToDashboard }) => {
         <div className="timeline-list">
           <div className="timeline-item">
             <span className="timeline-time">05:54</span>
-            <span className="timeline-label">Agent checked in</span>
+            <span className="timeline-label">Coordinator checked in</span>
             <span className="timeline-status done">✓</span>
           </div>
           <div className="timeline-item">
             <span className="timeline-time">06:11</span>
-            <span className="timeline-label">Agent admitted by PO</span>
+            <span className="timeline-label">Coordinator admitted by PO</span>
             <span className="timeline-status done">✓</span>
           </div>
           <div className="timeline-item">

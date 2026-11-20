@@ -491,11 +491,11 @@ const PollingStationIntelligenceInner = ({ onOpenModule }) => {
       </header>
 
       {/* Field Agent Health & Ground Telemetry Monitor */}
-      <section className="psi-telemetry-banner" aria-label="Field Agent Health & Ground Telemetry">
+      <section className="psi-telemetry-banner" aria-label="Field Coordinator Health & Ground Telemetry">
         <div className="psi-telemetry-header">
           <div className="psi-telemetry-title">
             <Radio size={16} className="psi-pulse-emerald" />
-            <h3>Field Agent Health & Ground Telemetry</h3>
+            <h3>Field Coordinator Health & Ground Telemetry</h3>
             <span className="psi-scope-tag">{assignment?.title || scopeLabel}</span>
           </div>
           {onOpenModule && (
@@ -503,10 +503,10 @@ const PollingStationIntelligenceInner = ({ onOpenModule }) => {
               type="button"
               className="psi-telemetry-action-btn"
               onClick={() => onOpenModule('agents')}
-              title="Open Personnel & Agent Management"
+              title="Open Personnel & Coordinator Management"
             >
               <Users size={13} />
-              <span>Manage Agents</span>
+              <span>Manage Coordinators</span>
             </button>
           )}
         </div>

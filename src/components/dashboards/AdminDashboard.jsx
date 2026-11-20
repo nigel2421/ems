@@ -1,3 +1,4 @@
+import { getRoleDisplayName } from '../../utils/roleDisplay';
 import React, { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -401,12 +402,12 @@ export const AdminDashboard = ({
       subtitle: 'Provision login credentials and bind the account to county, constituency, or ward.'
     },
     assign_agent: {
-      title: 'Assign Agent',
-      subtitle: 'Assign polling station agents to gazette streams by location sieve.'
+      title: 'Assign Coordinator',
+      subtitle: 'Assign polling station coordinators to gazette streams by location sieve.'
     },
     user_directory: {
       title: 'Accounts Directory',
-      subtitle: 'Provisioned candidates, campaign coordinators, and field agents with security controls.'
+      subtitle: 'Provisioned candidates, campaign coordinators, and field coordinators with security controls.'
     },
     feature_settings: {
       title: 'Campaign Feature Controls',
@@ -473,7 +474,7 @@ export const AdminDashboard = ({
             <article
               className="admin-metric is-clickable"
               onClick={() => setTab('user_directory')}
-              title="Manage Candidates, Officers & Agents in Accounts Directory"
+              title="Manage Candidates, Officers & Coordinators in Accounts Directory"
               style={{ cursor: 'pointer' }}
             >
               <div className="admin-metric-top">
@@ -553,7 +554,7 @@ export const AdminDashboard = ({
                       <strong>{user.name}</strong>
                       <span>{user.entityName || 'Unassigned'}</span>
                     </div>
-                    <span className="admin-chip">{user.role}</span>
+                    <span className="admin-chip">{getRoleDisplayName(user.role)}</span>
                   </div>
                 ))}
               </div>
@@ -563,14 +564,14 @@ export const AdminDashboard = ({
               <div className="admin-card-head">
                 <div>
                   <h2>Operations snapshot</h2>
-                  <p>Agents, counties, and audit activity</p>
+                  <p>Coordinators, counties, and audit activity</p>
                 </div>
               </div>
               <div className="admin-list">
                 <div className="admin-list-item">
                   <div className="admin-metric-icon"><Users strokeWidth={1.75} /></div>
                   <div>
-                    <strong>{formatCount(stats.agentCount)} agents</strong>
+                    <strong>{formatCount(stats.agentCount)} coordinators</strong>
                     <span>Field force directory</span>
                   </div>
                 </div>
@@ -607,11 +608,11 @@ export const AdminDashboard = ({
                 </button>
                 <button type="button" className="admin-btn admin-btn-ghost" onClick={() => setShowAddAgent(true)}>
                   <UserPlus strokeWidth={1.75} />
-                  Add polling station agent
+                  Add polling station coordinator
                 </button>
                 <button type="button" className="admin-btn admin-btn-ghost" onClick={() => setTab('assign_agent')}>
                   <MapPin strokeWidth={1.75} />
-                  Assign agent to station
+                  Assign coordinator to station
                 </button>
                 <button type="button" className="admin-btn admin-btn-ghost" onClick={onOpenAuditLogs}>
                   <Activity strokeWidth={1.75} />
@@ -741,19 +742,19 @@ export const AdminDashboard = ({
 
       {activeTab === 'assign_agent' && (
         <div className="admin-panel">
-          <h2>Agent boundary binding</h2>
-          <p>Filter County → Constituency → Ward, then bind an agent to a station stream.</p>
+          <h2>Coordinator boundary binding</h2>
+          <p>Filter County → Constituency → Ward, then bind a coordinator to a station stream.</p>
 
           {agents.length === 0 ? (
             <div className="admin-empty">
-              No polling station agents registered yet. Add an agent from quick actions, then bind them here.
+              No polling station coordinators registered yet. Add a coordinator from quick actions, then bind them here.
             </div>
           ) : (
             <form onSubmit={handleAssignAgent} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
               <div className="form-group">
-                <label className="form-label">Select agent</label>
+                <label className="form-label">Select coordinator</label>
                 <select className="form-select" value={selectedAgent} onChange={(e) => setSelectedAgent(e.target.value)} required>
-                  <option value="">-- Select Agent --</option>
+                  <option value="">-- Select Coordinator --</option>
                   {agents.map((a) => (
                     <option key={a.id} value={a.id}>{a.name} ({a.email})</option>
                   ))}
@@ -823,7 +824,7 @@ export const AdminDashboard = ({
 
               <button type="submit" className="admin-btn admin-btn-primary" style={{ height: 48, width: '100%' }}>
                 <MapPin strokeWidth={1.75} />
-                Assign agent to selected stream
+                Assign coordinator to selected stream
               </button>
 
               {assignmentNotice && (
@@ -847,7 +848,7 @@ export const AdminDashboard = ({
             <div className="admin-panel-toolbar" style={{ flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
               <div>
                 <h2>Campaign Feature Controls ({candidateAccounts.length} Campaigns)</h2>
-                <p>Activate or mute Strategic Intelligence & Strategy Team modules per candidate ticket. When active, all subordinate officers and agents inherit access automatically.</p>
+                <p>Activate or mute Strategic Intelligence & Strategy Team modules per candidate ticket. When active, all subordinate officers and coordinators inherit access automatically.</p>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <button
@@ -1010,7 +1011,7 @@ export const AdminDashboard = ({
                     </div>
 
                     <div style={{ fontSize: '0.72rem', color: 'var(--admin-muted)', fontStyle: 'italic' }}>
-                      ↳ Sub-accounts (coordinators and agents in {cand.county || cand.entityName}) inherit these module settings.
+                      ↳ Sub-accounts (coordinators in {cand.county || cand.entityName}) inherit these module settings.
                     </div>
                   </div>
                 );
@@ -1039,8 +1040,8 @@ export const AdminDashboard = ({
           <div className="admin-panel">
             <div className="admin-panel-toolbar" style={{ flexWrap: 'wrap', gap: '0.75rem' }}>
               <div>
-                <h2>User & Agent Directory ({displayedAccounts.length})</h2>
-                <p>Provisioned candidates, campaign coordinators, field agents, and security lockout status.</p>
+                <h2>User & Coordinator Directory ({displayedAccounts.length})</h2>
+                <p>Provisioned candidates, campaign coordinators, field coordinators, and security lockout status.</p>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', background: 'var(--admin-hover)', borderRadius: '10px', padding: '3px', gap: '3px', flexWrap: 'wrap' }}>
@@ -1070,7 +1071,7 @@ export const AdminDashboard = ({
                     className={`admin-btn admin-btn-sm ${directoryFilter === 'agents' ? 'admin-btn-primary' : 'admin-btn-ghost'}`}
                     onClick={() => setDirectoryFilter('agents')}
                   >
-                    Agents ({agentAccounts.length})
+                    Coordinators ({agentAccounts.length})
                   </button>
                   <button
                     type="button"
@@ -1138,7 +1139,7 @@ export const AdminDashboard = ({
                               )}
                             </div>
                           </td>
-                          <td><span className={`role-badge role-${String(u.role).toLowerCase().replace(/\s+/g, '-')}`}>{u.role}</span></td>
+                          <td><span className={`role-badge role-${String(u.role).toLowerCase().replace(/\s+/g, '-')}`}>{getRoleDisplayName(u.role)}</span></td>
                           <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem' }}>
                             <div>{u.email || '—'}</div>
                             {u.phone && <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>{u.phone}</div>}
@@ -1339,7 +1340,7 @@ export const AdminDashboard = ({
                 <img src={sanitizeMediaUrl(accountModal.user.avatar)} alt="" />
                 <div className="admin-account-detail-grid">
                   <div><span>Name</span><strong>{accountModal.user.name}</strong></div>
-                  <div><span>Role</span><strong>{accountModal.user.role}</strong></div>
+                  <div><span>Role</span><strong>{getRoleDisplayName(accountModal.user.role)}</strong></div>
                   <div><span>Email</span><strong>{accountModal.user.email}</strong></div>
                   <div><span>Phone</span><strong>{accountModal.user.phone || '—'}</strong></div>
                   <div><span>Jurisdiction</span><strong>{accountModal.user.entityName || '—'}</strong></div>
@@ -1473,7 +1474,7 @@ export const AdminDashboard = ({
                       Campaign Intelligence Modules & Access Control
                     </div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--admin-muted)', marginBottom: '0.75rem' }}>
-                      Enabling these features for this candidate ticket automatically unlocks the modules for all subordinate coordinators and field agents in their campaign jurisdiction.
+                      Enabling these features for this candidate ticket automatically unlocks the modules for all subordinate coordinators and field coordinators in their campaign jurisdiction.
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.65rem' }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, color: 'var(--admin-ink)' }}>

@@ -73,7 +73,7 @@ export default function ExecutiveBriefing({ userRole = 'SUPER_ADMIN' }) {
         <div style={{ fontSize: '12px', color: '#cbd5e1', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginTop: '8px' }}>
           <div><strong>Snapshot ID:</strong> <span style={{ fontFamily: 'monospace', color: '#38bdf8' }}>SP-829302</span></div>
           <div><strong>Model:</strong> Enterprise RAG Engine v3.0</div>
-          <div><strong>Data Sources:</strong> ✓ Agent coverage ✓ Incidents ✓ Logistics ✓ Telemetry</div>
+          <div><strong>Data Sources:</strong> ✓ Coordinator coverage ✓ Incidents ✓ Logistics ✓ Telemetry</div>
           <div><strong>Excluded Data:</strong> ✓ PII Voter Records ✓ Raw Credentials</div>
         </div>
       </div>
@@ -82,7 +82,7 @@ export default function ExecutiveBriefing({ userRole = 'SUPER_ADMIN' }) {
       {showSourceMetrics && (
         <div style={{ backgroundColor: '#0f172a', padding: '16px', borderRadius: '8px', border: '1px solid #334155', marginBottom: '24px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
           <div>
-            <div style={{ fontSize: '11px', color: '#94a3b8' }}>Verified Agent Count</div>
+            <div style={{ fontSize: '11px', color: '#94a3b8' }}>Verified Coordinator Count</div>
             <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#10b981', marginTop: '4px' }}>45,489 Stations</div>
           </div>
           <div>

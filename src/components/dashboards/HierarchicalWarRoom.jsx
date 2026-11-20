@@ -165,7 +165,7 @@ export const HierarchicalWarRoom = ({ user, onSelectModule }) => {
         <div style={{ background: '#1e293b', borderRadius: '16px', padding: '20px', border: '1px solid #334155' }}>
           <h3 style={{ margin: '0 0 12px 0', color: '#10b981' }}>WARD OPERATIONAL STATIONS: {selectedWard}</h3>
           <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
-            All polling station streams in this ward are operational with active agents checked in.
+            All polling station streams in this ward are operational with active coordinators checked in.
           </p>
           <button
             onClick={() => onSelectModule && onSelectModule('exception_cmd')}

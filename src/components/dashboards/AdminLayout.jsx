@@ -1,3 +1,4 @@
+import { getRoleDisplayName } from '../../utils/roleDisplay';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -43,7 +44,7 @@ const PRIMARY_MODULES = [
   { id: 'interactive_map', label: 'Electoral Map Room', icon: Map },
   { id: 'strategy', label: 'Strategy', icon: Target },
   { id: 'polling_stations', label: 'Polling Intel', icon: Building2 },
-  { id: 'agents', label: 'Agent Management', icon: Users },
+  { id: 'agents', label: 'Coordinator Management', icon: Users },
   { id: 'tally_center', label: 'Tally Center', icon: Vote }
 ];
 
@@ -286,7 +287,7 @@ export const AdminLayout = ({
                         }}
                       >
                         <UserPlus strokeWidth={1.75} />
-                        <span>Add new agent</span>
+                        <span>Add coordinator</span>
                       </button>
                       <button
                         type="button"
@@ -297,7 +298,7 @@ export const AdminLayout = ({
                         }}
                       >
                         <MapPin strokeWidth={1.75} />
-                        <span>Assign agent</span>
+                        <span>Assign coordinator</span>
                       </button>
                     </div>
                   )}
@@ -431,7 +432,7 @@ export const AdminLayout = ({
             </button>
             <button type="button" className={`admin-profile-btn admin-toolbar-profile${showProfilePanel ? ' is-active' : ''}`} onClick={() => onToggleProfilePanel?.()} aria-expanded={showProfilePanel} aria-controls="admin-profile-panel">
               <img src={sanitizeMediaUrl(currentUser?.avatar, DEFAULT_AVATAR)} alt="" />
-              <div><strong>{currentUser?.name}</strong><span className={`role-badge ${getRoleClass(currentUser?.role)}`}>{currentUser?.role}</span></div>
+              <div><strong>{currentUser?.name}</strong><span className={`role-badge ${getRoleClass(currentUser?.role)}`}>{getRoleDisplayName(currentUser?.role)}</span></div>
               <ChevronDown size={15} className={`admin-nav-chevron${showProfilePanel ? ' is-open' : ''}`} />
             </button>
           </div>
@@ -457,7 +458,7 @@ export const AdminLayout = ({
                   <div>
                     <h2>{currentUser?.name}</h2>
                     <span className={`role-badge ${getRoleClass(currentUser?.role)}`}>
-                      {currentUser?.role}
+                      {getRoleDisplayName(currentUser?.role)}
                     </span>
                   </div>
                 </div>

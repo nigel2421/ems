@@ -38,7 +38,7 @@ export default function PrivacyOperations() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '32px' }}>
         <div style={{ backgroundColor: '#1e293b', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #10b981' }}>
           <div style={{ fontSize: '12px', color: '#94a3b8' }}>Active Consent Records</div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#10b981', marginTop: '4px' }}>46,229 Agents</div>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#10b981', marginTop: '4px' }}>46,229 Coordinators</div>
         </div>
         <div style={{ backgroundColor: '#1e293b', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #3b82f6' }}>
           <div style={{ fontSize: '12px', color: '#94a3b8' }}>AI Excluded Datasets</div>
@@ -97,7 +97,7 @@ export default function PrivacyOperations() {
               <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '4px', backgroundColor: '#0284c7', color: '#fff' }}>Default</span>
             </div>
             <p style={{ margin: '8px 0 0', fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>
-              Hardware security module (FIPS 140-2 Level 3 HSM) with automatic 90-day rotation and envelope encryption. Zero agent configuration needed.
+              Hardware security module (FIPS 140-2 Level 3 HSM) with automatic 90-day rotation and envelope encryption. Zero coordinator configuration needed.
             </p>
           </div>
 

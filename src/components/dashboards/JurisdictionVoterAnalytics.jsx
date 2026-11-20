@@ -245,7 +245,7 @@ export const JurisdictionVoterAnalytics = ({ user, geography, onOpenModule }) =>
           <div className="jva-highlight">
             <span>Coverage ask</span>
             <strong>{formatCount(Math.min(5, topBlocks.length))} hot zones</strong>
-            <small>Ensure agents, materials, and Form 34A control here first</small>
+            <small>Ensure coordinators, materials, and Form 34A control here first</small>
           </div>
         </div>
 
