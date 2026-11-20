@@ -16,6 +16,8 @@ export const analyzeSurvey = survey => {
   const questions=survey.questions.map(question=>{
     const answered=valid.filter(row=>row.answers[question.id]!==undefined&&row.answers[question.id]!==''),n=answered.length;
     const result={...question,n,missing:valid.length-n};
+    // Choice drafts retain option inputs when switched to text or rating.
+    delete result.options;
     if(['single','multi'].includes(question.type)) result.options=question.options.map(option=>{const count=answered.filter(row=>question.type==='multi' ? row.answers[question.id].includes(option) : row.answers[question.id]===option).length;return {label:option,count,percent:n ? count/n*100 : 0,interval:probability&&n ? wilson(count,n) : null};});
     if(question.type==='rating'){const values=answered.map(row=>Number(row.answers[question.id]));result.mean=n ? values.reduce((a,b)=>a+b,0)/n : null;const sorted=[...values].sort((a,b)=>a-b);result.median=n ? (sorted[Math.floor((n-1)/2)]+sorted[Math.floor(n/2)])/2 : null;result.distribution=[1,2,3,4,5].map(value=>({label:String(value),count:values.filter(x=>x===value).length}));}
     if(question.type==='text')result.comments=answered.map(row=>row.answers[question.id]);

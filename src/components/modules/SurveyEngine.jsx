@@ -20,7 +20,11 @@ import {
   Target,
 } from "lucide-react";
 import { surveyRequest } from "../../services/surveys";
-import { analyzeSurvey, planSample } from "../../utils/surveyScience";
+import {
+  analyzeSurvey,
+  planSample,
+  validateQuestionnaire,
+} from "../../utils/surveyScience";
 import "./SurveyEngine.css";
 const empty = {
   title: "",
@@ -81,6 +85,42 @@ export const SurveyEngine = () => {
     [status, setStatus] = useState("all"),
     [loading, setLoading] = useState(true),
     [builderStep, setBuilderStep] = useState(1);
+  const [activeQuestion, setActiveQuestion] = useState(0),
+    [fading, setFading] = useState(false),
+    [editing, setEditing] = useState(null),
+    [deleteTarget, setDeleteTarget] = useState(null),
+    [deleteTitle, setDeleteTitle] = useState("");
+  const questionsLocked = Boolean(editing?.responses.length);
+  const moveQuestion = (index, append = false) => {
+    if (fading) return;
+    const problem = validateQuestionnaire([questions[activeQuestion]]);
+    if (append && problem) {
+      setError(problem);
+      return;
+    }
+    setError("");
+    setFading(true);
+    setTimeout(() => {
+      if (append) setQuestions((previous) => [...previous, question()]);
+      setActiveQuestion(index);
+      setFading(false);
+    }, 170);
+  };
+  const editStudy = (s) => {
+    setEditing(s);
+    setDraft({ ...empty, ...s });
+    setQuestions(structuredClone(s.questions));
+    setActiveQuestion(0);
+    setBuilderStep(1);
+    setError("");
+    setNotice("");
+    setView("builder");
+  };
+  const askDelete = (s) => {
+    setDeleteTarget(s);
+    setDeleteTitle("");
+    setError("");
+  };
   const openStudy = (s, next) => {
     setSelected(s);
     setFilter("");
@@ -93,6 +133,9 @@ export const SurveyEngine = () => {
     setNotice("");
   };
   const startStudy = (type = "survey") => {
+    setEditing(null);
+    setActiveQuestion(0);
+    setFading(false);
     setBuilderStep(1);
     setView("builder");
     setDraft({ ...empty, kind: type });
@@ -190,7 +233,9 @@ export const SurveyEngine = () => {
           </span>
           <h1>
             {view === "builder"
-              ? "Design your next study"
+              ? editing
+                ? "Edit your study"
+                : "Design your next study"
               : view === "analysis"
                 ? "Research insights"
                 : view === "collect"
@@ -231,6 +276,87 @@ export const SurveyEngine = () => {
       {error && (
         <div role="alert" className="se-error">
           {error}
+        </div>
+      )}
+      {deleteTarget && (
+        <div
+          className="se-delete-overlay"
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && !busy) setDeleteTarget(null);
+            if (e.key === "Tab") {
+              const fields = [
+                ...e.currentTarget.querySelectorAll(
+                  "input,button:not(:disabled)",
+                ),
+              ];
+              const first = fields[0],
+                last = fields.at(-1);
+              if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last?.focus();
+              } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first?.focus();
+              }
+            }
+          }}
+        >
+          <section
+            className="se-delete-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="se-delete-title"
+            aria-describedby="se-delete-description"
+          >
+            <span className="se-overline">DELETE STUDY</span>
+            <h2 id="se-delete-title">
+              Delete {deleteTarget.kind === "poll" ? "poll" : "survey"}?
+            </h2>
+            <p id="se-delete-description">
+              This permanently removes “{deleteTarget.title}”, its{" "}
+              {deleteTarget.responses.length} responses and participant link.
+              This cannot be undone.
+            </p>
+            {error && (
+              <div className="se-error" role="alert">
+                {error}
+              </div>
+            )}
+            <label>
+              Type the study title to confirm
+              <input
+                autoFocus
+                value={deleteTitle}
+                onChange={(e) => setDeleteTitle(e.target.value)}
+              />
+            </label>
+            <div className="se-actions">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setDeleteTarget(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="se-danger"
+                disabled={busy || deleteTitle !== deleteTarget.title}
+                onClick={() =>
+                  act(async () => {
+                    await surveyRequest("/" + deleteTarget.id, "DELETE", {
+                      confirmTitle: deleteTitle,
+                    });
+                    if (selected?.id === deleteTarget.id) setSelected(null);
+                    setDeleteTarget(null);
+                    setView("list");
+                  })
+                }
+              >
+                {busy ? "Deleting…" : "Permanently delete"}
+              </button>
+            </div>
+          </section>
         </div>
       )}
       {view === "list" && (
@@ -402,6 +528,35 @@ export const SurveyEngine = () => {
                       </div>
                     )}
                     <SurveyShareLink survey={s} compact />
+                    {s.canManage && (
+                      <div className="se-study-controls">
+                        <button
+                          type="button"
+                          disabled={s.status === "Open"}
+                          title={
+                            s.status === "Open"
+                              ? "Close collection first"
+                              : "Edit study"
+                          }
+                          onClick={() => editStudy(s)}
+                        >
+                          Edit study
+                        </button>
+                        <button
+                          type="button"
+                          className="se-danger"
+                          disabled={s.status === "Open"}
+                          title={
+                            s.status === "Open"
+                              ? "Close collection first"
+                              : "Delete study"
+                          }
+                          onClick={() => askDelete(s)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
                     <div className="se-study-footer">
                       <button
                         className="se-text-button"
@@ -461,11 +616,24 @@ export const SurveyEngine = () => {
               if (e.currentTarget.reportValidity()) setBuilderStep(2);
               return;
             }
+            const problem = validateQuestionnaire(questions);
+            if (problem) {
+              setError(problem);
+              const invalid = questions.findIndex((q) =>
+                validateQuestionnaire([q]),
+              );
+              if (invalid >= 0) setActiveQuestion(invalid);
+              return;
+            }
             act(async () => {
-              const data = await surveyRequest("", "POST", {
-                ...draft,
-                questions,
-              });
+              const data = await surveyRequest(
+                editing ? "/" + editing.id + "/edit" : "",
+                editing ? "PATCH" : "POST",
+                {
+                  ...draft,
+                  questions,
+                },
+              );
               setSelected(data.survey);
               setFilter("");
               setView("analysis");
@@ -474,7 +642,9 @@ export const SurveyEngine = () => {
         >
           <div className="se-builder">
             <aside className="se-build-guide">
-              <span className="se-overline">BUILD A STUDY</span>
+              <span className="se-overline">
+                {editing ? "EDIT STUDY" : "BUILD A STUDY"}
+              </span>
               <h2>Good research starts with a plan.</h2>
               <p>Set the audience first, then write a focused questionnaire.</p>
               <div
@@ -539,6 +709,7 @@ export const SurveyEngine = () => {
                   <label>
                     Type
                     <select
+                      disabled={!!editing}
                       value={draft.kind}
                       onChange={(e) =>
                         setDraft({ ...draft, kind: e.target.value })
@@ -576,6 +747,7 @@ export const SurveyEngine = () => {
                 <label>
                   Sampling
                   <select
+                    disabled={!!editing}
                     value={draft.sampling}
                     onChange={(e) =>
                       setDraft({ ...draft, sampling: e.target.value })
@@ -587,7 +759,7 @@ export const SurveyEngine = () => {
                     <option value="random">Simple random sample</option>
                   </select>
                 </label>
-                {draft.sampling === "random" && (
+                {!editing && draft.sampling === "random" && (
                   <>
                     <label>
                       Population size
@@ -668,161 +840,210 @@ export const SurveyEngine = () => {
                   Keep wording neutral. Use distinct choices and one idea per
                   question.
                 </p>
-                {questions.map((q, i) => (
-                  <div className="se-question" key={q.id}>
-                    <div className="se-question-number">
-                      {String(i + 1).padStart(2, "0")}
-                    </div>
-                    <label>
-                      Question {i + 1}
-                      <input
-                        required
-                        value={q.text}
-                        onChange={(e) =>
-                          setQuestions(
-                            questions.map((x) =>
-                              x.id === q.id
-                                ? { ...x, text: e.target.value }
-                                : x,
-                            ),
-                          )
-                        }
-                      />
-                    </label>
-                    <select
-                      aria-label={`Question ${i + 1} answer format`}
-                      value={q.type}
-                      onChange={(e) =>
-                        setQuestions(
-                          questions.map((x) =>
-                            x.id === q.id ? { ...x, type: e.target.value } : x,
-                          ),
-                        )
-                      }
+                {questionsLocked && (
+                  <p className="se-note">
+                    Responses have already been collected. Study details can be
+                    edited; question wording and choices remain fixed to
+                    preserve the recorded answers.
+                  </p>
+                )}
+                <nav
+                  className="se-question-nav"
+                  aria-label="Question navigation"
+                >
+                  {questions.map((q, i) => (
+                    <button
+                      type="button"
+                      key={q.id}
+                      aria-current={activeQuestion === i ? "step" : undefined}
+                      onClick={() => moveQuestion(i)}
                     >
-                      {[
-                        ["single", "Single choice"],
-                        ["multi", "Multiple choice"],
-                        ["rating", "Rating 1–5"],
-                        ["text", "Open text"],
-                      ].map(([v, l]) => (
-                        <option key={v} value={v}>
-                          {l}
-                        </option>
-                      ))}
-                    </select>
-                    {["single", "multi"].includes(q.type) && (
-                      <div className="se-choice-editor">
-                        <span className="se-choice-title">Answer choices</span>
-                        <p>
-                          {q.type === "multi"
-                            ? "Participants can select more than one choice."
-                            : "Participants select one choice."}
-                        </p>
-                        {q.options.map((option, choiceIndex) => (
-                          <div className="se-choice-row" key={choiceIndex}>
-                            <span
-                              className={
-                                "se-choice-marker " +
-                                (q.type === "multi" ? "is-multi" : "")
-                              }
-                              aria-hidden="true"
-                            />
-                            <label>
-                              Choice {choiceIndex + 1}
-                              <input
-                                required
-                                maxLength={120}
-                                placeholder={`Enter choice ${choiceIndex + 1}`}
-                                value={option}
-                                onChange={(e) =>
-                                  setQuestions(
-                                    questions.map((x) =>
-                                      x.id === q.id
-                                        ? {
-                                            ...x,
-                                            options: x.options.map((v, j) =>
-                                              j === choiceIndex
-                                                ? e.target.value
-                                                : v,
-                                            ),
-                                          }
-                                        : x,
-                                    ),
-                                  )
-                                }
-                              />
-                            </label>
-                            <button
-                              type="button"
-                              aria-label={`Remove choice ${choiceIndex + 1} from question ${i + 1}`}
-                              disabled={q.options.length <= 2}
-                              onClick={() =>
-                                setQuestions(
-                                  questions.map((x) =>
-                                    x.id === q.id
-                                      ? {
-                                          ...x,
-                                          options: x.options.filter(
-                                            (_, j) => j !== choiceIndex,
-                                          ),
-                                        }
-                                      : x,
-                                  ),
-                                )
-                              }
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                        <button
-                          type="button"
-                          disabled={q.options.length >= 12}
-                          onClick={() =>
+                      <span>{i + 1}</span>
+                      <strong>{q.text || "New question"}</strong>
+                      {!validateQuestionnaire([q]) && (
+                        <CheckCircle2 size={13} />
+                      )}
+                    </button>
+                  ))}
+                </nav>
+                <p className="se-question-position" role="status">
+                  Question {activeQuestion + 1} of {questions.length}
+                </p>
+                {questions.map(
+                  (q, i) =>
+                    i === activeQuestion && (
+                      <fieldset
+                        disabled={questionsLocked || busy || fading}
+                        className={
+                          "se-question se-focused-question " +
+                          (fading ? "is-fading" : "")
+                        }
+                        key={q.id}
+                      >
+                        <div className="se-question-number">
+                          {String(i + 1).padStart(2, "0")}
+                        </div>
+                        <label>
+                          Question {i + 1}
+                          <input
+                            required
+                            value={q.text}
+                            onChange={(e) =>
+                              setQuestions(
+                                questions.map((x) =>
+                                  x.id === q.id
+                                    ? { ...x, text: e.target.value }
+                                    : x,
+                                ),
+                              )
+                            }
+                          />
+                        </label>
+                        <select
+                          aria-label={`Question ${i + 1} answer format`}
+                          value={q.type}
+                          onChange={(e) =>
                             setQuestions(
                               questions.map((x) =>
                                 x.id === q.id
-                                  ? { ...x, options: [...x.options, ""] }
+                                  ? { ...x, type: e.target.value }
                                   : x,
                               ),
                             )
                           }
                         >
-                          <Plus size={14} />
-                          Add choice
+                          {[
+                            ["single", "Single choice"],
+                            ["multi", "Multiple choice"],
+                            ["rating", "Rating 1–5"],
+                            ["text", "Open text"],
+                          ].map(([v, l]) => (
+                            <option key={v} value={v}>
+                              {l}
+                            </option>
+                          ))}
+                        </select>
+                        {["single", "multi"].includes(q.type) && (
+                          <div className="se-choice-editor">
+                            <span className="se-choice-title">
+                              Answer choices
+                            </span>
+                            <p>
+                              {q.type === "multi"
+                                ? "Participants can select more than one choice."
+                                : "Participants select one choice."}
+                            </p>
+                            {q.options.map((option, choiceIndex) => (
+                              <div className="se-choice-row" key={choiceIndex}>
+                                <span
+                                  className={
+                                    "se-choice-marker " +
+                                    (q.type === "multi" ? "is-multi" : "")
+                                  }
+                                  aria-hidden="true"
+                                />
+                                <label>
+                                  Choice {choiceIndex + 1}
+                                  <input
+                                    required
+                                    maxLength={120}
+                                    placeholder={`Enter choice ${choiceIndex + 1}`}
+                                    value={option}
+                                    onChange={(e) =>
+                                      setQuestions(
+                                        questions.map((x) =>
+                                          x.id === q.id
+                                            ? {
+                                                ...x,
+                                                options: x.options.map(
+                                                  (v, j) =>
+                                                    j === choiceIndex
+                                                      ? e.target.value
+                                                      : v,
+                                                ),
+                                              }
+                                            : x,
+                                        ),
+                                      )
+                                    }
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  aria-label={`Remove choice ${choiceIndex + 1} from question ${i + 1}`}
+                                  disabled={q.options.length <= 2}
+                                  onClick={() =>
+                                    setQuestions(
+                                      questions.map((x) =>
+                                        x.id === q.id
+                                          ? {
+                                              ...x,
+                                              options: x.options.filter(
+                                                (_, j) => j !== choiceIndex,
+                                              ),
+                                            }
+                                          : x,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              disabled={q.options.length >= 12}
+                              onClick={() =>
+                                setQuestions(
+                                  questions.map((x) =>
+                                    x.id === q.id
+                                      ? { ...x, options: [...x.options, ""] }
+                                      : x,
+                                  ),
+                                )
+                              }
+                            >
+                              <Plus size={14} />
+                              Add choice
+                            </button>
+                            <small>
+                              {q.options.length} of 12 choices · at least 2
+                              required
+                            </small>
+                          </div>
+                        )}
+                        <label className="se-check">
+                          <input
+                            type="checkbox"
+                            checked={q.required}
+                            onChange={(e) =>
+                              setQuestions(
+                                questions.map((x) =>
+                                  x.id === q.id
+                                    ? { ...x, required: e.target.checked }
+                                    : x,
+                                ),
+                              )
+                            }
+                          />
+                          Required
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuestions(
+                              questions.filter((x) => x.id !== q.id),
+                            );
+                            setActiveQuestion(Math.max(0, i - 1));
+                          }}
+                          disabled={questions.length === 1}
+                        >
+                          Remove question
                         </button>
-                        <small>
-                          {q.options.length} of 12 choices · at least 2 required
-                        </small>
-                      </div>
-                    )}
-                    <label className="se-check">
-                      <input
-                        type="checkbox"
-                        checked={q.required}
-                        onChange={(e) =>
-                          setQuestions(
-                            questions.map((x) =>
-                              x.id === q.id
-                                ? { ...x, required: e.target.checked }
-                                : x,
-                            ),
-                          )
-                        }
-                      />
-                      Required
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setQuestions(questions.filter((x) => x.id !== q.id))
-                      }
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
+                      </fieldset>
+                    ),
+                )}
                 <div className="se-actions">
                   <button type="button" onClick={() => setBuilderStep(1)}>
                     <ArrowLeft size={15} />
@@ -830,13 +1051,20 @@ export const SurveyEngine = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setQuestions([...questions, question()])}
+                    disabled={
+                      questionsLocked || questions.length >= 20 || fading
+                    }
+                    onClick={() => moveQuestion(questions.length, true)}
                   >
                     <Plus size={15} />
-                    Add question
+                    Save & add next question
                   </button>
                   <button className="se-primary" disabled={busy}>
-                    {busy ? "Saving…" : "Create study draft"}{" "}
+                    {busy
+                      ? "Saving…"
+                      : editing
+                        ? "Save changes"
+                        : "Create study draft"}{" "}
                     <CheckCircle2 size={16} />
                   </button>
                 </div>
@@ -856,6 +1084,28 @@ export const SurveyEngine = () => {
               {selected.population} · {selected.method}
             </p>
             <div className="se-actions">
+              {selected.canManage && (
+                <>
+                  <button
+                    type="button"
+                    disabled={busy || selected.status === "Open"}
+                    onClick={() => editStudy(selected)}
+                  >
+                    Edit study
+                  </button>
+                  <button
+                    type="button"
+                    className="se-danger"
+                    disabled={busy || selected.status === "Open"}
+                    onClick={() => askDelete(selected)}
+                  >
+                    Delete study
+                  </button>
+                  {selected.status === "Open" && (
+                    <small>Close collection to edit or delete.</small>
+                  )}
+                </>
+              )}
               {selected.canManage && selected.status === "Draft" && (
                 <button
                   onClick={() =>

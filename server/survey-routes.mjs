@@ -172,9 +172,69 @@ export const handleSurveys = async (req, res, ctx) => {
     }
     const s = rows.find((s) => s.id === id && visible(s));
     if (!s) throw error(404, "Survey not found.");
+    if (req.method === "DELETE") {
+      if (!canManage(s))
+        throw error(
+          403,
+          "Only the organizer or their supervisor can delete this study.",
+        );
+      if (s.status === "Open")
+        throw error(409, "Close collection before deleting this study.");
+      if (body.confirmTitle !== s.title)
+        throw error(400, "Enter the study title to confirm deletion.");
+      rows.splice(rows.indexOf(s), 1);
+      save(rows);
+      send(200, { success: true });
+      return;
+    }
     if (req.method === "PATCH") {
       if (!canManage(s))
         throw error(403, "Only supervisors can change this survey.");
+      if (action === "edit") {
+        if (s.status === "Open")
+          throw error(409, "Close collection before editing this study.");
+        if (
+          typeof body.title !== "string" ||
+          !body.title.trim() ||
+          body.title.length > 120 ||
+          typeof body.population !== "string" ||
+          !body.population.trim() ||
+          typeof body.method !== "string" ||
+          !body.method.trim()
+        )
+          throw error(400, "Add a title, population and collection method.");
+        if (body.questions) {
+          const problem = validateQuestionnaire(body.questions);
+          if (problem) throw error(400, problem);
+          if (
+            s.responses.length &&
+            JSON.stringify(body.questions) !== JSON.stringify(s.questions)
+          )
+            throw error(
+              409,
+              "Questions cannot change after responses have been collected. You can edit the study details.",
+            );
+        }
+        s.editHistory ||= [];
+        s.editHistory.push({
+          by: actor.id,
+          at: new Date().toISOString(),
+          before: {
+            title: s.title,
+            population: s.population,
+            method: s.method,
+            questions: s.questions,
+          },
+        });
+        s.title = body.title.trim();
+        s.population = body.population.trim();
+        s.method = body.method.trim();
+        if (body.questions) s.questions = body.questions;
+        s.updatedAt = new Date().toISOString();
+        save(rows);
+        send(200, { survey: present(s) });
+        return;
+      }
       if (action === "share") {
         s.participantToken ||= crypto.randomBytes(32).toString("hex");
         save(rows);
