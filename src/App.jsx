@@ -1,3 +1,4 @@
+import { CoordinatorDashboard } from './components/dashboards/CoordinatorDashboard';
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider, useData } from './context/DataContext';
@@ -168,7 +169,13 @@ const MainAppContent = () => {
             onOpenAIAssistant={() => setShowAIAssistant(true)}
           />
         );
+      case 'National Coordinator':
+      case 'County Coordinator':
+      case 'Constituency Coordinator':
+      case 'Ward Coordinator':
+      case 'Polling Coordinator':
       case 'Regional Coordinator':
+        return <CoordinatorDashboard onOpenModule={openModule} />;
       case 'MP':
       case 'MCA':
       case 'Aspirant':

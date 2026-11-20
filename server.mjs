@@ -1,3 +1,4 @@
+import { handleCoordinatorOverview } from './server/coordinator-overview.mjs';
 import { handleResults } from './server/result-routes.mjs';
 import { handleSurveys } from './server/survey-routes.mjs';
 import { resolveCoordinatorStationAssignment } from './src/utils/coordinatorAssignment.js';
@@ -316,6 +317,7 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${hostHeader || 'localhost'}`);
   const pathname = url.pathname;
 
+  if (/^\/(?:ems\/)?api\/coordinator-overview(?:\/|$)/.test(pathname)) { handleCoordinatorOverview(req,res,{session:verifyToken(extractTokenFromReq(req,currentRealm)),geography:assignmentGeography}); return; }
   if (/^\/(?:ems\/)?api\/results(?:\/|$)/.test(pathname)) { void handleResults(req,res,{session:verifyToken(extractTokenFromReq(req,currentRealm)),url,geography:assignmentGeography}); return; }
   if (/^\/(?:ems\/)?api\/surveys(?:\/|$)/.test(pathname)) { void handleSurveys(req,res,{session:verifyToken(extractTokenFromReq(req,currentRealm)),url,geography:assignmentGeography}); return; }
   // Real-Time Server-Sent Events (SSE) Stream
