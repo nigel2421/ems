@@ -22,7 +22,7 @@ export const resolveCoordinatorAssignmentScope = (user, geography) => {
     MP: 'CONSTITUENCY', 'Constituency Coordinator': 'CONSTITUENCY',
     MCA: 'WARD', 'Ward Coordinator': 'WARD',
     Governor: 'COUNTY', Senator: 'COUNTY', 'Woman Rep': 'COUNTY', 'County Coordinator': 'COUNTY',
-    Presidential: 'NATIONAL', President: 'NATIONAL', Admin: 'NATIONAL', 'Super Admin': 'NATIONAL'
+    'National Coordinator': 'NATIONAL', Presidential: 'NATIONAL', President: 'NATIONAL', Admin: 'NATIONAL', 'Super Admin': 'NATIONAL'
   };
   let level = roleLevels[user.role];
   if (!level && (user.contestType || user.contest)) {

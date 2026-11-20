@@ -1,3 +1,5 @@
+import { handleTeamRequest } from './server/team-routes.mjs';
+import { isCampaignWorkspaceUser, isDescendant, isTeamAccountActive } from './src/utils/teamHierarchy.js';
 import { resolveCoordinatorStationAssignment } from './src/utils/coordinatorAssignment.js';
 import http from 'node:http';
 import fs from 'node:fs';
@@ -295,7 +297,7 @@ const server = http.createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
   }
 
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-EMS-Realm');
 
   if (req.method === 'OPTIONS') {
@@ -313,6 +315,13 @@ const server = http.createServer((req, res) => {
 
   const url = new URL(req.url, `http://${hostHeader || 'localhost'}`);
   const pathname = url.pathname;
+
+  if (/^\/(?:ems\/)?api\/team(?:\/|$)/.test(pathname)) {
+    const token = extractTokenFromReq(req, currentRealm);
+    const session = verifyToken(token);
+    void handleTeamRequest(req, res, { session, url, geography:assignmentGeography, getDb:()=>currentDb, audit:appendServerAuditLog });
+    return;
+  }
 
   // Real-Time Server-Sent Events (SSE) Stream
   if (req.method === 'GET' && (pathname === '/api/stream' || pathname === '/ems/api/stream')) {
@@ -475,7 +484,7 @@ const server = http.createServer((req, res) => {
         }
 
         // Check if account is suspended
-        if (user.isSuspended || user.status === 'Suspended') {
+        if (user.isSuspended || user.status === 'Suspended' || (user.campaignId && !isTeamAccountActive(user, loadUsers()))) {
           appendServerAuditLog({
             userId: user.id,
             userName: user.name,
@@ -649,6 +658,10 @@ const server = http.createServer((req, res) => {
     }
 
     const user = findUserById(decoded.uid) || findUserByEmail(decoded.email);
+    if (!user || (user.campaignId && !isTeamAccountActive(user, loadUsers()))) {
+      res.writeHead(401, { 'Content-Type':'application/json' });
+      res.end(JSON.stringify({authenticated:false})); return;
+    }
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       authenticated: true,
@@ -678,6 +691,10 @@ const server = http.createServer((req, res) => {
     const isAgentCreation = req.method === 'POST' && (isAdminUserEndpoint || isAgentEndpoint);
     const isAgentRead = req.method === 'GET' && (isAgentEndpoint || isAdminUserEndpoint);
 
+    if (isAgentCreation && !isAdm) {
+      res.writeHead(403, { 'Content-Type':'application/json' });
+      res.end(JSON.stringify({success:false,error:'Create team members through your campaign workspace so roles and reporting lines are enforced.'})); return;
+    }
     if (!decoded || (!isAdm && !(isAsp && (isAgentCreation || isAgentRead)))) {
       appendServerAuditLog({
         userId: decoded?.uid || 'UNKNOWN',
@@ -729,6 +746,11 @@ const server = http.createServer((req, res) => {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(allUsers));
           return;
+        }
+        if (!isAdm && isCampaignWorkspaceUser(creatorUser)) {
+          const branch = allUsers.filter(user => user.id === creatorUser.id || isDescendant(creatorUser,user,allUsers));
+          res.writeHead(200, { 'Content-Type':'application/json' });
+          res.end(JSON.stringify(branch)); return;
         }
         // Aspirant/Coordinator or agent endpoint: filter to agents scoped to caller's jurisdiction
         const scopedAgents = allUsers.filter(u => {
@@ -1305,6 +1327,16 @@ const server = http.createServer((req, res) => {
     res.writeHead(405, { 'Content-Type': 'application/json', 'Allow': 'GET, POST' });
     res.end(JSON.stringify({ error: 'Method not allowed.' }));
     return;
+  }
+
+  // Campaign data uses /api/team; do not allow the legacy full-sync endpoint to bypass it.
+  if (pathname === '/api/db' || pathname === '/ems/api/db') {
+    const session=verifyToken(extractTokenFromReq(req,currentRealm));
+    if (!session || !isAdminRole(session.role)) {
+      if(req.method==='GET') { res.writeHead(200,{'Content-Type':'application/json'}); res.end(JSON.stringify({agents:[],fieldReports:[],tallyResults:[]})); }
+      else { res.writeHead(403,{'Content-Type':'application/json'}); res.end(JSON.stringify({error:'Use the campaign reporting endpoint.'})); }
+      return;
+    }
   }
 
   // Common DB Full Sync endpoint

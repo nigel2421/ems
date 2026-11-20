@@ -5110,19 +5110,10 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     assert.ok(sieveContent.includes('matchGeoName'), 'ScopedLocationSieve uses normalized geo token matching');
   });
 
-  test('379. Unified Agent Provisioning: AddAgentModal, DataContext, and server.mjs dual-persist agents to AuthContext.users and DataContext.agents', async () => {
-    const fs = await import('node:fs');
-    const path = await import('node:path');
-
-    const modalContent = fs.readFileSync(path.resolve(process.cwd(), 'src/components/modules/AddAgentModal.jsx'), 'utf8');
-    const dataContent = fs.readFileSync(path.resolve(process.cwd(), 'src/context/DataContext.jsx'), 'utf8');
-    const serverContent = fs.readFileSync(path.resolve(process.cwd(), 'server.mjs'), 'utf8');
-
-    assert.ok(modalContent.includes('createAgent('), 'AddAgentModal invokes DataContext.createAgent after addUser');
-    assert.ok(modalContent.includes('setLocationMeta'), 'AddAgentModal captures full location metadata from ScopedLocationSieve');
-    assert.ok(dataContent.includes('const createAgent ='), 'DataContext defines createAgent');
-    assert.ok(dataContent.includes("fetch(`${window.location.origin}/api/agents`"), 'DataContext hydrates scoped agents from /api/agents');
-    assert.ok(serverContent.includes('const operationalAgent ='), 'server.mjs dual-persists created Agent into currentDb.agents');
+  test('379. Coordinator provisioning follows the aspirant level', async () => {
+    const { nextTeamRole } = await import('../utils/teamHierarchy.js');
+    assert.equal(nextTeamRole({ role: 'MP', assignedEntity: 'CONST-274' }, { counties: [], constituencies: [{ id: 'CONST-274', countyId: 'C-047', name: 'Westlands' }], wards: [] }), null);
+    assert.equal(nextTeamRole({ role: 'Ward Coordinator' }, {}), 'Agent');
   });
 
   test('380. Watermark-Free Map Boundaries & Labels: removes basemaps.cartocdn.com and renders County/Constituency/Ward hulls and labels', async () => {
@@ -5177,18 +5168,10 @@ describe('Subdomain Realm Separation & Auth Security Tests', () => {
     assert.ok(markers.some(m => m.opts.icon.html.includes('PARKLANDS/HIGHRIDGE WARD')), 'Renders Ward boundary label');
   });
 
-  test('381. Conflict-Free Popup Agent Registration: blocks browser autofill and prevents 409 Conflict when registering agents', async () => {
-    const fs = await import('node:fs');
-    const path = await import('node:path');
-
-    const modalContent = fs.readFileSync(path.resolve(process.cwd(), 'src/components/modules/AddAgentModal.jsx'), 'utf8');
-    const serverContent = fs.readFileSync(path.resolve(process.cwd(), 'server.mjs'), 'utf8');
-
-    assert.ok(modalContent.includes('emailTouched'), 'AddAgentModal tracks emailTouched to prevent browser autofill');
-    assert.ok(modalContent.includes('readOnly={!emailTouched}'), 'Email input is readOnly until focused by user');
-    assert.ok(modalContent.includes('isCreatorEmailAutofill'), 'Ignores creator email if autofilled');
-    assert.ok(modalContent.includes('zIndex: 10000'), 'Modal overlay sits above floating bottom widgets');
-    assert.ok(serverContent.includes('const isAgentTarget ='), 'server.mjs handles Agent registration without throwing 409 on autofilled or existing agent records');
+  test('381. Hierarchy rejects unknown profiles and prevents agents creating accounts', async () => {
+    const { nextTeamRole, resolveTeamAssignment } = await import('../utils/teamHierarchy.js');
+    assert.equal(nextTeamRole({ role: 'Agent' }, {}), null);
+    assert.throws(() => resolveTeamAssignment({ role: 'Agent' }, 'Admin', 'GLOBAL', {}));
   });
 
 });
